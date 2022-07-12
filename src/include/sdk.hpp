@@ -12,6 +12,6 @@
 #define NO_MALLOC_OVERRIDE 1
 
 #include <cdll_int.h>
+#include <engine/iserverplugin.h>
 #include <igameevents.h>
 #include <interface.h>
-#include <engine/iserverplugin.h>

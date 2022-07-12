@@ -3,7 +3,7 @@ shared_library(
   'injectable',
   files(
     'main.cpp',
-    'wrappers.cpp',
+    'interceptor.cpp',
     'plugin.cpp',
   ),
   include_directories: ['include'],

@@ -1,5 +1,25 @@
-#include "wrappers.hpp"
 #include <frida-gum.h>
+#include <gumobjwrapper.hpp>
+#include <interceptor.hpp>
+
+// Listener
+Listener::Listener()
+    : GumObjectWrapper(gum_make_call_listener(on_enter_wrapper,
+                                              on_leave_wrapper, this, nullptr),
+                       true){};
+Listener::~Listener(){};
+GumInvocationListener *Listener::get_listener() { return get_obj(); };
+
+void Listener::on_enter_wrapper(GumInvocationContext *context,
+                                void *user_data) {
+  auto _this = static_cast<Listener *>(user_data);
+  _this->on_enter(context);
+};
+void Listener::on_leave_wrapper(GumInvocationContext *context,
+                                void *user_data) {
+  auto _this = static_cast<Listener *>(user_data);
+  _this->on_leave(context);
+};
 
 // Interceptor
 Interceptor::Interceptor()
@@ -20,8 +40,7 @@ GumAttachReturn Interceptor::attach(void *address,
   };
   return retval;
 };
-void Interceptor::detach(std::shared_ptr<Listener> listener,
-                         bool erase) {
+void Interceptor::detach(std::shared_ptr<Listener> listener, bool erase) {
   gum_interceptor_detach(get_obj(), listener->get_listener());
   if (erase) {
     listeners.erase(listener);
@@ -35,21 +54,4 @@ GumReplaceReturn Interceptor::replace(void *address, void *replacement_address,
 };
 void Interceptor::revert(void *address) {
   gum_interceptor_revert(get_obj(), address);
-};
-
-// Listener
-Listener::Listener()
-    : GumObjectWrapper(gum_make_call_listener(on_enter_wrapper, on_leave_wrapper, this, nullptr), true){};
-Listener::~Listener(){};
-GumInvocationListener *Listener::get_listener() { return get_obj(); };
-
-void Listener::on_enter_wrapper(GumInvocationContext *context,
-                                void *user_data) {
-  auto _this = static_cast<Listener *>(user_data);
-  _this->on_enter(context);
-};
-void Listener::on_leave_wrapper(GumInvocationContext *context,
-                                void *user_data) {
-  auto _this = static_cast<Listener *>(user_data);
-  _this->on_leave(context);
 };

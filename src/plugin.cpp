@@ -48,7 +48,7 @@ public:
     }
   };
 
-  enum HookId: int {
+  enum HookId : int {
     HOOK_DLOPEN,
     HOOK_FIREGAMEEVENT,
   };

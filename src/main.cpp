@@ -1,8 +1,8 @@
 #include <plugin.hpp>
 
 // For whatever reason, system headers must be included BEFORE sdk.hpp
-#include <sdk.hpp>
 #include <frida-gum.h>
+#include <sdk.hpp>
 
 ServerPlugin plugin{};
 
