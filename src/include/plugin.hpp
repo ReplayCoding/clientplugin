@@ -1,9 +1,9 @@
 #pragma once
-#include "interceptor.hpp"
+#include <frida-gum.h>
+#include <interceptor.hpp>
 #include <memory>
 
-#include "sdk.hpp"
-#include <frida-gum.h>
+#include <sdk.hpp>
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 public:
