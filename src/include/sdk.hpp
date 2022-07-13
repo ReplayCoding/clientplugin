@@ -1,17 +1,12 @@
 #pragma once
 
-// Yoinked from cathook
-#define _POSIX 1
-#define FREETYPE_GL_USE_VAO 1
-#define RAD_TELEMETRY_DISABLED 1
-#define LINUX 1
-#define USE_SDL 1
-#define _LINUX 1
-#define POSIX 1
-#define GNUC 1
-#define NO_MALLOC_OVERRIDE 1
-
 #include <cdll_int.h>
 #include <engine/iserverplugin.h>
 #include <igameevents.h>
 #include <interface.h>
+#include <public/icvar.h>
+#include <tier1/convar.h>
+#include <tier1/tier1.h>
+#include <tier2/tier2.h>
+#include <convar.h>
+#include <tier0/dbg.h>

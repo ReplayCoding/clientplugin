@@ -3,27 +3,24 @@
 #include "sdk.hpp"
 #include "tfdefs.hpp"
 
-// TODO: We should search signatures
-const gpointer FIREGAMEEVENT_OFFSET = reinterpret_cast<gpointer>(0x01150720);
-
 class MyListener : public Listener {
 public:
   MyListener(CreateInterfaceFn interfaceFactory) : Listener() {
     engineClient = static_cast<IVEngineClient013 *>(
         interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION_13, nullptr));
-    auto vtable = (*(void ***)engineClient);
-    vfptr = &vtable[75]; // CEngineClient::DrawPortals()
-    gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
-    vfptr_bkp = *vfptr;
-    *vfptr = (void *)drawportals_stub;
-    gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
+    // auto vtable = (*(void ***)engineClient);
+    // vfptr = &vtable[75]; // CEngineClient::DrawPortals()
+    // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
+    // vfptr_bkp = *vfptr;
+    // *vfptr = (void *)drawportals_stub;
+    // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
   };
   ~MyListener() {
-    if (vfptr != nullptr) {
-      gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
-      *vfptr = vfptr_bkp;
-      gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
-    };
+    // if (vfptr != nullptr) {
+    //   gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
+    //   *vfptr = vfptr_bkp;
+    //   gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
+    // };
   };
   virtual void on_enter(GumInvocationContext *context) {
     HookId hookid = reinterpret_cast<int>(
@@ -57,10 +54,10 @@ private:
   // This should NOT be freed!
   IVEngineClient013 *engineClient{};
 
-  void *vfptr_bkp{};
-  void **vfptr{};
+  // void *vfptr_bkp{};
+  // void **vfptr{};
+  // static void drawportals_stub(){};
 
-  static void drawportals_stub(){};
   void handleGameEvent_handler(const void *thisPtr, IGameEvent *gameEvent) {
     const int customkill = gameEvent->GetInt("customkill", TF_DMG_CUSTOM_NONE);
     int i = 0;
@@ -79,6 +76,13 @@ private:
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
 
+  // TODO: We should search signatures
+  const gpointer FIREGAMEEVENT_OFFSET = reinterpret_cast<gpointer>(0x01150720);
+
+  ConnectTier1Libraries(&interfaceFactory, 1);
+  ConnectTier2Libraries(&interfaceFactory, 1);
+  ConVar_Register();
+
   gum_init();
   interceptor = std::make_unique<Interceptor>();
   listener = std::make_shared<MyListener>(interfaceFactory);
@@ -87,6 +91,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;
   interceptor->attach(fireGameEvent_ptr, listener,
                       reinterpret_cast<void *>(MyListener::HOOK_FIREGAMEEVENT));
+
   return true;
 };
 
@@ -98,7 +103,12 @@ void ServerPlugin::Unload(void) {
   // Is this really really stupid? Yes.
   // (Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!)
   //
+
   interceptor.reset();
   listener.reset();
   gum_deinit();
+
+  ConVar_Unregister();
+  DisconnectTier2Libraries();
+  DisconnectTier1Libraries();
 };
