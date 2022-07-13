@@ -13,5 +13,4 @@ project('sdk-plugin', 'c', 'cpp',
     ]
 )
 
-subdir('sdk')
 subdir('src')
