@@ -1,4 +1,4 @@
-project('frida-c', 'c', 'cpp',
+project('sdk-plugin', 'c', 'cpp',
   version : '0.1',
   default_options :
     [
@@ -13,5 +13,5 @@ project('frida-c', 'c', 'cpp',
     ]
 )
 
-subdir('external')
+subdir('sdk')
 subdir('src')

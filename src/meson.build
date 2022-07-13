@@ -1,10 +1,12 @@
+frida_dep = subproject('frida-gum').get_variable('frida_dep')
+
 add_project_arguments('-fpermissive', language: ['cpp'])
 shared_library(
   'injectable',
   files(
     'main.cpp',
-    'interceptor.cpp',
     'plugin.cpp',
+    'gum/interceptor.cpp',
   ),
   include_directories: ['include'],
   dependencies: [frida_dep, sdk_dep],

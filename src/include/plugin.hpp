@@ -1,6 +1,6 @@
 #pragma once
 #include <frida-gum.h>
-#include <interceptor.hpp>
+#include <gum/interceptor.hpp>
 #include <memory>
 
 #include <sdk.hpp>
