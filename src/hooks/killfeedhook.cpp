@@ -1,5 +1,6 @@
 #include <gum/interceptor.hpp>
 #include <hooks/killfeedhook.hpp>
+#include <interfaces.hpp>
 #include <plugin.hpp>
 
 #include <sdk.hpp>
@@ -8,17 +9,15 @@
 // TODO: We should search signatures
 const gpointer FIREGAMEEVENT_OFFSET = reinterpret_cast<gpointer>(0x01150720);
 
-KillfeedListener::KillfeedListener(CreateInterfaceFn interfaceFactory)
-    : Listener() {
-  engineClient = static_cast<IVEngineClient013 *>(
-      interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION_13, nullptr));
-  // auto vtable = (*(void ***)engineClient);
-  // vfptr = &vtable[75]; // CEngineClient::DrawPortals()
-  // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
-  // vfptr_bkp = *vfptr;
-  // *vfptr = (void *)drawportals_stub;
-  // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
-};
+KillfeedListener::KillfeedListener()
+    : Listener(){
+          // auto vtable = (*(void ***)engineClient);
+          // vfptr = &vtable[75]; // CEngineClient::DrawPortals()
+          // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
+          // vfptr_bkp = *vfptr;
+          // *vfptr = (void *)drawportals_stub;
+          // gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_READ);
+      };
 KillfeedListener::~KillfeedListener(){
     // if (vfptr != nullptr) {
     //   gum_mprotect(vfptr, sizeof vfptr, GUM_PAGE_RW);
@@ -53,6 +52,7 @@ void KillfeedListener::handleGameEvent_handler(const void *thisPtr,
                                                IGameEvent *gameEvent) {
   const int customkill = gameEvent->GetInt("customkill", TF_DMG_CUSTOM_NONE);
   int i = 0;
+  auto engineClient = Interfaces.GetEngineClient();
   engineClient->Con_NPrintf(i++, "FireGameEvent(this: %p, event: %p)\n",
                             thisPtr, gameEvent);
   engineClient->Con_NPrintf(i++, "\t event name: %s\n", gameEvent->GetName());
@@ -64,8 +64,8 @@ void KillfeedListener::handleGameEvent_handler(const void *thisPtr,
   };
 };
 
-KillfeedHook::KillfeedHook(CreateInterfaceFn interfaceFactory) {
-  listener = std::make_shared<KillfeedListener>(interfaceFactory);
+KillfeedHook::KillfeedHook() {
+  listener = std::make_shared<KillfeedListener>();
 
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;

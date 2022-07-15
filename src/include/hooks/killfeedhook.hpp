@@ -5,7 +5,7 @@
 
 class KillfeedListener : public Listener {
 public:
-  KillfeedListener(CreateInterfaceFn interfaceFactory);
+  KillfeedListener();
   ~KillfeedListener();
   virtual void on_enter(GumInvocationContext *context);
 
@@ -17,9 +17,6 @@ public:
   };
 
 private:
-  // This should NOT be freed!
-  IVEngineClient013 *engineClient{};
-
   // void *vfptr_bkp{};
   // void **vfptr{};
   // static void drawportals_stub(){};
@@ -29,7 +26,7 @@ private:
 
 class KillfeedHook {
 public:
-  KillfeedHook(CreateInterfaceFn interfaceFactory);
+  KillfeedHook();
   ~KillfeedHook();
 
 private:
