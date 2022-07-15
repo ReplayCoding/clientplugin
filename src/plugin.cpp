@@ -1,9 +1,10 @@
+#include <hooks.hpp>
 #include <hooks/killfeedhook.hpp>
 #include <interfaces.hpp>
 #include <memory>
 #include <plugin.hpp>
 
-Interceptor *g_Interceptor;
+std::unique_ptr<Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
@@ -13,9 +14,9 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   Interfaces.Load(interfaceFactory);
   ConVar_Register();
 
-  g_Interceptor = new Interceptor();
+  g_Interceptor = std::make_unique<Interceptor>();
+  hookManager = std::make_unique<HookManager>();
 
-  hook = std::make_unique<KillfeedHook>();
   return true;
 };
 
@@ -30,12 +31,11 @@ void ServerPlugin::Unload(void) {
   //
   // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
-  hook.reset();
-
+  hookManager.reset();
   Interfaces.Unload();
   ConVar_Unregister();
 
-  delete g_Interceptor;
+  g_Interceptor.reset();
   gum_deinit();
 };
 

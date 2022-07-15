@@ -1,4 +1,5 @@
 #pragma once
+#include <hooks.hpp>
 #include <gum/interceptor.hpp>
 
 #include <sdk.hpp>
@@ -12,10 +13,10 @@ public:
   virtual void on_leave(GumInvocationContext *context);
 };
 
-class KillfeedHook {
+class KillfeedHook: public IHook {
 public:
   KillfeedHook();
-  ~KillfeedHook();
+  virtual ~KillfeedHook();
 
 private:
   std::shared_ptr<KillfeedListener> listener;

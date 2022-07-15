@@ -8,6 +8,7 @@ shared_library(
   files(
     'interfaces.cpp',
     'plugin.cpp',
+    'hooks.cpp',
     'hooks/killfeedhook.cpp',
     'gum/interceptor.cpp',
   ),
