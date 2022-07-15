@@ -1,6 +1,0 @@
-[submodule "sdk/source-sdk-2013"]
-	path = sdk/source-sdk-2013
-	url = https://github.com/ValveSoftware/source-sdk-2013
-[submodule "subprojects/source-sdk/source-sdk-2013"]
-	path = subprojects/source-sdk/source-sdk-2013
-	url = https://github.com/ValveSoftware/source-sdk-2013

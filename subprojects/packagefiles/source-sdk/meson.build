@@ -2,7 +2,7 @@ project('source-sdk-2013', 'cpp')
 
 cxx = meson.get_compiler('cpp')
 
-sdk_dir = 'source-sdk-2013/mp/src'
+sdk_dir = 'mp/src'
 sdk_cflags = [
   # Yoinked from cathook
   '-D_POSIX=1',
