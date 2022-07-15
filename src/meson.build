@@ -5,8 +5,8 @@ add_project_arguments('-fpermissive', language: ['cpp'])
 shared_library(
   'injectable',
   files(
-    'main.cpp',
     'plugin.cpp',
+    'hooks/killfeedhook.cpp',
     'gum/interceptor.cpp',
   ),
   include_directories: ['include'],

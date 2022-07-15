@@ -1,9 +1,13 @@
 #pragma once
 #include <frida-gum.h>
 #include <gum/interceptor.hpp>
+#include <hooks/killfeedhook.hpp>
 #include <memory>
 
 #include <sdk.hpp>
+
+// Raw pointer because it will be managed by the server plugin
+extern Interceptor *g_Interceptor;
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 public:
@@ -98,6 +102,5 @@ public:
   virtual void FireGameEvent(IGameEvent *event){};
 
 private:
-  std::unique_ptr<Interceptor> interceptor{};
-  std::shared_ptr<Listener> listener{};
+  std::unique_ptr<KillfeedHook> hook{};
 };
