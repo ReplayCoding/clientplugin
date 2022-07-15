@@ -64,7 +64,7 @@ void KillfeedListener::handleGameEvent_handler(const void *thisPtr,
   };
 };
 
-void KillfeedHook::Enable(CreateInterfaceFn interfaceFactory) {
+KillfeedHook::KillfeedHook(CreateInterfaceFn interfaceFactory) {
   listener = std::make_shared<KillfeedListener>(interfaceFactory);
 
   const GumAddress module_base = gum_module_find_base_address("client.so");
@@ -73,4 +73,4 @@ void KillfeedHook::Enable(CreateInterfaceFn interfaceFactory) {
       fireGameEvent_ptr, listener,
       reinterpret_cast<void *>(KillfeedListener::HOOK_FIREGAMEEVENT));
 };
-void KillfeedHook::Disable() { g_Interceptor->detach(listener); };
+KillfeedHook::~KillfeedHook() { g_Interceptor->detach(listener); };

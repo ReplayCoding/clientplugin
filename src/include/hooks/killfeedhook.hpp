@@ -29,13 +29,8 @@ private:
 
 class KillfeedHook {
 public:
-  KillfeedHook(CreateInterfaceFn interfaceFactory) {
-    Enable(interfaceFactory);
-  };
-  ~KillfeedHook() { Disable(); };
-
-  void Enable(CreateInterfaceFn interfaceFactory);
-  void Disable();
+  KillfeedHook(CreateInterfaceFn interfaceFactory);
+  ~KillfeedHook();
 
 private:
   std::shared_ptr<KillfeedListener> listener;

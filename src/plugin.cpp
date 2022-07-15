@@ -23,9 +23,12 @@ void ServerPlugin::Unload(void) {
   // destructor, and this function is used in gum_interceptor_detach, which is
   // called to cleanup loose hooks.
   // Is this really really stupid? Yes.
-  // (Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!)
+  // (TLDR: Reset all hooks in here, or else they will be freed in a library
+  // destructor, which will crash)
   //
+  // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
+  hook.reset();
   delete g_Interceptor;
   gum_deinit();
 
