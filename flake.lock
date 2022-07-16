@@ -1,0 +1,26 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1657998488,
+        "narHash": "sha256-BmenAkiAm32yQP5MrVDCTRDsYvFNNGjB0q/i2jShADY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "feeb878d42ed911c15da3e6031d8ef9b554cd259",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
