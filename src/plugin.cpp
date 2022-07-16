@@ -1,5 +1,5 @@
-#include <hooks.hpp>
-#include <hooks/killfeedhook.hpp>
+#include <modules.hpp>
+#include <modules/killfeedmod.hpp>
 #include <interfaces.hpp>
 #include <memory>
 #include <plugin.hpp>
@@ -15,7 +15,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   ConVar_Register();
 
   g_Interceptor = std::make_unique<Interceptor>();
-  hookManager = std::make_unique<HookManager>();
+  moduleManager = std::make_unique<ModuleManager>();
 
   return true;
 };
@@ -31,7 +31,7 @@ void ServerPlugin::Unload(void) {
   //
   // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
-  hookManager.reset();
+  moduleManager.reset();
   Interfaces.Unload();
   ConVar_Unregister();
 

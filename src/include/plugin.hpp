@@ -1,8 +1,8 @@
 #pragma once
 #include <frida-gum.h>
 #include <gum/interceptor.hpp>
-#include <hooks.hpp>
-#include <hooks/killfeedhook.hpp>
+#include <modules.hpp>
+#include <modules/killfeedmod.hpp>
 #include <memory>
 
 #include <sdk.hpp>
@@ -102,5 +102,5 @@ public:
   virtual void FireGameEvent(IGameEvent *event){};
 
 private:
-  std::unique_ptr<HookManager> hookManager{};
+  std::unique_ptr<ModuleManager> moduleManager{};
 };

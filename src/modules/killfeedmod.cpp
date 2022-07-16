@@ -1,5 +1,5 @@
 #include <gum/interceptor.hpp>
-#include <hooks/killfeedhook.hpp>
+#include <modules/killfeedmod.hpp>
 #include <interfaces.hpp>
 #include <plugin.hpp>
 
@@ -36,11 +36,11 @@ void KillfeedListener::on_enter(GumInvocationContext *context) {
 
 void KillfeedListener::on_leave(GumInvocationContext *context){};
 
-KillfeedHook::KillfeedHook() {
+KillfeedMod::KillfeedMod() {
   listener = std::make_shared<KillfeedListener>();
 
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;
   g_Interceptor->attach(fireGameEvent_ptr, listener, nullptr);
 };
-KillfeedHook::~KillfeedHook() { g_Interceptor->detach(listener); };
+KillfeedMod::~KillfeedMod() { g_Interceptor->detach(listener); };
