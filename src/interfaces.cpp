@@ -13,7 +13,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
   gameEventManager = static_cast<IGameEventManager2 *>(
       factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
   engineClientReplay = static_cast<IEngineClientReplay *>(
-      factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION), nullptr);
+      factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
 };
 
 void InterfaceManager::Unload() {

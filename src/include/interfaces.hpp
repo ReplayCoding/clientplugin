@@ -1,5 +1,10 @@
-#include <replay/ienginereplay.h>
-#include <sdk.hpp>
+#pragma once
+
+#include <interface.h>
+
+class IVEngineClient013;
+class IGameEventManager2;
+class IEngineClientReplay;
 
 class InterfaceManager {
 public:

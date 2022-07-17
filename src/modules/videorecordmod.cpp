@@ -1,16 +1,14 @@
 #include <gum/interceptor.hpp>
-#include <interfaces.hpp>
 #include <modules/videorecordmod.hpp>
-#include <interfaces.hpp>
 #include <plugin.hpp>
+#include <interfaces.hpp>
+
 
 #include <bitmap/imageformat.h>
 #include <convar.h>
 #include <materialsystem/imaterialsystemhardwareconfig.h>
 #include <replay/ienginereplay.h>
 
-typedef void (*SND_RecordInit_t)(void);
-static SND_RecordInit_t SND_RecordInit = nullptr;
 static IVideoMode *videomode = nullptr;
 static ConVar pe_take_screenshot("pe_take_screenshot", "", FCVAR_DONTRECORD,
                                  "Takes a screenshot");
@@ -65,7 +63,6 @@ VideoRecordMod::VideoRecordMod() {
   listener = std::make_shared<VideoRecordListener>();
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
-  SND_RecordInit = module_base + SND_RECORDINIT_OFFSET;
   void **videomode_ptr = (module_base + VIDEOMODE_OFFSET);
   videomode = static_cast<decltype(videomode)>(*videomode_ptr);
   g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, listener,

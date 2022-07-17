@@ -1,5 +1,4 @@
 project('source-sdk-2013', 'cpp')
-
 cxx = meson.get_compiler('cpp')
 
 sdk_dir = 'mp/src'
@@ -15,6 +14,7 @@ sdk_cflags = [
   '-DGNUC=1',
   '-DNO_MALLOC_OVERRIDE=1',
   '-D_GLIBCXX_USE_CXX11_ABI=0',
+  '-fpermissive', # Nothing will compile without it
 ]
 sdk_libdirs = [
   meson.current_source_dir() / sdk_dir / 'lib/public/linux32',
@@ -77,11 +77,18 @@ tier1_sources = [
   sdk_dir /	'tier1/snappy-sinksource.cpp',
   sdk_dir /	'tier1/snappy-stubs-internal.cpp',
 ]
+tier1_dep = static_library(
+  'tier1',
+  tier1_sources,
+  c_args: sdk_cflags,
+  cpp_args: sdk_cflags,
+  include_directories: sdk_headers,
+)
 
 sdk_dep = declare_dependency(
   # Workaround for a dumb meson thing
-  sources: tier1_sources,
-
+  # sources: tier1_sources,
+  
   compile_args: sdk_cflags,
   dependencies: [
     # These aren't included in the SDK as source code
