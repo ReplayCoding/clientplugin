@@ -7,7 +7,6 @@ project('sdk-plugin', 'c', 'cpp',
 
       'c_std=gnu99',
       'default_library=static',
-      'optimization=s',
       'b_ndebug=true',
       'strip=true',
     ]

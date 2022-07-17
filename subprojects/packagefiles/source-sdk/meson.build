@@ -87,7 +87,9 @@ sdk_dep = declare_dependency(
     # These aren't included in the SDK as source code
     cxx.find_library('tier0', dirs: sdk_libdirs),
     cxx.find_library('tier2', dirs: sdk_libdirs),
+    cxx.find_library('tier3', dirs: sdk_libdirs),
     cxx.find_library('vstdlib', dirs: sdk_libdirs),
+    cxx.find_library('bitmap', dirs: sdk_libdirs),
     # tier1 is borked so we compile it
   ],
   include_directories: sdk_headers,

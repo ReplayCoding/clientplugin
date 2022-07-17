@@ -10,6 +10,7 @@ shared_library(
     'plugin.cpp',
     'modules.cpp',
     'modules/killfeedmod.cpp',
+    'modules/videorecordmod.cpp',
     'gum/interceptor.cpp',
   ),
   include_directories: ['include'],

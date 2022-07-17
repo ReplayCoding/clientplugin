@@ -6,7 +6,7 @@
 #include <sdk.hpp>
 #include <tfdefs.hpp>
 
-static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_DONTRECORD,
+static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,
                                 "Disable debugging of killfeed game events");
 
 // TODO: We should search signatures
