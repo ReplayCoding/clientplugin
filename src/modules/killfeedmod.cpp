@@ -1,9 +1,11 @@
 #include <gum/interceptor.hpp>
-#include <modules/killfeedmod.hpp>
 #include <interfaces.hpp>
+#include <modules/killfeedmod.hpp>
 #include <plugin.hpp>
 
-#include <sdk.hpp>
+#include <cdll_int.h>
+#include <convar.h>
+#include <igameevents.h>
 #include <tfdefs.hpp>
 
 static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,

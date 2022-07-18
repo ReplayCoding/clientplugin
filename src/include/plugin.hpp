@@ -1,11 +1,14 @@
 #pragma once
 #include <frida-gum.h>
 #include <gum/interceptor.hpp>
+#include <memory>
 #include <modules.hpp>
 #include <modules/killfeedmod.hpp>
-#include <memory>
 
-#include <sdk.hpp>
+#include <edict.h>
+#include <igameevents.h>
+#include <engine/iserverplugin.h>
+#include <interface.h>
 
 extern std::unique_ptr<Interceptor> g_Interceptor;
 

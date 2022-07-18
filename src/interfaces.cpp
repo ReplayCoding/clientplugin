@@ -1,7 +1,11 @@
 #include <interfaces.hpp>
 
+#include <cdll_int.h>
+#include <igameevents.h>
 #include <replay/ienginereplay.h>
-#include <sdk.hpp>
+#include <tier1/tier1.h>
+#include <tier2/tier2.h>
+#include <tier3/tier3.h>
 
 void InterfaceManager::Load(CreateInterfaceFn factory) {
   ConnectTier1Libraries(&factory, 1);
@@ -19,6 +23,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
 void InterfaceManager::Unload() {
   engineClient = nullptr;
   gameEventManager = nullptr;
+  engineClientReplay = nullptr;
 
   DisconnectTier2Libraries();
   DisconnectTier1Libraries();

@@ -2,8 +2,6 @@
 #include <modules.hpp>
 #include <gum/interceptor.hpp>
 
-#include <sdk.hpp>
-
 class KillfeedListener : public Listener {
 public:
   KillfeedListener();

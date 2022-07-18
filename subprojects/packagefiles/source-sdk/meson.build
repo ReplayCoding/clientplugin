@@ -95,7 +95,7 @@ sdk_dep = declare_dependency(
     cxx.find_library('tier0', dirs: sdk_libdirs),
     cxx.find_library('tier2', dirs: sdk_libdirs),
     cxx.find_library('tier3', dirs: sdk_libdirs),
-    cxx.find_library('vstdlib', dirs: sdk_libdirs),
+    # cxx.find_library('vstdlib', dirs: sdk_libdirs),
     cxx.find_library('bitmap', dirs: sdk_libdirs),
   ],
   link_with: [

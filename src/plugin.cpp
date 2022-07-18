@@ -1,8 +1,11 @@
-#include <modules.hpp>
-#include <modules/killfeedmod.hpp>
 #include <interfaces.hpp>
 #include <memory>
+#include <modules.hpp>
+#include <modules/killfeedmod.hpp>
 #include <plugin.hpp>
+
+#include <convar.h>
+#include <interface.h>
 
 std::unique_ptr<Interceptor> g_Interceptor;
 
