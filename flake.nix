@@ -18,7 +18,9 @@
       in {
         default = pkgs.stdenv.mkDerivation {
           name = "devshell";
-          nativeBuildInputs = with pkgs; [meson ninja];
+          # For systemd-coredump
+          SYSTEMD_DEBUGGER = "lldb";
+          nativeBuildInputs = with pkgs; [meson ninja lldb];
         };
       }
     );
