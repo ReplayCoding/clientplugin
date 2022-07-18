@@ -9,6 +9,7 @@
 
 void InterfaceManager::Load(CreateInterfaceFn factory) {
   ConnectTier1Libraries(&factory, 1);
+  ConVar_Register();
   ConnectTier2Libraries(&factory, 1);
   ConnectTier3Libraries(&factory, 1);
 
@@ -25,9 +26,10 @@ void InterfaceManager::Unload() {
   gameEventManager = nullptr;
   engineClientReplay = nullptr;
 
-  DisconnectTier2Libraries();
-  DisconnectTier1Libraries();
   DisconnectTier3Libraries();
+  DisconnectTier2Libraries();
+  ConVar_Unregister();
+  DisconnectTier1Libraries();
 };
 
 InterfaceManager Interfaces{};

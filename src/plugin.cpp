@@ -13,9 +13,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
 
   gum_init();
-
   Interfaces.Load(interfaceFactory);
-  ConVar_Register();
 
   g_Interceptor = std::make_unique<Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
@@ -36,7 +34,6 @@ void ServerPlugin::Unload(void) {
 
   moduleManager.reset();
   Interfaces.Unload();
-  ConVar_Unregister();
 
   g_Interceptor.reset();
   gum_deinit();
