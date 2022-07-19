@@ -4,11 +4,10 @@ project('sdk-plugin', 'c', 'cpp',
     [
       'warning_level=1',
       'cpp_std=gnu++20',
-
       'c_std=gnu99',
+
       'default_library=static',
-      'b_ndebug=true',
-      'strip=true',
+      'b_ndebug=if-release',
     ]
 )
 

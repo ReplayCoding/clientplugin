@@ -17,6 +17,7 @@ sdk_cflags = [
   '-fpermissive', # Nothing will compile without it
 ]
 sdk_libdirs = [
+  meson.current_source_dir() / 'patched_libs',
   meson.current_source_dir() / sdk_dir / 'lib/public/linux32',
 ]
 sdk_headers = include_directories(
@@ -86,16 +87,16 @@ tier1_dep = static_library(
 )
 
 sdk_dep = declare_dependency(
-  # Workaround for a dumb meson thing
-  # sources: tier1_sources,
-  
   compile_args: sdk_cflags,
   dependencies: [
     # These aren't included in the SDK as source code
+    # tier0 is a shared lib so we need to fixup the soname
+    # we will also need to do this for vstdlib if
+    # we ever use it.
     cxx.find_library('tier0', dirs: sdk_libdirs),
+    # cxx.find_library('vstdlib', dirs: sdk_libdirs),
     cxx.find_library('tier2', dirs: sdk_libdirs),
     cxx.find_library('tier3', dirs: sdk_libdirs),
-    # cxx.find_library('vstdlib', dirs: sdk_libdirs),
     cxx.find_library('bitmap', dirs: sdk_libdirs),
   ],
   link_with: [
