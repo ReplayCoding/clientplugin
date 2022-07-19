@@ -20,7 +20,14 @@
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
-          nativeBuildInputs = with pkgs; [meson ninja lldb];
+          nativeBuildInputs = with pkgs; [
+          # For build
+          meson ninja
+          # openh264
+          nasm
+          # Debugging
+          lldb
+          ];
         };
       }
     );

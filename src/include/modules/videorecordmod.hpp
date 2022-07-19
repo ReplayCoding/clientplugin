@@ -90,6 +90,8 @@ public:
   virtual void on_enter(GumInvocationContext *context);
 
   virtual void on_leave(GumInvocationContext *context);
+private:
+  uint64_t framenum{};
 };
 
 class VideoRecordMod : public IModule {
