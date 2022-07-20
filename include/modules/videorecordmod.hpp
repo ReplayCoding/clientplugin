@@ -32,9 +32,9 @@ public:
   virtual void on_enter(GumInvocationContext *context);
   virtual void on_leave(GumInvocationContext *context);
 
-  int width;
-  int height;
-  X264Encoder encoder;
+  int width{};
+  int height{};
+  X264Encoder *encoder{};
   std::ofstream ofile;
 
 private:

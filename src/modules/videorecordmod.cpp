@@ -63,6 +63,13 @@ void X264Encoder::encode_frame(uint8_t *input_buf, std::ostream os) {
 static IVideoMode *videomode = nullptr;
 
 void VideoRecordMod::renderFrame() {
+  // Width and height can't be set when the module is being setup
+  if (encoder != nullptr) {
+    width = videomode->GetModeStereoWidth();
+    height = videomode->GetModeStereoHeight();
+    encoder = new X264Encoder(width, height, 30);
+  };
+
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
 
   auto mem_required =
@@ -75,10 +82,7 @@ void VideoRecordMod::on_enter(GumInvocationContext *context){};
 
 void VideoRecordMod::on_leave(GumInvocationContext *context) { renderFrame(); };
 
-VideoRecordMod::VideoRecordMod()
-    : width(videomode->GetModeStereoWidth()),
-      height(videomode->GetModeStereoHeight()),
-      encoder(X264Encoder(width, height, 30)) {
+VideoRecordMod::VideoRecordMod() {
   // TODO: We should search signatures
   const gpointer SCR_UPDATESCREEN_OFFSET = reinterpret_cast<gpointer>(0x39ea70);
   // const gpointer SHADER_SWAPBUFFERS_OFFSET =
@@ -96,5 +100,7 @@ VideoRecordMod::VideoRecordMod()
 };
 VideoRecordMod::~VideoRecordMod() {
   g_Interceptor->detach(this);
-  // delete encoder;
+  if (encoder != nullptr) {
+    delete encoder;
+  };
 };
