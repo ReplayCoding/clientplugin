@@ -1,6 +1,6 @@
 #include <frida-gum.h>
-#include <gum/objectwrapper.hpp>
 #include <gum/interceptor.hpp>
+#include <gum/objectwrapper.hpp>
 
 // Listener
 Listener::Listener()
@@ -30,8 +30,7 @@ Interceptor::~Interceptor() {
   }
 };
 
-GumAttachReturn Interceptor::attach(void *address,
-                                    std::shared_ptr<Listener> listener,
+GumAttachReturn Interceptor::attach(void *address, Listener *listener,
                                     void *user_data) {
   auto retval = gum_interceptor_attach(get_obj(), address,
                                        listener->get_listener(), user_data);
@@ -40,7 +39,7 @@ GumAttachReturn Interceptor::attach(void *address,
   };
   return retval;
 };
-void Interceptor::detach(std::shared_ptr<Listener> listener, bool erase) {
+void Interceptor::detach(Listener *listener, bool erase) {
   gum_interceptor_detach(get_obj(), listener->get_listener());
   if (erase) {
     listeners.erase(listener);

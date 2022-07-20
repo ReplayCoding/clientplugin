@@ -5,6 +5,6 @@
 
 ModuleManager::ModuleManager() {
   modules.emplace_back(std::make_unique<KillfeedMod>());
-  modules.emplace_back(std::make_unique<VideoRecordMod>());
+  // modules.emplace_back(std::make_unique<VideoRecordMod>());
 };
 ModuleManager::~ModuleManager(){};

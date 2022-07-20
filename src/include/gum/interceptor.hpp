@@ -23,9 +23,9 @@ class Interceptor : GumObjectWrapper<GumInterceptor> {
 public:
   Interceptor();
   ~Interceptor();
-  GumAttachReturn attach(void *address, std::shared_ptr<Listener> listener,
+  GumAttachReturn attach(void *address, Listener* listener,
                          void *user_data);
-  void detach(std::shared_ptr<Listener> listener, bool erase = true);
+  void detach(Listener* listener, bool erase = true);
 
   GumReplaceReturn replace(void *address, void *replacement_address,
                            void *user_data);
@@ -37,5 +37,5 @@ public:
   inline void end_transaction() { gum_interceptor_end_transaction(get_obj()); };
 
 private:
-  std::set<std::shared_ptr<Listener>> listeners{};
+  std::set<Listener *> listeners{};
 };

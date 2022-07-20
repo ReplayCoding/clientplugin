@@ -23,10 +23,10 @@
           nativeBuildInputs = with pkgs; [
           # For build
           meson ninja
-          # openh264
-          nasm
           # Debugging
           lldb
+          # x264
+          nasm
           ];
         };
       }

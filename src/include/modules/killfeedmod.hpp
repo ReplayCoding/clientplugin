@@ -17,5 +17,5 @@ public:
   virtual ~KillfeedMod();
 
 private:
-  std::shared_ptr<KillfeedListener> listener;
+  KillfeedListener listener;
 };

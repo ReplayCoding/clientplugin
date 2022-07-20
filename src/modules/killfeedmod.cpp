@@ -2,11 +2,11 @@
 #include <interfaces.hpp>
 #include <modules/killfeedmod.hpp>
 #include <plugin.hpp>
+#include <sdk-excluded.hpp>
 
 #include <cdll_int.h>
 #include <convar.h>
 #include <igameevents.h>
-#include <tfdefs.hpp>
 
 static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,
                                 "Disable debugging of killfeed game events");
@@ -38,11 +38,9 @@ void KillfeedListener::on_enter(GumInvocationContext *context) {
 
 void KillfeedListener::on_leave(GumInvocationContext *context){};
 
-KillfeedMod::KillfeedMod() {
-  listener = std::make_shared<KillfeedListener>();
-
+KillfeedMod::KillfeedMod() : listener(KillfeedListener()) {
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;
-  g_Interceptor->attach(fireGameEvent_ptr, listener, nullptr);
+  g_Interceptor->attach(fireGameEvent_ptr, &listener, nullptr);
 };
-KillfeedMod::~KillfeedMod() { g_Interceptor->detach(listener); };
+KillfeedMod::~KillfeedMod() { g_Interceptor->detach(&listener); };
