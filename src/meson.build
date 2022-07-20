@@ -13,7 +13,7 @@ shared_library(
     'modules/videorecordmod.cpp',
     'gum/interceptor.cpp',
   ),
-  include_directories: ['include'],
+  include_directories: inc_dirs,
   dependencies: [frida_dep, sdk_dep, x264_dep],
   install_dir: 'addons',
   install : true

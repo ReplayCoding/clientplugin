@@ -11,4 +11,5 @@ project('sdk-plugin', 'c', 'cpp',
     ]
 )
 
+subdir('include')
 subdir('src')
