@@ -2,7 +2,7 @@
 #include <frida-gum.h>
 #include <gum/interceptor.hpp>
 #include <memory>
-#include <modules.hpp>
+#include <modules/modules.hpp>
 #include <modules/killfeedmod.hpp>
 
 #include <edict.h>

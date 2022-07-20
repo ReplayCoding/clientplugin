@@ -9,14 +9,12 @@
 #include <igameevents.h>
 
 static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,
-                                "Disable debugging of killfeed game events");
+                                "Enable debugging of killfeed game events");
 
 // TODO: We should search signatures
 const gpointer FIREGAMEEVENT_OFFSET = reinterpret_cast<gpointer>(0x01150720);
 
-KillfeedListener::KillfeedListener() : Listener(){};
-KillfeedListener::~KillfeedListener(){};
-void KillfeedListener::on_enter(GumInvocationContext *context) {
+void KillfeedMod::on_enter(GumInvocationContext *context) {
   const auto gameEvent = static_cast<IGameEvent *>(
       gum_invocation_context_get_nth_argument(context, 1));
 
@@ -36,11 +34,11 @@ void KillfeedListener::on_enter(GumInvocationContext *context) {
   };
 };
 
-void KillfeedListener::on_leave(GumInvocationContext *context){};
+void KillfeedMod::on_leave(GumInvocationContext *context){};
 
-KillfeedMod::KillfeedMod() : listener(KillfeedListener()) {
+KillfeedMod::KillfeedMod() : Listener() {
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;
-  g_Interceptor->attach(fireGameEvent_ptr, &listener, nullptr);
+  g_Interceptor->attach(fireGameEvent_ptr, this, nullptr);
 };
-KillfeedMod::~KillfeedMod() { g_Interceptor->detach(&listener); };
+KillfeedMod::~KillfeedMod() { g_Interceptor->detach(this); };

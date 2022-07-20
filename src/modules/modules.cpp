@@ -1,6 +1,6 @@
 #include "modules/videorecordmod.hpp"
 #include <memory>
-#include <modules.hpp>
+#include <modules/modules.hpp>
 #include <modules/killfeedmod.hpp>
 
 ModuleManager::ModuleManager() {

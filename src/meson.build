@@ -8,7 +8,7 @@ shared_library(
   files(
     'interfaces.cpp',
     'plugin.cpp',
-    'modules.cpp',
+    'modules/modules.cpp',
     'modules/killfeedmod.cpp',
     'modules/videorecordmod.cpp',
     'gum/interceptor.cpp',
