@@ -1,6 +1,6 @@
 #pragma once
-#include <modules.hpp>
 #include <gum/interceptor.hpp>
+#include <modules.hpp>
 
 class KillfeedListener : public Listener {
 public:
@@ -11,7 +11,7 @@ public:
   virtual void on_leave(GumInvocationContext *context);
 };
 
-class KillfeedMod: public IModule {
+class KillfeedMod : public IModule {
 public:
   KillfeedMod();
   virtual ~KillfeedMod();

@@ -6,8 +6,8 @@
 #include <modules/killfeedmod.hpp>
 
 #include <edict.h>
-#include <igameevents.h>
 #include <engine/iserverplugin.h>
+#include <igameevents.h>
 #include <interface.h>
 
 extern std::unique_ptr<Interceptor> g_Interceptor;
