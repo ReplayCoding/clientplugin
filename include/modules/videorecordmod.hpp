@@ -11,12 +11,14 @@ class X264Encoder {
 public:
   X264Encoder(int width, int height, int fps);
   ~X264Encoder();
-  void encode_frame(uint8_t *input_buf, std::ostream os);
+  void encode_frame(uint8_t *input_buf, FILE *output);
 
 private:
   x264_t *encoder{};
   x264_param_t param{};
   x264_picture_t pic_in{};
+  x264_picture_t pic_out{};
+
   // TODO: Is this a memory leak?
   x264_nal_t *nal{};
   int i_nal{};
@@ -34,8 +36,8 @@ public:
 
   int width{};
   int height{};
+  FILE *ofile;
   X264Encoder *encoder{};
-  std::ofstream ofile;
 
 private:
   void renderFrame();
