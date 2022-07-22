@@ -14,14 +14,6 @@ public:
   void Load(CreateInterfaceFn factory);
   void Unload();
 
-  auto GetEngineClient() { return engineClient; };
-  auto GetGameEventManager() { return gameEventManager; };
-  auto GetEngineClientReplay() { return engineClientReplay; };
-  auto GetClientDll() { return clientDll; };
-  auto GetEngineTool() { return engineTool; };
-  auto GetMaterialSystem() { return materialSystem; };
-
-private:
   IVEngineClient013 *engineClient{};
   IGameEventManager2 *gameEventManager{};
   IEngineClientReplay *engineClientReplay{};

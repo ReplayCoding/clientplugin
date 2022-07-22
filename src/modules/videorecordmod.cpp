@@ -81,16 +81,13 @@ void VideoRecordMod::renderFrame() {
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
 
   if (pe_render.GetBool()) {
-    auto clientDll = Interfaces.GetClientDll();
-    auto materialSystem = Interfaces.GetMaterialSystem();
-
     CViewSetup viewSetup{};
-    CMatRenderContextPtr renderContextPtr(materialSystem);
+    CMatRenderContextPtr renderContextPtr(Interfaces.materialSystem);
     renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
                                                   height);
-    auto gotPlayerView = clientDll->GetPlayerView(viewSetup);
+    auto gotPlayerView = Interfaces.clientDll->GetPlayerView(viewSetup);
     if (gotPlayerView) {
-      clientDll->RenderView(
+      Interfaces.clientDll->RenderView(
           viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
           RENDERVIEW_DRAWVIEWMODEL |
               RENDERVIEW_DRAWHUD /* This seems to be broken */);
@@ -123,9 +120,8 @@ VideoRecordMod::VideoRecordMod() {
   // reinterpret_cast<gpointer>(0x39f660);
   // const gpointer VIDEOMODE_OFFSET = reinterpret_cast<gpointer>(0xab39e0);
   const gpointer SND_RECORDBUFFER_OFFSET = reinterpret_cast<gpointer>(0x2813d0);
-  auto materialSystem = Interfaces.GetMaterialSystem();
   MaterialVideoMode_t mode;
-  materialSystem->GetDisplayMode(mode);
+  Interfaces.materialSystem->GetDisplayMode(mode);
   width = mode.m_Width;
   height = mode.m_Height;
 

@@ -22,11 +22,11 @@ void KillfeedMod::on_enter(GumInvocationContext *context) {
 
   if (pe_killfeed_debug.GetBool()) {
     int i = 0;
-    auto engineClient = Interfaces.GetEngineClient();
-    engineClient->Con_NPrintf(i++, "event name: %s\n", gameEvent->GetName());
-    engineClient->Con_NPrintf(i++, "weapon name: %s\n",
-                              gameEvent->GetString("weapon"));
-    engineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
+    Interfaces.engineClient->Con_NPrintf(i++, "event name: %s\n",
+                                         gameEvent->GetName());
+    Interfaces.engineClient->Con_NPrintf(i++, "weapon name: %s\n",
+                                         gameEvent->GetString("weapon"));
+    Interfaces.engineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
   };
 
   if (customkill == TF_DMG_CUSTOM_BACKSTAB) {
