@@ -6,12 +6,14 @@
 #include <sdk-excluded.hpp>
 #include <x264.h>
 
+#include <materialsystem/MaterialSystemUtil.h>
+
 typedef std::string EncoderError;
 class X264Encoder {
 public:
   X264Encoder(int width, int height, int fps);
   ~X264Encoder();
-  void encode_frame(uint8_t *input_buf, FILE *output);
+  void encode_frame(uint8_t *input_buf, std::ostream *output);
 
 private:
   x264_t *encoder{};
@@ -34,11 +36,12 @@ public:
   virtual void on_enter(GumInvocationContext *context);
   virtual void on_leave(GumInvocationContext *context);
 
-  int width{};
-  int height{};
-  FILE *ofile;
-  X264Encoder *encoder{};
-
 private:
   void renderFrame();
+  void initRenderTexture(IMaterialSystem *materialSystem);
+  int width{};
+  int height{};
+  std::ofstream ofile;
+  X264Encoder *encoder{};
+  CTextureReference renderTexture;
 };

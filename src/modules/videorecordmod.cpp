@@ -59,7 +59,7 @@ X264Encoder::~X264Encoder() {
   // x264_picture_clean(&pic_in);
 };
 
-void X264Encoder::encode_frame(uint8_t *input_buf, FILE *output) {
+void X264Encoder::encode_frame(uint8_t *input_buf, std::ostream *output) {
   pic_in.img.plane[0] = input_buf;
   pic_in.i_pts = current_frame++;
   auto i_frame_size =
@@ -68,17 +68,13 @@ void X264Encoder::encode_frame(uint8_t *input_buf, FILE *output) {
     throw "Failed to encode frame";
   };
   if (i_frame_size > 0) {
-    fwrite(nal->p_payload, i_frame_size, 1, output);
+    output->write(nal->p_payload, i_frame_size);
   };
 };
-
-static IVideoMode *videomode = nullptr;
 
 void VideoRecordMod::renderFrame() {
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
-    width = videomode->GetModeStereoWidth();
-    height = videomode->GetModeStereoHeight();
     encoder = new X264Encoder(width, height, 30);
   };
 
@@ -86,23 +82,25 @@ void VideoRecordMod::renderFrame() {
 
   if (pe_render.GetBool()) {
     auto clientDll = Interfaces.GetClientDll();
-    // auto materialSystem = Interfaces.GetMaterialSystem();
+    auto materialSystem = Interfaces.GetMaterialSystem();
 
     CViewSetup viewSetup{};
-    // CMatRenderContextPtr renderContextPtr(materialSystem);
+    CMatRenderContextPtr renderContextPtr(materialSystem);
+    renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
+                                                  height);
     auto gotPlayerView = clientDll->GetPlayerView(viewSetup);
-    // This isn't actually rendered to the screen because SCR_UpdateFrame clears
-    // this before rendering, but it still gets rendered to the framebuffer long
-    // enough for us to capture it.
     if (gotPlayerView) {
-      clientDll->RenderView(viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
-                            RENDERVIEW_DRAWVIEWMODEL);
+      clientDll->RenderView(
+          viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
+          RENDERVIEW_DRAWVIEWMODEL |
+              RENDERVIEW_DRAWHUD /* This seems to be broken */);
     };
     auto mem_required =
         ImageLoader::GetMemRequired(width, height, 1, image_format, false);
     uint8_t pic_buf[mem_required];
-    videomode->ReadScreenPixels(0, 0, width, height, pic_buf, image_format);
-    encoder->encode_frame(pic_buf, ofile);
+    renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
+    encoder->encode_frame(pic_buf, &ofile);
+    renderContextPtr->PopRenderTargetAndViewport();
   };
 };
 
@@ -110,19 +108,30 @@ void VideoRecordMod::on_enter(GumInvocationContext *context){};
 
 void VideoRecordMod::on_leave(GumInvocationContext *context) { renderFrame(); };
 
+void VideoRecordMod::initRenderTexture(IMaterialSystem *materialSystem) {
+  materialSystem->BeginRenderTargetAllocation();
+  renderTexture.Init(materialSystem->CreateNamedRenderTargetTextureEx2(
+      "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
+      IMAGE_FORMAT_RGB888, MATERIAL_RT_DEPTH_SHARED));
+  materialSystem->EndRenderTargetAllocation();
+};
+
 VideoRecordMod::VideoRecordMod() {
   // TODO: We should search signatures
   const gpointer SCR_UPDATESCREEN_OFFSET = reinterpret_cast<gpointer>(0x39ea70);
   // const gpointer SHADER_SWAPBUFFERS_OFFSET =
   // reinterpret_cast<gpointer>(0x39f660);
-  const gpointer VIDEOMODE_OFFSET = reinterpret_cast<gpointer>(0xab39e0);
+  // const gpointer VIDEOMODE_OFFSET = reinterpret_cast<gpointer>(0xab39e0);
   const gpointer SND_RECORDBUFFER_OFFSET = reinterpret_cast<gpointer>(0x2813d0);
+  auto materialSystem = Interfaces.GetMaterialSystem();
+  MaterialVideoMode_t mode;
+  materialSystem->GetDisplayMode(mode);
+  width = mode.m_Width;
+  height = mode.m_Height;
 
-  ofile = fopen("output.h264", "wb");
+  ofile = std::ofstream("output.h264", std::ios::binary);
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
-  void **videomode_ptr = (module_base + VIDEOMODE_OFFSET);
-  videomode = static_cast<decltype(videomode)>(*videomode_ptr);
 
   g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this, nullptr);
 };
@@ -131,5 +140,4 @@ VideoRecordMod::~VideoRecordMod() {
   if (encoder != nullptr) {
     delete encoder;
   };
-  fclose(ofile);
 };

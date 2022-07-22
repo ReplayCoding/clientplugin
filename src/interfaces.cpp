@@ -2,6 +2,7 @@
 
 #include <cdll_int.h>
 #include <igameevents.h>
+#include <materialsystem/imaterialsystem.h>
 #include <replay/ienginereplay.h>
 #include <tier1/tier1.h>
 #include <tier2/tier2.h>
@@ -21,7 +22,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
   engineClientReplay = static_cast<IEngineClientReplay *>(
       factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
 	engineTool = (IEngineTool *)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
-	materialSystem = (IMaterialSystem*)factory("VMaterialSystem081", nullptr);
+	materialSystem = (IMaterialSystem*)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
 
   CreateInterfaceFn gameClientFactory;
   engineTool->GetClientFactory(gameClientFactory);
@@ -36,7 +37,6 @@ void InterfaceManager::Unload() {
   engineClientReplay = nullptr;
   engineTool = nullptr;
   materialSystem = nullptr;
-  // TODO
 
   DisconnectTier3Libraries();
   DisconnectTier2Libraries();
