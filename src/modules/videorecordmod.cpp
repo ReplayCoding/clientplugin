@@ -17,8 +17,10 @@
 
 ConVar pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264");
 
-X264Encoder::X264Encoder(int width, int height, int fps) {
-  if (x264_param_default_preset(&param, "medium", nullptr) < 0) {
+X264Encoder::X264Encoder(int width, int height, int fps,
+                         std::ostream &output_stream)
+    : output_stream(output_stream) {
+  if (x264_param_default_preset(&param, "ultrafast", nullptr) < 0) {
     throw "Failed to create set params";
   };
   // We assume Packed RGB 8:8:8
@@ -31,11 +33,10 @@ X264Encoder::X264Encoder(int width, int height, int fps) {
   // for now
   param.i_fps_num = fps;
   param.i_fps_den = 1;
-  param.i_timebase_num = fps;
-  param.i_timebase_den = 1;
   param.b_vfr_input = 0;
 
   param.i_log_level = X264_LOG_DEBUG;
+  // For some weird reason, the engine crashes if I set this any higher
   param.i_threads = 1;
 
   if (x264_param_apply_profile(&param, "high444") < 0) {
@@ -54,12 +55,23 @@ X264Encoder::X264Encoder(int width, int height, int fps) {
 };
 
 X264Encoder::~X264Encoder() {
+  while (x264_encoder_delayed_frames(encoder)) {
+    auto i_frame_size =
+        x264_encoder_encode(encoder, &nal, &i_nal, NULL, &pic_out);
+    if (i_frame_size < 0) {
+      throw "Failed to encode delayed frames";
+    };
+    if (i_frame_size > 0) {
+      output_stream.write(nal->p_payload, i_frame_size);
+    }
+  }
+
   x264_encoder_close(encoder);
   // WHAT THE FUCK IT CRASHES MY ASS
   // x264_picture_clean(&pic_in);
 };
 
-void X264Encoder::encode_frame(uint8_t *input_buf, std::ostream *output) {
+void X264Encoder::encode_frame(uint8_t *input_buf) {
   pic_in.img.plane[0] = input_buf;
   pic_in.i_pts = current_frame++;
   auto i_frame_size =
@@ -68,14 +80,14 @@ void X264Encoder::encode_frame(uint8_t *input_buf, std::ostream *output) {
     throw "Failed to encode frame";
   };
   if (i_frame_size > 0) {
-    output->write(nal->p_payload, i_frame_size);
+    output_stream.write(nal->p_payload, i_frame_size);
   };
 };
 
 void VideoRecordMod::renderFrame() {
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
-    encoder = new X264Encoder(width, height, 30);
+    encoder = new X264Encoder(width, height, 30, ofile);
   };
 
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
@@ -96,7 +108,7 @@ void VideoRecordMod::renderFrame() {
         ImageLoader::GetMemRequired(width, height, 1, image_format, false);
     uint8_t pic_buf[mem_required];
     renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
-    encoder->encode_frame(pic_buf, &ofile);
+    encoder->encode_frame(pic_buf);
     renderContextPtr->PopRenderTargetAndViewport();
   };
 };

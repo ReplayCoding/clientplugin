@@ -11,9 +11,9 @@
 typedef std::string EncoderError;
 class X264Encoder {
 public:
-  X264Encoder(int width, int height, int fps);
+  X264Encoder(int width, int height, int fps, std::ostream &output_stream);
   ~X264Encoder();
-  void encode_frame(uint8_t *input_buf, std::ostream *output);
+  void encode_frame(uint8_t *input_buf);
 
 private:
   x264_t *encoder{};
@@ -26,6 +26,7 @@ private:
   int i_nal{};
 
   uint64_t current_frame{};
+  std::ostream &output_stream;
 };
 
 class VideoRecordMod : public IModule, public Listener {
