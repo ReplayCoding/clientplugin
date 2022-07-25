@@ -6,12 +6,14 @@
 #include <sdk-excluded.hpp>
 #include <x264.h>
 
+#include <convar.h>
 #include <materialsystem/MaterialSystemUtil.h>
 
 typedef std::string EncoderError;
 class X264Encoder {
 public:
-  X264Encoder(int width, int height, int fps, std::ostream &output_stream);
+  X264Encoder(int width, int height, int fps, std::string preset,
+              std::ostream &output_stream);
   ~X264Encoder();
   void encode_frame(uint8_t *input_buf);
 
@@ -38,11 +40,26 @@ public:
   virtual void on_leave(GumInvocationContext *context);
 
 private:
-  void renderFrame();
+  void renderVideoFrame();
+  void renderAudioFrame();
   void initRenderTexture(IMaterialSystem *materialSystem);
+
   int width{};
   int height{};
+  std::unique_ptr<X264Encoder> encoder;
+
   std::ofstream ofile;
-  X264Encoder *encoder{};
   CTextureReference renderTexture;
+
+  ConVar pe_render;
+
+  int **snd_p;
+
+  int *snd_vol;
+  int *snd_linear_count;
+
+  enum HookType : int {
+    SCR_UpdateScreen,
+    SND_RecordBuffer,
+  };
 };

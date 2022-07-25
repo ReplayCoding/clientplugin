@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <fstream>
 #include <gum/interceptor.hpp>
 #include <interfaces.hpp>
 #include <ios>
+#include <memory>
 #include <modules/videorecordmod.hpp>
 #include <ostream>
 #include <plugin.hpp>
@@ -15,9 +17,7 @@
 #include <replay/ienginereplay.h>
 #include <view_shared.h>
 
-ConVar pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264");
-
-X264Encoder::X264Encoder(int width, int height, int fps,
+X264Encoder::X264Encoder(int width, int height, int fps, std::string preset,
                          std::ostream &output_stream)
     : output_stream(output_stream) {
   if (x264_param_default_preset(&param, "ultrafast", nullptr) < 0) {
@@ -84,10 +84,20 @@ void X264Encoder::encode_frame(uint8_t *input_buf) {
   };
 };
 
-void VideoRecordMod::renderFrame() {
+void VideoRecordMod::renderAudioFrame() {
+  for (auto i = 0; i < (*snd_linear_count); i++) {
+    auto sample = (*snd_p)[i] * (*snd_vol) >> 8;
+    auto clipped_sample = std::clamp(sample, -0x7fff, 0x7fff);
+    g_print("%d ", clipped_sample);
+  };
+  g_print("\n");
+};
+
+void VideoRecordMod::renderVideoFrame() {
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
-    encoder = new X264Encoder(width, height, 30, ofile);
+    encoder =
+        std::make_unique<X264Encoder>(width, height, 30, "ultrafast", ofile);
   };
 
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
@@ -99,10 +109,9 @@ void VideoRecordMod::renderFrame() {
                                                   height);
     auto gotPlayerView = Interfaces.clientDll->GetPlayerView(viewSetup);
     if (gotPlayerView) {
-      Interfaces.clientDll->RenderView(
-          viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
-          RENDERVIEW_DRAWVIEWMODEL |
-              RENDERVIEW_DRAWHUD /* This seems to be broken */);
+      Interfaces
+          .clientDll->RenderView(viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
+                                 RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
     };
     auto mem_required =
         ImageLoader::GetMemRequired(width, height, 1, image_format, false);
@@ -115,7 +124,18 @@ void VideoRecordMod::renderFrame() {
 
 void VideoRecordMod::on_enter(GumInvocationContext *context){};
 
-void VideoRecordMod::on_leave(GumInvocationContext *context) { renderFrame(); };
+void VideoRecordMod::on_leave(GumInvocationContext *context) {
+  auto hookType = reinterpret_cast<int>(
+      gum_invocation_context_get_listener_function_data(context));
+  switch (hookType) {
+    case SCR_UpdateScreen:
+      renderVideoFrame();
+      break;
+    case SND_RecordBuffer:
+      renderAudioFrame();
+      break;
+  };
+};
 
 void VideoRecordMod::initRenderTexture(IMaterialSystem *materialSystem) {
   materialSystem->BeginRenderTargetAllocation();
@@ -125,13 +145,17 @@ void VideoRecordMod::initRenderTexture(IMaterialSystem *materialSystem) {
   materialSystem->EndRenderTargetAllocation();
 };
 
-VideoRecordMod::VideoRecordMod() {
+VideoRecordMod::VideoRecordMod()
+    : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
   // TODO: We should search signatures
-  const gpointer SCR_UPDATESCREEN_OFFSET = reinterpret_cast<gpointer>(0x39ea70);
-  // const gpointer SHADER_SWAPBUFFERS_OFFSET =
-  // reinterpret_cast<gpointer>(0x39f660);
-  // const gpointer VIDEOMODE_OFFSET = reinterpret_cast<gpointer>(0xab39e0);
-  const gpointer SND_RECORDBUFFER_OFFSET = reinterpret_cast<gpointer>(0x2813d0);
+  const uintptr_t SCR_UPDATESCREEN_OFFSET = static_cast<uintptr_t>(0x39ea70);
+  // const uintptr_t SHADER_SWAPBUFFERS_OFFSET =
+  // static_cast<uintptr_t>(0x39f660);
+  // const uintptr_t VIDEOMODE_OFFSET = static_cast<uintptr_t>(0xab39e0);
+  const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x2813d0);
+  const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x8488f0);
+  const uintptr_t SND_G_P = static_cast<uintptr_t>(0x848910);
+  const uintptr_t SND_G_LINEAR_COUNT = static_cast<uintptr_t>(0x848900);
   MaterialVideoMode_t mode;
   Interfaces.materialSystem->GetDisplayMode(mode);
   width = mode.m_Width;
@@ -141,11 +165,12 @@ VideoRecordMod::VideoRecordMod() {
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
 
-  g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this, nullptr);
+  snd_vol = reinterpret_cast<int *>(module_base + SND_G_VOL);
+  snd_p = reinterpret_cast<void **>(module_base + SND_G_P);
+  snd_linear_count = reinterpret_cast<int *>(module_base + SND_G_LINEAR_COUNT);
+  g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this,
+                        reinterpret_cast<void *>(HookType::SCR_UpdateScreen));
+  g_Interceptor->attach(module_base + SND_RECORDBUFFER_OFFSET, this,
+                        reinterpret_cast<void *>(HookType::SND_RecordBuffer));
 };
-VideoRecordMod::~VideoRecordMod() {
-  g_Interceptor->detach(this);
-  if (encoder != nullptr) {
-    delete encoder;
-  };
-};
+VideoRecordMod::~VideoRecordMod() { g_Interceptor->detach(this); };
