@@ -48,15 +48,16 @@ private:
   int height{};
   std::unique_ptr<X264Encoder> encoder;
 
-  std::ofstream ofile;
+  std::ofstream o_vidfile;
+  std::ofstream o_audfile;
   CTextureReference renderTexture;
 
   ConVar pe_render;
 
-  int **snd_p;
+  int **snd_p{};
 
-  int *snd_vol;
-  int *snd_linear_count;
+  int *snd_vol{};
+  int *snd_linear_count{};
 
   enum HookType : int {
     SCR_UpdateScreen,

@@ -85,55 +85,58 @@ void X264Encoder::encode_frame(uint8_t *input_buf) {
 };
 
 void VideoRecordMod::renderAudioFrame() {
+  int16_t clipped_samples[*snd_linear_count];
   for (auto i = 0; i < (*snd_linear_count); i++) {
     auto sample = (*snd_p)[i] * (*snd_vol) >> 8;
     auto clipped_sample = std::clamp(sample, -0x7fff, 0x7fff);
-    g_print("%d ", clipped_sample);
+    clipped_samples[i] = clipped_sample;
   };
-  g_print("\n");
+  o_audfile.write(reinterpret_cast<char *>(clipped_samples),
+                  (*snd_linear_count) * sizeof(int16_t));
 };
 
 void VideoRecordMod::renderVideoFrame() {
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
-    encoder =
-        std::make_unique<X264Encoder>(width, height, 30, "ultrafast", ofile);
+    encoder = std::make_unique<X264Encoder>(width, height, 30, "ultrafast",
+                                            o_vidfile);
   };
 
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
 
-  if (pe_render.GetBool()) {
-    CViewSetup viewSetup{};
-    CMatRenderContextPtr renderContextPtr(Interfaces.materialSystem);
-    renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
-                                                  height);
-    auto gotPlayerView = Interfaces.clientDll->GetPlayerView(viewSetup);
-    if (gotPlayerView) {
-      Interfaces
-          .clientDll->RenderView(viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
-                                 RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
-    };
-    auto mem_required =
-        ImageLoader::GetMemRequired(width, height, 1, image_format, false);
-    uint8_t pic_buf[mem_required];
-    renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
-    encoder->encode_frame(pic_buf);
-    renderContextPtr->PopRenderTargetAndViewport();
+  CViewSetup viewSetup{};
+  CMatRenderContextPtr renderContextPtr(Interfaces.materialSystem);
+  renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
+                                                height);
+  auto gotPlayerView = Interfaces.clientDll->GetPlayerView(viewSetup);
+  if (gotPlayerView) {
+    Interfaces
+        .clientDll->RenderView(viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
+                               RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
   };
+  auto mem_required =
+      ImageLoader::GetMemRequired(width, height, 1, image_format, false);
+  uint8_t pic_buf[mem_required];
+  renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
+  // encoder->encode_frame(pic_buf);
+  o_vidfile.write(pic_buf, mem_required);
+  renderContextPtr->PopRenderTargetAndViewport();
 };
 
 void VideoRecordMod::on_enter(GumInvocationContext *context){};
 
 void VideoRecordMod::on_leave(GumInvocationContext *context) {
-  auto hookType = reinterpret_cast<int>(
-      gum_invocation_context_get_listener_function_data(context));
-  switch (hookType) {
-    case SCR_UpdateScreen:
-      renderVideoFrame();
-      break;
-    case SND_RecordBuffer:
-      renderAudioFrame();
-      break;
+  if (pe_render.GetBool()) {
+    auto hookType = reinterpret_cast<int>(
+        gum_invocation_context_get_listener_function_data(context));
+    switch (hookType) {
+      case SCR_UpdateScreen:
+        renderVideoFrame();
+        break;
+      case SND_RecordBuffer:
+        renderAudioFrame();
+        break;
+    };
   };
 };
 
@@ -153,6 +156,10 @@ VideoRecordMod::VideoRecordMod()
   // static_cast<uintptr_t>(0x39f660);
   // const uintptr_t VIDEOMODE_OFFSET = static_cast<uintptr_t>(0xab39e0);
   const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x2813d0);
+  const uintptr_t GETSOUNDTIME_OFFSET = static_cast<uintptr_t>(0x264880);
+  const uintptr_t CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET =
+      static_cast<uintptr_t>(0x377a10);
+
   const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x8488f0);
   const uintptr_t SND_G_P = static_cast<uintptr_t>(0x848910);
   const uintptr_t SND_G_LINEAR_COUNT = static_cast<uintptr_t>(0x848900);
@@ -161,13 +168,54 @@ VideoRecordMod::VideoRecordMod()
   width = mode.m_Width;
   height = mode.m_Height;
 
-  ofile = std::ofstream("output.h264", std::ios::binary);
+  o_vidfile = std::ofstream("output.h264", std::ios::binary);
+  o_audfile = std::ofstream("output.aud", std::ios::binary);
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
 
   snd_vol = reinterpret_cast<int *>(module_base + SND_G_VOL);
   snd_p = reinterpret_cast<void **>(module_base + SND_G_P);
   snd_linear_count = reinterpret_cast<int *>(module_base + SND_G_LINEAR_COUNT);
+
+  // Patch the comparison
+  struct patching_data_t {
+    void *address;
+  };
+  patching_data_t patching_data_1 = {
+      .address =
+          reinterpret_cast<void *>(module_base + GETSOUNDTIME_OFFSET + 0x69),
+  };
+
+  gum_memory_patch_code(
+      patching_data_1.address, 2,
+      [](void *memory, void *user_data) {
+        auto patching_data = static_cast<patching_data_t *>(user_data);
+        GumX86Writer x86writer{};
+        gum_x86_writer_init(&x86writer, memory);
+        x86writer.pc = reinterpret_cast<GumAddress>(patching_data->address);
+        gum_x86_writer_put_nop_padding(&x86writer, 2);
+        gum_x86_writer_clear(&x86writer);
+      },
+      &patching_data_1);
+
+  patching_data_t patching_data_2 = {
+      .address = reinterpret_cast<void *>(
+          module_base + CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6),
+  };
+
+  gum_memory_patch_code(
+      patching_data_2.address, 7,
+      [](void *memory, void *user_data) {
+        auto patching_data = static_cast<patching_data_t *>(user_data);
+        GumX86Writer x86writer{};
+        gum_x86_writer_init(&x86writer, memory);
+        x86writer.pc = reinterpret_cast<GumAddress>(patching_data->address);
+        gum_x86_writer_put_nop_padding(&x86writer, 7);
+        gum_x86_writer_clear(&x86writer);
+      },
+      &patching_data_2);
+
+  Interfaces.engineClientReplay->InitSoundRecord();
   g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this,
                         reinterpret_cast<void *>(HookType::SCR_UpdateScreen));
   g_Interceptor->attach(module_base + SND_RECORDBUFFER_OFFSET, this,
