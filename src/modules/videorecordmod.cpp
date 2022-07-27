@@ -6,6 +6,7 @@
 #include <ios>
 #include <memory>
 #include <modules/videorecordmod.hpp>
+#include <offsets.hpp>
 #include <ostream>
 #include <plugin.hpp>
 #include <string>
@@ -151,19 +152,6 @@ void VideoRecordMod::initRenderTexture(IMaterialSystem *materialSystem) {
 
 VideoRecordMod::VideoRecordMod()
     : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
-  // TODO: We should search signatures
-  const uintptr_t SCR_UPDATESCREEN_OFFSET = static_cast<uintptr_t>(0x39ea70);
-  // const uintptr_t SHADER_SWAPBUFFERS_OFFSET =
-  // static_cast<uintptr_t>(0x39f660);
-  // const uintptr_t VIDEOMODE_OFFSET = static_cast<uintptr_t>(0xab39e0);
-  const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x2813d0);
-  const uintptr_t GETSOUNDTIME_OFFSET = static_cast<uintptr_t>(0x264880);
-  const uintptr_t CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET =
-      static_cast<uintptr_t>(0x377a10);
-
-  const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x8488f0);
-  const uintptr_t SND_G_P = static_cast<uintptr_t>(0x848910);
-  const uintptr_t SND_G_LINEAR_COUNT = static_cast<uintptr_t>(0x848900);
   MaterialVideoMode_t mode;
   Interfaces.materialSystem->GetDisplayMode(mode);
   width = mode.m_Width;
@@ -174,23 +162,26 @@ VideoRecordMod::VideoRecordMod()
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
 
-  snd_vol = reinterpret_cast<int *>(module_base + SND_G_VOL);
-  snd_p = reinterpret_cast<void **>(module_base + SND_G_P);
-  snd_linear_count = reinterpret_cast<int *>(module_base + SND_G_LINEAR_COUNT);
+  snd_vol = reinterpret_cast<int *>(module_base + offsets::SND_G_VOL);
+  snd_p = reinterpret_cast<void **>(module_base + offsets::SND_G_P);
+  snd_linear_count =
+      reinterpret_cast<int *>(module_base + offsets::SND_G_LINEAR_COUNT);
 
   getSoundTime_patch = std::make_unique<X86Patcher>(
-      reinterpret_cast<void *>(module_base + GETSOUNDTIME_OFFSET + 0x69), 2,
-      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
+      reinterpret_cast<void *>(module_base + offsets::GETSOUNDTIME_OFFSET +
+                               0x69),
+      2, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
 
   setSoundFrameTime_patch = std::make_unique<X86Patcher>(
       reinterpret_cast<void *>(
-          module_base + CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6),
+          module_base + offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET +
+          6),
       7, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
   Interfaces.engineClientReplay->InitSoundRecord();
-  g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this,
+  g_Interceptor->attach(module_base + offsets::SCR_UPDATESCREEN_OFFSET, this,
                         reinterpret_cast<void *>(HookType::SCR_UpdateScreen));
-  g_Interceptor->attach(module_base + SND_RECORDBUFFER_OFFSET, this,
+  g_Interceptor->attach(module_base + offsets::SND_RECORDBUFFER_OFFSET, this,
                         reinterpret_cast<void *>(HookType::SND_RecordBuffer));
 };
 VideoRecordMod::~VideoRecordMod() { g_Interceptor->detach(this); };

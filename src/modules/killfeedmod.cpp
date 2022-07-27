@@ -1,6 +1,7 @@
 #include <gum/interceptor.hpp>
 #include <interfaces.hpp>
 #include <modules/killfeedmod.hpp>
+#include <offsets.hpp>
 #include <plugin.hpp>
 #include <sdk-excluded.hpp>
 
@@ -12,7 +13,6 @@ static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,
                                 "Enable debugging of killfeed game events");
 
 // TODO: We should search signatures
-const gpointer FIREGAMEEVENT_OFFSET = reinterpret_cast<gpointer>(0x01150720);
 
 void KillfeedMod::on_enter(GumInvocationContext *context) {
   const auto gameEvent = static_cast<IGameEvent *>(
@@ -38,7 +38,8 @@ void KillfeedMod::on_leave(GumInvocationContext *context){};
 
 KillfeedMod::KillfeedMod() : Listener() {
   const GumAddress module_base = gum_module_find_base_address("client.so");
-  const gpointer fireGameEvent_ptr = module_base + FIREGAMEEVENT_OFFSET;
+  const uintptr_t fireGameEvent_ptr =
+      module_base + offsets::FIREGAMEEVENT_OFFSET;
   g_Interceptor->attach(fireGameEvent_ptr, this, nullptr);
 };
 KillfeedMod::~KillfeedMod() { g_Interceptor->detach(this); };
