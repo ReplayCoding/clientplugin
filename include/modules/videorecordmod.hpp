@@ -1,4 +1,5 @@
 #pragma once
+#include <gum/x86patcher.hpp>
 #include <fstream>
 #include <gum/interceptor.hpp>
 #include <modules/modules.hpp>
@@ -63,4 +64,7 @@ private:
     SCR_UpdateScreen,
     SND_RecordBuffer,
   };
+
+  std::unique_ptr<X86Patcher> getSoundTime_patch;
+  std::unique_ptr<X86Patcher> setSoundFrameTime_patch;
 };

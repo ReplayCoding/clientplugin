@@ -12,6 +12,7 @@ shared_library(
     'modules/killfeedmod.cpp',
     'modules/videorecordmod.cpp',
     'gum/interceptor.cpp',
+    'gum/x86patcher.cpp',
   ),
   include_directories: inc_dirs,
   dependencies: [frida_dep, sdk_dep, x264_dep],

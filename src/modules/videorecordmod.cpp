@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <fstream>
 #include <gum/interceptor.hpp>
+#include <gum/x86patcher.hpp>
 #include <interfaces.hpp>
 #include <ios>
 #include <memory>
@@ -177,43 +178,14 @@ VideoRecordMod::VideoRecordMod()
   snd_p = reinterpret_cast<void **>(module_base + SND_G_P);
   snd_linear_count = reinterpret_cast<int *>(module_base + SND_G_LINEAR_COUNT);
 
-  // Patch the comparison
-  struct patching_data_t {
-    void *address;
-  };
-  patching_data_t patching_data_1 = {
-      .address =
-          reinterpret_cast<void *>(module_base + GETSOUNDTIME_OFFSET + 0x69),
-  };
+  getSoundTime_patch = std::make_unique<X86Patcher>(
+      reinterpret_cast<void *>(module_base + GETSOUNDTIME_OFFSET + 0x69), 2,
+      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
 
-  gum_memory_patch_code(
-      patching_data_1.address, 2,
-      [](void *memory, void *user_data) {
-        auto patching_data = static_cast<patching_data_t *>(user_data);
-        GumX86Writer x86writer{};
-        gum_x86_writer_init(&x86writer, memory);
-        x86writer.pc = reinterpret_cast<GumAddress>(patching_data->address);
-        gum_x86_writer_put_nop_padding(&x86writer, 2);
-        gum_x86_writer_clear(&x86writer);
-      },
-      &patching_data_1);
-
-  patching_data_t patching_data_2 = {
-      .address = reinterpret_cast<void *>(
+  setSoundFrameTime_patch = std::make_unique<X86Patcher>(
+      reinterpret_cast<void *>(
           module_base + CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6),
-  };
-
-  gum_memory_patch_code(
-      patching_data_2.address, 7,
-      [](void *memory, void *user_data) {
-        auto patching_data = static_cast<patching_data_t *>(user_data);
-        GumX86Writer x86writer{};
-        gum_x86_writer_init(&x86writer, memory);
-        x86writer.pc = reinterpret_cast<GumAddress>(patching_data->address);
-        gum_x86_writer_put_nop_padding(&x86writer, 7);
-        gum_x86_writer_clear(&x86writer);
-      },
-      &patching_data_2);
+      7, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
   Interfaces.engineClientReplay->InitSoundRecord();
   g_Interceptor->attach(module_base + SCR_UPDATESCREEN_OFFSET, this,
