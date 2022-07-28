@@ -16,7 +16,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
   ConnectTier2Libraries(&factory, 1);
   ConnectTier3Libraries(&factory, 1);
 
-  engineClient = static_cast<IVEngineClient013 *>(
+  engineClient = static_cast<IVEngineClient *>(
       factory(VENGINE_CLIENT_INTERFACE_VERSION, nullptr));
   gameEventManager = static_cast<IGameEventManager2 *>(
       factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));

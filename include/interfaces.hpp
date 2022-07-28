@@ -2,7 +2,7 @@
 
 #include <interface.h>
 
-class IVEngineClient013;
+class IVEngineClient;
 class IGameEventManager2;
 class IEngineClientReplay;
 class IBaseClientDLL;
@@ -14,7 +14,7 @@ public:
   void Load(CreateInterfaceFn factory);
   void Unload();
 
-  IVEngineClient013 *engineClient{};
+  IVEngineClient *engineClient{};
   IGameEventManager2 *gameEventManager{};
   IEngineClientReplay *engineClientReplay{};
   IBaseClientDLL *clientDll{};

@@ -64,7 +64,7 @@ X264Encoder::~X264Encoder() {
       throw "Failed to encode delayed frames";
     };
     if (i_frame_size > 0) {
-      output_stream.write(nal->p_payload, i_frame_size);
+      output_stream.write(reinterpret_cast<const char *>(nal->p_payload), i_frame_size);
     }
   }
 
@@ -82,7 +82,7 @@ void X264Encoder::encode_frame(uint8_t *input_buf) {
     throw "Failed to encode frame";
   };
   if (i_frame_size > 0) {
-    output_stream.write(nal->p_payload, i_frame_size);
+      output_stream.write(reinterpret_cast<const char *>(nal->p_payload), i_frame_size);
   };
 };
 
@@ -122,7 +122,7 @@ void VideoRecordMod::renderVideoFrame() {
   uint8_t pic_buf[mem_required];
   renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
   // encoder->encode_frame(pic_buf);
-  o_vidfile.write(pic_buf, mem_required);
+  o_vidfile.write(reinterpret_cast<const char*>(pic_buf), mem_required);
   renderContextPtr->PopRenderTargetAndViewport();
 };
 
@@ -164,19 +164,14 @@ VideoRecordMod::VideoRecordMod()
   const GumAddress module_base = gum_module_find_base_address("engine.so");
 
   snd_vol = reinterpret_cast<int *>(module_base + offsets::SND_G_VOL);
-  snd_p = reinterpret_cast<void **>(module_base + offsets::SND_G_P);
+  snd_p = reinterpret_cast<int **>(module_base + offsets::SND_G_P);
   snd_linear_count =
       reinterpret_cast<int *>(module_base + offsets::SND_G_LINEAR_COUNT);
 
-  getSoundTime_patch = std::make_unique<X86Patcher>(
-      reinterpret_cast<void *>(module_base + offsets::GETSOUNDTIME_OFFSET +
-                               0x69),
+  getSoundTime_patch = std::make_unique<X86Patcher>( module_base + offsets::GETSOUNDTIME_OFFSET + 0x69,
       2, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
 
-  setSoundFrameTime_patch = std::make_unique<X86Patcher>(
-      reinterpret_cast<void *>(
-          module_base + offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET +
-          6),
+  setSoundFrameTime_patch = std::make_unique<X86Patcher>( module_base + offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6,
       7, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
   Interfaces.engineClientReplay->InitSoundRecord();

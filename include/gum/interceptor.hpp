@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <frida-gum.h>
 #include <memory>
 #include <set>
@@ -23,9 +24,13 @@ class Interceptor : GumObjectWrapper<GumInterceptor> {
 public:
   Interceptor();
   ~Interceptor();
-  GumAttachReturn attach(void *address, Listener* listener,
-                         void *user_data);
-  void detach(Listener* listener, bool erase = true);
+  GumAttachReturn attach(void *address, Listener *listener, void *user_data);
+  GumAttachReturn attach(std::uintptr_t address, Listener *listener,
+                         void *user_data) {
+    return attach(reinterpret_cast<void *>(address), listener, user_data);
+  };
+
+  void detach(Listener *listener, bool erase = true);
 
   GumReplaceReturn replace(void *address, void *replacement_address,
                            void *user_data);

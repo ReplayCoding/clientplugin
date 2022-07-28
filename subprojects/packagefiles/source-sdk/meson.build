@@ -21,6 +21,19 @@ sdk_cflags = [
   '-DGNUC',
   '-DCOMPILER_GCC',
   '-DNO_MALLOC_OVERRIDE',
+
+  '-fno-strict-aliasing',
+  '-Wsign-compare',
+  '-Wno-conversion',
+  '-Wno-overloaded-virtual',
+  '-Wno-non-virtual-dtor',
+  '-Wno-invalid-offsetof',
+  '-Wno-unknown-pragmas',
+  '-Wno-unused',
+
+  '-Wno-delete-non-virtual-dtor',
+  '-Wno-narrowing',
+
 ]
 sdk_libdirs = [ meson.current_source_dir() / 'libraries' ]
 sdk_headers = include_directories(
