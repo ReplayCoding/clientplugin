@@ -3,6 +3,7 @@
 #include <cdll_int.h>
 #include <igameevents.h>
 #include <materialsystem/imaterialsystem.h>
+#include <mathlib/mathlib.h>
 #include <replay/ienginereplay.h>
 #include <tier1/tier1.h>
 #include <tier2/tier2.h>
@@ -16,7 +17,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
   ConnectTier3Libraries(&factory, 1);
 
   engineClient = static_cast<IVEngineClient013 *>(
-      factory(VENGINE_CLIENT_INTERFACE_VERSION_13, nullptr));
+      factory(VENGINE_CLIENT_INTERFACE_VERSION, nullptr));
   gameEventManager = static_cast<IGameEventManager2 *>(
       factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
   engineClientReplay = static_cast<IEngineClientReplay *>(

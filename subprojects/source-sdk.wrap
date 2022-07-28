@@ -1,6 +1,6 @@
 [wrap-git]
-url = https://github.com/ValveSoftware/source-sdk-2013
-revision = master
+url = https://github.com/alliedmodders/hl2sdk
+revision = tf2
 depth = 1
 
 patch_directory = source-sdk
