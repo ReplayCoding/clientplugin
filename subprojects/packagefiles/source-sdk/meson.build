@@ -1,5 +1,6 @@
 project('source-sdk-2013', 'cpp', default_options : [
   'warning_level=3',
+  'werror=true',
 ])
 cxx = meson.get_compiler('cpp')
 
@@ -76,11 +77,20 @@ tier1_sources = [
 	sdk_dir / 'tier1/utlstring.cpp',
 	sdk_dir / 'tier1/utlsymbol.cpp',
 ]
+
+tier1_cflags = [
+  '-Wno-implicit-fallthrough',
+  '-Wno-register',
+  '-Wno-nonnull-compare',
+  '-Wno-unused-result',
+]
+tier1_cflags += sdk_cflags
+
 tier1_dep = static_library(
   'tier1',
   tier1_sources,
-  c_args: sdk_cflags,
-  cpp_args: sdk_cflags,
+  c_args: tier1_cflags,
+  cpp_args: tier1_cflags,
   include_directories: sdk_headers,
 )
 
