@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/alliedmodders/hl2sdk
-revision = tf2
+revision = sdk2013
 depth = 1
 
 patch_directory = source-sdk

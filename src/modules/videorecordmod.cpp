@@ -92,8 +92,9 @@ void VideoRecordMod::renderAudioFrame() {
   int16_t clipped_samples[*snd_linear_count];
   for (auto i = 0; i < (*snd_linear_count); i++) {
     auto sample = (*snd_p)[i] * (*snd_vol) >> 8;
-    // Fucking mathlib
-    auto clipped_sample = clamp(sample, -0x7fff, 0x7fff);
+
+    // Thank fucking god the AM SDK exists
+    auto clipped_sample = std::clamp(sample, -0x7fff, 0x7fff);
     clipped_samples[i] = clipped_sample;
   };
   o_audfile.write(reinterpret_cast<char *>(clipped_samples),
