@@ -9,7 +9,7 @@
 X86Patcher::X86Patcher(std::uintptr_t address, std::size_t size,
                        std::function<void(GumX86Writer *)> function) {
   original_code = new uint8_t[size];
-  memcpy(original_code, reinterpret_cast<void*>(address), size);
+  memcpy(original_code, reinterpret_cast<void *>(address), size);
 
   cons_callback_data.address = address;
   cons_callback_data.size = size;
@@ -20,7 +20,7 @@ X86Patcher::X86Patcher(std::uintptr_t address, std::size_t size,
   des_callback_data.original_code = original_code,
 
   gum_memory_patch_code(
-      reinterpret_cast<void*>(address), size,
+      reinterpret_cast<void *>(address), size,
       [](void *memory, void *user_data) {
         auto callback_data = static_cast<cons_callback_data_t *>(user_data);
         auto x86writer = gum_x86_writer_new(memory);

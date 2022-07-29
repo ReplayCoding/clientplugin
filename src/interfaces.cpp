@@ -22,8 +22,9 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
       factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
   engineClientReplay = static_cast<IEngineClientReplay *>(
       factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
-	engineTool = (IEngineTool *)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
-	materialSystem = (IMaterialSystem*)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
+  engineTool = (IEngineTool *)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
+  materialSystem =
+      (IMaterialSystem *)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
 
   CreateInterfaceFn gameClientFactory;
   engineTool->GetClientFactory(gameClientFactory);

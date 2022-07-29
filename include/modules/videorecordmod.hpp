@@ -1,7 +1,7 @@
 #pragma once
-#include <gum/x86patcher.hpp>
 #include <fstream>
 #include <gum/interceptor.hpp>
+#include <gum/x86patcher.hpp>
 #include <modules/modules.hpp>
 #include <ostream>
 #include <sdk-excluded.hpp>

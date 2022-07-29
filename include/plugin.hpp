@@ -2,8 +2,8 @@
 #include <frida-gum.h>
 #include <gum/interceptor.hpp>
 #include <memory>
-#include <modules/modules.hpp>
 #include <modules/killfeedmod.hpp>
+#include <modules/modules.hpp>
 
 #include <edict.h>
 #include <engine/iserverplugin.h>

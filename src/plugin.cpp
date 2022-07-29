@@ -1,7 +1,7 @@
 #include <interfaces.hpp>
 #include <memory>
-#include <modules/modules.hpp>
 #include <modules/killfeedmod.hpp>
+#include <modules/modules.hpp>
 #include <plugin.hpp>
 
 #include <convar.h>

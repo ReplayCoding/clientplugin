@@ -1,7 +1,7 @@
 #include "modules/videorecordmod.hpp"
 #include <memory>
-#include <modules/modules.hpp>
 #include <modules/killfeedmod.hpp>
+#include <modules/modules.hpp>
 
 ModuleManager::ModuleManager() {
   modules.emplace_back(std::make_unique<KillfeedMod>());
