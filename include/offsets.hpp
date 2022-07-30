@@ -2,18 +2,20 @@
 
 namespace offsets {
 // TODO: We should search signatures
-const uintptr_t FIREGAMEEVENT_OFFSET = static_cast<uintptr_t>(0x01150720);
+// CLIENT
+const uintptr_t FIREGAMEEVENT_OFFSET = static_cast<uintptr_t>(0x1150830);
 
-const uintptr_t SCR_UPDATESCREEN_OFFSET = static_cast<uintptr_t>(0x39ea70);
-// const uintptr_t SHADER_SWAPBUFFERS_OFFSET =
-// static_cast<uintptr_t>(0x39f660);
-// const uintptr_t VIDEOMODE_OFFSET = static_cast<uintptr_t>(0xab39e0);
-const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x2813d0);
-const uintptr_t GETSOUNDTIME_OFFSET = static_cast<uintptr_t>(0x264880);
+// ENGINE
+const uintptr_t SCR_UPDATESCREEN_OFFSET = static_cast<uintptr_t>(0x39eab0);
+const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x281410);
+
+const uintptr_t GETSOUNDTIME_OFFSET = static_cast<uintptr_t>(0x2648c0);
+
+// This is in a vtable so we should probably fix that
 const uintptr_t CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET =
-    static_cast<uintptr_t>(0x377a10);
+    static_cast<uintptr_t>(0x00387a50 - 0x10000);
 
-const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x8488f0);
-const uintptr_t SND_G_P = static_cast<uintptr_t>(0x848910);
-const uintptr_t SND_G_LINEAR_COUNT = static_cast<uintptr_t>(0x848900);
+const uintptr_t SND_G_P = static_cast<uintptr_t>(0x00858910 - 0x10000);
+const uintptr_t SND_G_LINEAR_COUNT = static_cast<uintptr_t>(0x00858900 - 0x10000);
+const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x008588f0 - 0x10000);
 }; // namespace offsets
