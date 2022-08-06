@@ -1,0 +1,13 @@
+[wrap-file]
+directory = imgui-1.87
+source_url = https://github.com/ocornut/imgui/archive/refs/tags/v1.87.tar.gz
+source_filename = imgui-1.87.tar.gz
+source_hash = b54ceb35bda38766e36b87c25edf7a1cd8fd2cb8c485b245aedca6fb85645a20
+patch_filename = imgui_1.87-3_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/imgui_1.87-3/get_patch
+patch_hash = daedd65150ad24667190f915267515f36da68e46724a21175d667660c1b54918
+wrapdb_version = 1.87-3
+
+[provide]
+imgui = imgui_dep
+

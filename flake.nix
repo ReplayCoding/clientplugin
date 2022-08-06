@@ -13,6 +13,22 @@
         pkgs_ = import nixpkgs {
           localSystem.system = system;
           crossSystem.system = "i686-linux";
+          overlays = [
+            (final: prev: {
+              SDL2 = prev.SDL2.override {
+                # We aren't actually using SDL2 from here, but we need to trick meson into using the headers and soname
+                alsaSupport = false;
+                dbusSupport = false;
+                libdecorSupport = false;
+                pipewireSupport = false;
+                pulseaudioSupport = false;
+                udevSupport = false;
+                waylandSupport = false;
+                x11Support = false;
+                drmSupport = false;
+              };
+            })
+          ];
         };
         pkgs = pkgs_.__splicedPackages;
       in {
@@ -20,13 +36,19 @@
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
+          buildInputs = with pkgs; [
+            libGL
+            pkgsi686Linux.SDL2
+          ];
           nativeBuildInputs = with pkgs; [
-          # For build
-          meson ninja
-          # Debugging
-          lldb
-          # x264
-          nasm
+            # For build
+            meson
+            ninja
+            pkg-config
+            # Debugging
+            lldb
+            # x264
+            nasm
           ];
         };
       }
