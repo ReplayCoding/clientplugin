@@ -1,3 +1,11 @@
+#include <bitmap/imageformat.h>
+#include <cdll_int.h>
+#include <convar.h>
+#include <materialsystem/imaterialsystem.h>
+#include <replay/ienginereplay.h>
+#include <view_shared.h>
+#include <x264.h>
+
 #include <algorithm>
 #include <fstream>
 #include <gum/interceptor.hpp>
@@ -10,17 +18,12 @@
 #include <ostream>
 #include <plugin.hpp>
 #include <string>
-#include <x264.h>
 
-#include <bitmap/imageformat.h>
-#include <cdll_int.h>
-#include <convar.h>
-#include <materialsystem/imaterialsystem.h>
-#include <replay/ienginereplay.h>
-#include <view_shared.h>
-
-X264Encoder::X264Encoder(int width, int height, int fps, std::string preset,
-                         std::ostream &output_stream)
+X264Encoder::X264Encoder(int width,
+                         int height,
+                         int fps,
+                         std::string preset,
+                         std::ostream& output_stream)
     : output_stream(output_stream) {
   if (x264_param_default_preset(&param, preset.c_str(), nullptr) < 0) {
     throw "Failed to create set params";
@@ -64,7 +67,7 @@ X264Encoder::~X264Encoder() {
       throw "Failed to encode delayed frames";
     };
     if (i_frame_size > 0) {
-      output_stream.write(reinterpret_cast<const char *>(nal->p_payload),
+      output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
                           i_frame_size);
     }
   }
@@ -76,7 +79,7 @@ X264Encoder::~X264Encoder() {
   x264_encoder_close(encoder);
 };
 
-void X264Encoder::encode_frame(uint8_t *input_buf) {
+void X264Encoder::encode_frame(uint8_t* input_buf) {
   pic_in.img.plane[0] = input_buf;
   pic_in.i_pts = current_frame++;
   auto i_frame_size =
@@ -85,7 +88,7 @@ void X264Encoder::encode_frame(uint8_t *input_buf) {
     throw "Failed to encode frame";
   };
   if (i_frame_size > 0) {
-    output_stream.write(reinterpret_cast<const char *>(nal->p_payload),
+    output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
                         i_frame_size);
   };
 };
@@ -99,7 +102,7 @@ void VideoRecordMod::renderAudioFrame() {
     auto clipped_sample = std::clamp(sample, -0x7fff, 0x7fff);
     clipped_samples[i] = clipped_sample;
   };
-  o_audfile.write(reinterpret_cast<char *>(clipped_samples),
+  o_audfile.write(reinterpret_cast<char*>(clipped_samples),
                   (*snd_linear_count) * sizeof(int16_t));
 };
 
@@ -131,9 +134,9 @@ void VideoRecordMod::renderVideoFrame() {
   renderContextPtr->PopRenderTargetAndViewport();
 };
 
-void VideoRecordMod::on_enter(GumInvocationContext *context){};
+void VideoRecordMod::on_enter(GumInvocationContext* context){};
 
-void VideoRecordMod::on_leave(GumInvocationContext *context) {
+void VideoRecordMod::on_leave(GumInvocationContext* context) {
   if (pe_render.GetBool()) {
     auto hookType = reinterpret_cast<int>(
         gum_invocation_context_get_listener_function_data(context));
@@ -148,7 +151,7 @@ void VideoRecordMod::on_leave(GumInvocationContext *context) {
   };
 };
 
-void VideoRecordMod::initRenderTexture(IMaterialSystem *materialSystem) {
+void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
   materialSystem->BeginRenderTargetAllocation();
   renderTexture.Init(materialSystem->CreateNamedRenderTargetTextureEx2(
       "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
@@ -168,10 +171,10 @@ VideoRecordMod::VideoRecordMod()
 
   const GumAddress module_base = gum_module_find_base_address("engine.so");
 
-  snd_vol = reinterpret_cast<int *>(module_base + offsets::SND_G_VOL);
-  snd_p = reinterpret_cast<int **>(module_base + offsets::SND_G_P);
+  snd_vol = reinterpret_cast<int*>(module_base + offsets::SND_G_VOL);
+  snd_p = reinterpret_cast<int**>(module_base + offsets::SND_G_P);
   snd_linear_count =
-      reinterpret_cast<int *>(module_base + offsets::SND_G_LINEAR_COUNT);
+      reinterpret_cast<int*>(module_base + offsets::SND_G_LINEAR_COUNT);
 
   getSoundTime_patch = std::make_unique<X86Patcher>(
       module_base + offsets::GETSOUNDTIME_OFFSET + 0x69, 2,
@@ -183,8 +186,10 @@ VideoRecordMod::VideoRecordMod()
 
   Interfaces.engineClientReplay->InitSoundRecord();
   g_Interceptor->attach(module_base + offsets::SCR_UPDATESCREEN_OFFSET, this,
-                        reinterpret_cast<void *>(HookType::SCR_UpdateScreen));
+                        reinterpret_cast<void*>(HookType::SCR_UpdateScreen));
   g_Interceptor->attach(module_base + offsets::SND_RECORDBUFFER_OFFSET, this,
-                        reinterpret_cast<void *>(HookType::SND_RecordBuffer));
+                        reinterpret_cast<void*>(HookType::SND_RecordBuffer));
 };
-VideoRecordMod::~VideoRecordMod() { g_Interceptor->detach(this); };
+VideoRecordMod::~VideoRecordMod() {
+  g_Interceptor->detach(this);
+};

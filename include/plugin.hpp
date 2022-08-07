@@ -1,19 +1,19 @@
 #pragma once
+#include <edict.h>
+#include <engine/iserverplugin.h>
 #include <frida-gum.h>
+#include <igameevents.h>
+#include <interface.h>
+
 #include <gum/interceptor.hpp>
 #include <memory>
 #include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
 
-#include <edict.h>
-#include <engine/iserverplugin.h>
-#include <igameevents.h>
-#include <interface.h>
-
 extern std::unique_ptr<Interceptor> g_Interceptor;
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
-public:
+ public:
   ServerPlugin(){};
   ~ServerPlugin(){};
   // Initialize the plugin to run
@@ -32,16 +32,17 @@ public:
   virtual void UnPause(void){};
 
   // Returns string describing current plugin.  e.g., Admin-Mod.
-  virtual const char *GetPluginDescription(void) {
+  virtual const char* GetPluginDescription(void) {
     return "A testing server plugin";
   };
 
   // Called any time a new level is started (after GameInit() also on level
   // transitions within a game)
-  virtual void LevelInit(char const *pMapName){};
+  virtual void LevelInit(char const* pMapName){};
 
   // The server is about to activate
-  virtual void ServerActivate(edict_t *pEdictList, int edictCount,
+  virtual void ServerActivate(edict_t* pEdictList,
+                              int edictCount,
                               int clientMax){};
 
   // The server should run physics/think on all edicts
@@ -51,39 +52,41 @@ public:
   virtual void LevelShutdown(void){};
 
   // Client is going active
-  virtual void ClientActive(edict_t *pEntity){};
+  virtual void ClientActive(edict_t* pEntity){};
 
   // Client is disconnecting from server
-  virtual void ClientDisconnect(edict_t *pEntity){};
+  virtual void ClientDisconnect(edict_t* pEntity){};
 
   // Client is connected and should be put in the game
-  virtual void ClientPutInServer(edict_t *pEntity, char const *playername){};
+  virtual void ClientPutInServer(edict_t* pEntity, char const* playername){};
 
   // Sets the client index for the client who typed the command into their
   // console
   virtual void SetCommandClient(int index){};
 
   // A player changed one/several replicated cvars (name etc)
-  virtual void ClientSettingsChanged(edict_t *pEdict){};
+  virtual void ClientSettingsChanged(edict_t* pEdict){};
 
   // Client is connecting to server ( set retVal to false to reject the
   // connection )
   //	You can specify a rejection message by writing it into reject
-  virtual PLUGIN_RESULT ClientConnect(bool *bAllowConnect, edict_t *pEntity,
-                                      const char *pszName,
-                                      const char *pszAddress, char *reject,
+  virtual PLUGIN_RESULT ClientConnect(bool* bAllowConnect,
+                                      edict_t* pEntity,
+                                      const char* pszName,
+                                      const char* pszAddress,
+                                      char* reject,
                                       int maxrejectlen) {
     return PLUGIN_RESULT::PLUGIN_CONTINUE;
   };
 
   // The client has typed a command at the console
-  virtual PLUGIN_RESULT ClientCommand(edict_t *pEntity, const CCommand &args) {
+  virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args) {
     return PLUGIN_RESULT::PLUGIN_CONTINUE;
   };
 
   // A user has had their network id setup and validated
-  virtual PLUGIN_RESULT NetworkIDValidated(const char *pszUserName,
-                                           const char *pszNetworkID) {
+  virtual PLUGIN_RESULT NetworkIDValidated(const char* pszUserName,
+                                           const char* pszNetworkID) {
     return PLUGIN_RESULT::PLUGIN_CONTINUE;
   };
 
@@ -92,18 +95,18 @@ public:
   // IServerPluginHelpers::StartQueryCvarValue. Added with version 2 of the
   // interface.
   virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie,
-                                        edict_t *pPlayerEntity,
+                                        edict_t* pPlayerEntity,
                                         EQueryCvarValueStatus eStatus,
-                                        const char *pCvarName,
-                                        const char *pCvarValue){};
+                                        const char* pCvarName,
+                                        const char* pCvarValue){};
 
   // added with version 3 of the interface.
-  virtual void OnEdictAllocated(edict_t *edict){};
-  virtual void OnEdictFreed(const edict_t *edict){};
+  virtual void OnEdictAllocated(edict_t* edict){};
+  virtual void OnEdictFreed(const edict_t* edict){};
 
   // IGameEventListener2
-  virtual void FireGameEvent(IGameEvent *event){};
+  virtual void FireGameEvent(IGameEvent* event){};
 
-private:
+ private:
   std::unique_ptr<ModuleManager> moduleManager{};
 };

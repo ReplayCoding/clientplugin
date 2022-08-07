@@ -3,10 +3,10 @@
 #include <modules/modules.hpp>
 
 class KillfeedMod : public IModule, public Listener {
-public:
+ public:
   KillfeedMod();
   virtual ~KillfeedMod();
-  virtual void on_enter(GumInvocationContext *context);
+  virtual void on_enter(GumInvocationContext* context);
 
-  virtual void on_leave(GumInvocationContext *context);
+  virtual void on_leave(GumInvocationContext* context);
 };

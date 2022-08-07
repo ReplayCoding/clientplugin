@@ -3,17 +3,17 @@
 #include <vector>
 
 class IModule {
-public:
+ public:
   IModule(){};
   virtual ~IModule(){};
 };
 
 class ModuleManager {
-public:
+ public:
   ModuleManager();
   ~ModuleManager();
 
-private:
+ private:
   std::unique_ptr<IModule> killfeedModule;
   std::unique_ptr<IModule> videoRecordModule;
   std::unique_ptr<IModule> gfxOverlayModule;

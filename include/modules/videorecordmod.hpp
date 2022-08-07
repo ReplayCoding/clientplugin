@@ -1,49 +1,52 @@
 #pragma once
+#include <convar.h>
+#include <materialsystem/MaterialSystemUtil.h>
+#include <x264.h>
+
 #include <fstream>
 #include <gum/interceptor.hpp>
 #include <gum/x86patcher.hpp>
 #include <modules/modules.hpp>
 #include <ostream>
 #include <sdk-excluded.hpp>
-#include <x264.h>
-
-#include <convar.h>
-#include <materialsystem/MaterialSystemUtil.h>
 
 typedef std::string EncoderError;
 class X264Encoder {
-public:
-  X264Encoder(int width, int height, int fps, std::string preset,
-              std::ostream &output_stream);
+ public:
+  X264Encoder(int width,
+              int height,
+              int fps,
+              std::string preset,
+              std::ostream& output_stream);
   ~X264Encoder();
-  void encode_frame(uint8_t *input_buf);
+  void encode_frame(uint8_t* input_buf);
 
-private:
-  x264_t *encoder{};
+ private:
+  x264_t* encoder{};
   x264_param_t param{};
   x264_picture_t pic_in{};
   x264_picture_t pic_out{};
 
   // TODO: Is this a memory leak?
-  x264_nal_t *nal{};
+  x264_nal_t* nal{};
   int i_nal{};
 
   uint64_t current_frame{};
-  std::ostream &output_stream;
+  std::ostream& output_stream;
 };
 
 class VideoRecordMod : public IModule, public Listener {
-public:
+ public:
   VideoRecordMod();
   virtual ~VideoRecordMod();
 
-  virtual void on_enter(GumInvocationContext *context);
-  virtual void on_leave(GumInvocationContext *context);
+  virtual void on_enter(GumInvocationContext* context);
+  virtual void on_leave(GumInvocationContext* context);
 
-private:
+ private:
   void renderVideoFrame();
   void renderAudioFrame();
-  void initRenderTexture(IMaterialSystem *materialSystem);
+  void initRenderTexture(IMaterialSystem* materialSystem);
 
   int width{};
   int height{};
@@ -55,10 +58,10 @@ private:
 
   ConVar pe_render;
 
-  int **snd_p{};
+  int** snd_p{};
 
-  int *snd_vol{};
-  int *snd_linear_count{};
+  int* snd_vol{};
+  int* snd_linear_count{};
 
   enum HookType : int {
     SCR_UpdateScreen,

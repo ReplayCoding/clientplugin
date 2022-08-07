@@ -1,17 +1,16 @@
+#include <convar.h>
+#include <interface.h>
+
 #include <interfaces.hpp>
 #include <memory>
 #include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
 #include <plugin.hpp>
 
-#include <convar.h>
-#include <interface.h>
-
 std::unique_ptr<Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
-
   gum_init_embedded();
   Interfaces.Load(interfaceFactory);
 
@@ -40,6 +39,7 @@ void ServerPlugin::Unload(void) {
 };
 
 ServerPlugin plugin{};
-EXPOSE_SINGLE_INTERFACE_GLOBALVAR(ServerPlugin, IServerPluginCallbacks,
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(ServerPlugin,
+                                  IServerPluginCallbacks,
                                   INTERFACEVERSION_ISERVERPLUGINCALLBACKS,
                                   plugin);

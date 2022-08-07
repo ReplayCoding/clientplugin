@@ -1,13 +1,14 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
-#include <gum/interceptor.hpp>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
+
+#include <gum/interceptor.hpp>
 #include <modules/gfxoverlaymod.hpp>
 #include <plugin.hpp>
 
-void GfxOverlayMod::init_imgui(SDL_Window *window) {
+void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
@@ -15,13 +16,13 @@ void GfxOverlayMod::init_imgui(SDL_Window *window) {
   ImGui_ImplOpenGL3_Init();
 };
 
-void GfxOverlayMod::on_enter(GumInvocationContext *context) {
+void GfxOverlayMod::on_enter(GumInvocationContext* context) {
   auto hookType = reinterpret_cast<int>(
       gum_invocation_context_get_listener_function_data(context));
   if (hookType != static_cast<int>(HookType::SDL_GL_SwapWindow))
     return;
 
-  auto window = static_cast<SDL_Window *>(
+  auto window = static_cast<SDL_Window*>(
       gum_invocation_context_get_nth_argument(context, 0));
   auto theirContext = SDL_GL_GetCurrentContext();
   if (!haveWeInitedUI) {
@@ -33,7 +34,7 @@ void GfxOverlayMod::on_enter(GumInvocationContext *context) {
     SDL_GL_MakeCurrent(window, ourContext);
   };
 
-  ImGuiIO &io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame();
@@ -46,9 +47,9 @@ void GfxOverlayMod::on_enter(GumInvocationContext *context) {
       ImGuiWindowFlags_NoNav;
   if (corner != -1) {
     const float PAD = 10.0f;
-    const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImVec2 work_pos =
-        viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+        viewport->WorkPos;  // Use work area to avoid menu-bar/task-bar, if any!
     ImVec2 work_size = viewport->WorkSize;
     ImVec2 window_pos, window_pos_pivot;
     window_pos.x =
@@ -60,10 +61,11 @@ void GfxOverlayMod::on_enter(GumInvocationContext *context) {
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
     window_flags |= ImGuiWindowFlags_NoMove;
   }
-  ImGui::SetNextWindowBgAlpha(0.75f); // Transparent background
+  ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
   if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags)) {
-    ImGui::Text("Simple overlay\n"
-                "in the corner of the screen.\n");
+    ImGui::Text(
+        "Simple overlay\n"
+        "in the corner of the screen.\n");
     ImGui::Separator();
     if (ImGui::IsMousePosValid())
       ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
@@ -80,7 +82,7 @@ void GfxOverlayMod::on_enter(GumInvocationContext *context) {
   SDL_GL_MakeCurrent(window, theirContext);
 };
 
-void GfxOverlayMod::on_leave(GumInvocationContext *context) {
+void GfxOverlayMod::on_leave(GumInvocationContext* context) {
   auto hookType = reinterpret_cast<int>(
       gum_invocation_context_get_listener_function_data(context));
   if (hookType != static_cast<int>(HookType::SDL_PollEvent))
@@ -91,7 +93,7 @@ void GfxOverlayMod::on_leave(GumInvocationContext *context) {
 
   if (haveWeInitedUI && doProcessEvent) {
     // ImGuiIO &io = ImGui::GetIO();
-    SDL_Event *event = static_cast<SDL_Event *>(
+    SDL_Event* event = static_cast<SDL_Event*>(
         gum_invocation_context_get_nth_argument(context, 0));
     ImGui_ImplSDL2_ProcessEvent(event);
   };
@@ -100,10 +102,10 @@ void GfxOverlayMod::on_leave(GumInvocationContext *context) {
 GfxOverlayMod::GfxOverlayMod() : Listener() {
   SDL_version sdlversion;
   SDL_GetVersion(&sdlversion);
-  g_Interceptor->attach(reinterpret_cast<void *>(SDL_GL_SwapWindow), this,
-                        reinterpret_cast<void *>(HookType::SDL_GL_SwapWindow));
-  g_Interceptor->attach(reinterpret_cast<void *>(SDL_PollEvent), this,
-                        reinterpret_cast<void *>(HookType::SDL_PollEvent));
+  g_Interceptor->attach(reinterpret_cast<void*>(SDL_GL_SwapWindow), this,
+                        reinterpret_cast<void*>(HookType::SDL_GL_SwapWindow));
+  g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
+                        reinterpret_cast<void*>(HookType::SDL_PollEvent));
 };
 GfxOverlayMod::~GfxOverlayMod() {
   g_Interceptor->detach(this);
