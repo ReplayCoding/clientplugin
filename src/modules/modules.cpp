@@ -2,7 +2,7 @@
 #include <modules/gfxoverlaymod.hpp>
 #include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
-#include <modules/videorecordmod.hpp>
+#include <modules/videorecord/videorecordmod.hpp>
 
 ModuleManager::ModuleManager() {
   gfxOverlayModule = std::make_unique<GfxOverlayMod>();
