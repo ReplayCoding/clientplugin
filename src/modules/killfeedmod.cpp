@@ -12,8 +12,6 @@
 static ConVar pe_killfeed_debug("pe_killfeed_debug", 0, FCVAR_NONE,
                                 "Enable debugging of killfeed game events");
 
-// TODO: We should search signatures
-
 void KillfeedMod::on_enter(GumInvocationContext *context) {
   const auto gameEvent = static_cast<IGameEvent *>(
       gum_invocation_context_get_nth_argument(context, 1));

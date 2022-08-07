@@ -1,6 +1,0 @@
-mat_queue_mode 0 snd_noextraupdate 1
-
-GetSoundTime seems to be responsible for matching up samples to frames. We need
-to stub the check for cl_movieinfo so that it always follows what we need. It
-isn't possible to set cl_movieinfo because it is used in a bunch of different
-places

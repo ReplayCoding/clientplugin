@@ -22,7 +22,7 @@
 X264Encoder::X264Encoder(int width, int height, int fps, std::string preset,
                          std::ostream &output_stream)
     : output_stream(output_stream) {
-  if (x264_param_default_preset(&param, "ultrafast", nullptr) < 0) {
+  if (x264_param_default_preset(&param, preset.c_str(), nullptr) < 0) {
     throw "Failed to create set params";
   };
   // We assume Packed RGB 8:8:8
@@ -69,9 +69,11 @@ X264Encoder::~X264Encoder() {
     }
   }
 
-  x264_encoder_close(encoder);
   // WHAT THE FUCK IT CRASHES MY ASS
+  // this is a memory leak. deal with it
   // x264_picture_clean(&pic_in);
+
+  x264_encoder_close(encoder);
 };
 
 void X264Encoder::encode_frame(uint8_t *input_buf) {
@@ -104,8 +106,8 @@ void VideoRecordMod::renderAudioFrame() {
 void VideoRecordMod::renderVideoFrame() {
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
-    encoder = std::make_unique<X264Encoder>(width, height, 30, "ultrafast",
-                                            o_vidfile);
+    encoder =
+        std::make_unique<X264Encoder>(width, height, 30, "medium", o_vidfile);
   };
 
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
@@ -124,8 +126,8 @@ void VideoRecordMod::renderVideoFrame() {
       ImageLoader::GetMemRequired(width, height, 1, image_format, false);
   uint8_t pic_buf[mem_required];
   renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
-  // encoder->encode_frame(pic_buf);
-  o_vidfile.write(reinterpret_cast<const char *>(pic_buf), mem_required);
+  encoder->encode_frame(pic_buf);
+  // o_vidfile.write(reinterpret_cast<const char *>(pic_buf), mem_required);
   renderContextPtr->PopRenderTargetAndViewport();
 };
 

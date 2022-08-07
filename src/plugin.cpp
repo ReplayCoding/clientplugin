@@ -12,7 +12,7 @@ std::unique_ptr<Interceptor> g_Interceptor;
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
 
-  gum_init();
+  gum_init_embedded();
   Interfaces.Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Interceptor>();
@@ -36,7 +36,7 @@ void ServerPlugin::Unload(void) {
   Interfaces.Unload();
 
   g_Interceptor.reset();
-  gum_deinit();
+  gum_deinit_embedded();
 };
 
 ServerPlugin plugin{};

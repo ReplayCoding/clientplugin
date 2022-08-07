@@ -1,5 +1,6 @@
 #pragma once
 
+// uh oh don't look at this i swear i didn't look at any leaks
 enum ETFDmgCustom {
   TF_DMG_CUSTOM_NONE = 0,
   TF_DMG_CUSTOM_HEADSHOT,

@@ -100,8 +100,6 @@ void GfxOverlayMod::on_leave(GumInvocationContext *context) {
 GfxOverlayMod::GfxOverlayMod() : Listener() {
   SDL_version sdlversion;
   SDL_GetVersion(&sdlversion);
-  g_print("IMGUI VERSION IS: %s, SDL is %d.%d.%d\n", ImGui::GetVersion(),
-          sdlversion.major, sdlversion.minor, sdlversion.patch);
   g_Interceptor->attach(reinterpret_cast<void *>(SDL_GL_SwapWindow), this,
                         reinterpret_cast<void *>(HookType::SDL_GL_SwapWindow));
   g_Interceptor->attach(reinterpret_cast<void *>(SDL_PollEvent), this,
