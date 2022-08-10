@@ -67,10 +67,6 @@ void GfxOverlayMod::on_enter(GumInvocationContext* context) {
         "Simple overlay\n"
         "in the corner of the screen.\n");
     ImGui::Separator();
-    if (ImGui::IsMousePosValid())
-      ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
-    else
-      ImGui::Text("Mouse Position: <invalid>");
   }
   ImGui::End();
   /* END DRAWING */
@@ -82,21 +78,8 @@ void GfxOverlayMod::on_enter(GumInvocationContext* context) {
   SDL_GL_MakeCurrent(window, theirContext);
 };
 
-void GfxOverlayMod::on_leave(GumInvocationContext* context) {
-  auto hookType = reinterpret_cast<int>(
-      gum_invocation_context_get_listener_function_data(context));
-  if (hookType != static_cast<int>(HookType::SDL_PollEvent))
-    return;
-
-  auto doProcessEvent =
-      reinterpret_cast<int>(gum_invocation_context_get_return_value(context));
-
-  if (haveWeInitedUI && doProcessEvent) {
-    // ImGuiIO &io = ImGui::GetIO();
-    SDL_Event* event = static_cast<SDL_Event*>(
-        gum_invocation_context_get_nth_argument(context, 0));
-    ImGui_ImplSDL2_ProcessEvent(event);
-  };
+void GfxOverlayMod::on_leave(GumInvocationContext* context){
+    // Currently there isn't any input handling
 };
 
 GfxOverlayMod::GfxOverlayMod() : Listener() {
@@ -104,8 +87,8 @@ GfxOverlayMod::GfxOverlayMod() : Listener() {
   SDL_GetVersion(&sdlversion);
   g_Interceptor->attach(reinterpret_cast<void*>(SDL_GL_SwapWindow), this,
                         reinterpret_cast<void*>(HookType::SDL_GL_SwapWindow));
-  g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
-                        reinterpret_cast<void*>(HookType::SDL_PollEvent));
+  // g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
+  //                       reinterpret_cast<void*>(HookType::SDL_PollEvent));
 };
 GfxOverlayMod::~GfxOverlayMod() {
   g_Interceptor->detach(this);
