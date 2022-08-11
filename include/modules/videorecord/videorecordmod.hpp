@@ -5,9 +5,9 @@
 #include <fstream>
 #include <gum/interceptor.hpp>
 #include <gum/x86patcher.hpp>
+#include <hook/attachmenthook.hpp>
 #include <modules/modules.hpp>
 #include <sdk-excluded.hpp>
-#include <hook/attachmenthook.hpp>
 #include "x264encoder.hpp"
 
 class VideoRecordMod : public IModule {

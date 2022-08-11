@@ -123,7 +123,7 @@ ConCommandBase::~ConCommandBase(void) {}
 //-----------------------------------------------------------------------------
 bool ConCommandBase::IsCommand(void) const {
   //	Assert( 0 ); This can't assert. . causes a recursive assert in
-  //Sys_Printf, etc.
+  // Sys_Printf, etc.
   return true;
 }
 
