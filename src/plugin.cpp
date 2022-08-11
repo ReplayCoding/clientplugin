@@ -7,14 +7,15 @@
 #include <modules/modules.hpp>
 #include <plugin.hpp>
 
-std::unique_ptr<Interceptor> g_Interceptor;
+// Defined in gum/interceptor.hpp
+std::unique_ptr<Gum::Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
   gum_init_embedded();
   Interfaces.Load(interfaceFactory);
 
-  g_Interceptor = std::make_unique<Interceptor>();
+  g_Interceptor = std::make_unique<Gum::Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
 
   return true;

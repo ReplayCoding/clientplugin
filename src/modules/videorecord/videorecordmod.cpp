@@ -20,6 +20,9 @@
 #include <string>
 
 void VideoRecordMod::renderAudioFrame() {
+  if (!pe_render.GetBool())
+    return;
+
   int16_t clipped_samples[*snd_linear_count];
   for (auto i = 0; i < (*snd_linear_count); i++) {
     auto sample = (*snd_p)[i] * (*snd_vol) >> 8;
@@ -33,6 +36,9 @@ void VideoRecordMod::renderAudioFrame() {
 };
 
 void VideoRecordMod::renderVideoFrame() {
+  if (!pe_render.GetBool())
+    return;
+
   // Width and height can't be set when the module is being setup
   if (encoder == nullptr) {
     encoder =
@@ -60,23 +66,6 @@ void VideoRecordMod::renderVideoFrame() {
   renderContextPtr->PopRenderTargetAndViewport();
 };
 
-void VideoRecordMod::on_enter(GumInvocationContext* context){};
-
-void VideoRecordMod::on_leave(GumInvocationContext* context) {
-  if (pe_render.GetBool()) {
-    auto hookType = reinterpret_cast<int>(
-        gum_invocation_context_get_listener_function_data(context));
-    switch (hookType) {
-      case SCR_UpdateScreen:
-        renderVideoFrame();
-        break;
-      case SND_RecordBuffer:
-        renderAudioFrame();
-        break;
-    };
-  };
-};
-
 void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
   materialSystem->BeginRenderTargetAllocation();
   renderTexture.Init(materialSystem->CreateNamedRenderTargetTextureEx2(
@@ -89,6 +78,7 @@ VideoRecordMod::VideoRecordMod()
     : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
   MaterialVideoMode_t mode;
   Interfaces.materialSystem->GetDisplayMode(mode);
+  Interfaces.engineClientReplay->InitSoundRecord();
   width = mode.m_Width;
   height = mode.m_Height;
 
@@ -110,12 +100,11 @@ VideoRecordMod::VideoRecordMod()
       module_base + offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6,
       7, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
-  Interfaces.engineClientReplay->InitSoundRecord();
-  g_Interceptor->attach(module_base + offsets::SCR_UPDATESCREEN_OFFSET, this,
-                        reinterpret_cast<void*>(HookType::SCR_UpdateScreen));
-  g_Interceptor->attach(module_base + offsets::SND_RECORDBUFFER_OFFSET, this,
-                        reinterpret_cast<void*>(HookType::SND_RecordBuffer));
+  scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
+      module_base + offsets::SCR_UPDATESCREEN_OFFSET,
+      [this](GumInvocationContext*) { renderVideoFrame(); });
+  snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
+      module_base + offsets::SND_RECORDBUFFER_OFFSET,
+      [this](GumInvocationContext*) { renderAudioFrame(); });
 };
-VideoRecordMod::~VideoRecordMod() {
-  g_Interceptor->detach(this);
-};
+VideoRecordMod::~VideoRecordMod(){};

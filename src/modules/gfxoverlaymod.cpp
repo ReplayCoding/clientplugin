@@ -7,6 +7,7 @@
 #include <gum/interceptor.hpp>
 #include <modules/gfxoverlaymod.hpp>
 #include <plugin.hpp>
+#include "hook/attachmenthook.hpp"
 
 void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
@@ -16,12 +17,7 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   ImGui_ImplOpenGL3_Init();
 };
 
-void GfxOverlayMod::on_enter(GumInvocationContext* context) {
-  auto hookType = reinterpret_cast<int>(
-      gum_invocation_context_get_listener_function_data(context));
-  if (hookType != static_cast<int>(HookType::SDL_GL_SwapWindow))
-    return;
-
+void GfxOverlayMod::SDL_GL_SwapWindow_handler(GumInvocationContext* context) {
   auto window = static_cast<SDL_Window*>(
       gum_invocation_context_get_nth_argument(context, 0));
   auto theirContext = SDL_GL_GetCurrentContext();
@@ -78,21 +74,19 @@ void GfxOverlayMod::on_enter(GumInvocationContext* context) {
   SDL_GL_MakeCurrent(window, theirContext);
 };
 
-void GfxOverlayMod::on_leave(GumInvocationContext* context){
-    // Currently there isn't any input handling
-};
-
-GfxOverlayMod::GfxOverlayMod() : Listener() {
+GfxOverlayMod::GfxOverlayMod() {
   SDL_version sdlversion;
   SDL_GetVersion(&sdlversion);
-  g_Interceptor->attach(reinterpret_cast<void*>(SDL_GL_SwapWindow), this,
-                        reinterpret_cast<void*>(HookType::SDL_GL_SwapWindow));
+  sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
+      reinterpret_cast<std::uintptr_t>(SDL_GL_SwapWindow),
+      std::bind(&GfxOverlayMod::SDL_GL_SwapWindow_handler, this,
+                std::placeholders::_1));
   // g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
   //                       reinterpret_cast<void*>(HookType::SDL_PollEvent));
 };
 GfxOverlayMod::~GfxOverlayMod() {
-  g_Interceptor->detach(this);
-  // Do this AFTER we detach listener to avoid it being called with a deleted
+  sdl_gl_swapWindow_hook.reset();
+  // Do this AFTER we detach to avoid it being called with a deleted
   // context
   SDL_GL_DeleteContext(ourContext);
 };

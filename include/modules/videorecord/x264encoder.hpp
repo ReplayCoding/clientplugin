@@ -1,8 +1,8 @@
 #pragma once
 
 #include <x264.h>
-#include <string>
 #include <ostream>
+#include <string>
 
 typedef std::string EncoderError;
 class X264Encoder {

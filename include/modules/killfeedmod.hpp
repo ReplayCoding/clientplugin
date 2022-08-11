@@ -1,12 +1,15 @@
 #pragma once
 #include <gum/interceptor.hpp>
+#include <hook/attachmenthook.hpp>
+#include <memory>
 #include <modules/modules.hpp>
 
-class KillfeedMod : public IModule, public Listener {
+class KillfeedMod : public IModule {
  public:
   KillfeedMod();
   virtual ~KillfeedMod();
-  virtual void on_enter(GumInvocationContext* context);
 
-  virtual void on_leave(GumInvocationContext* context);
+ private:
+  void FireGameEvent_handler(GumInvocationContext* context);
+  std::unique_ptr<AttachmentHookEnter> fireGameEvent_attachment;
 };

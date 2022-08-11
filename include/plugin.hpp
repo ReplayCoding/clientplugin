@@ -10,8 +10,6 @@
 #include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
 
-extern std::unique_ptr<Interceptor> g_Interceptor;
-
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  public:
   ServerPlugin(){};

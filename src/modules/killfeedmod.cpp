@@ -2,7 +2,9 @@
 #include <convar.h>
 #include <igameevents.h>
 
+#include <functional>
 #include <gum/interceptor.hpp>
+#include <hook/attachmenthook.hpp>
 #include <interfaces.hpp>
 #include <modules/killfeedmod.hpp>
 #include <offsets.hpp>
@@ -14,7 +16,7 @@ static ConVar pe_killfeed_debug("pe_killfeed_debug",
                                 FCVAR_NONE,
                                 "Enable debugging of killfeed game events");
 
-void KillfeedMod::on_enter(GumInvocationContext* context) {
+void KillfeedMod::FireGameEvent_handler(GumInvocationContext* context) {
   const auto gameEvent = static_cast<IGameEvent*>(
       gum_invocation_context_get_nth_argument(context, 1));
 
@@ -34,14 +36,12 @@ void KillfeedMod::on_enter(GumInvocationContext* context) {
   };
 };
 
-void KillfeedMod::on_leave(GumInvocationContext* context){};
-
-KillfeedMod::KillfeedMod() : Listener() {
+KillfeedMod::KillfeedMod() {
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const uintptr_t fireGameEvent_ptr =
       module_base + offsets::FIREGAMEEVENT_OFFSET;
-  g_Interceptor->attach(fireGameEvent_ptr, this, nullptr);
+  fireGameEvent_attachment = std::make_unique<AttachmentHookEnter>(
+      fireGameEvent_ptr, std::bind(&KillfeedMod::FireGameEvent_handler, this,
+                                   std::placeholders::_1));
 };
-KillfeedMod::~KillfeedMod() {
-  g_Interceptor->detach(this);
-};
+KillfeedMod::~KillfeedMod(){};

@@ -3,14 +3,12 @@
 
 #include <gum/interceptor.hpp>
 #include <modules/modules.hpp>
+#include "hook/attachmenthook.hpp"
 
-class GfxOverlayMod : public IModule, public Listener {
+class GfxOverlayMod : public IModule {
  public:
   GfxOverlayMod();
   virtual ~GfxOverlayMod();
-  virtual void on_enter(GumInvocationContext* context);
-
-  virtual void on_leave(GumInvocationContext* context);
 
  private:
   // Needed because we can't setup ourContext in the constructor, as we would
@@ -19,11 +17,8 @@ class GfxOverlayMod : public IModule, public Listener {
   SDL_GLContext ourContext;
 
   int corner = 0;
-
-  enum class HookType : int {
-    SDL_GL_SwapWindow,
-    SDL_PollEvent,
-  };
+  std::unique_ptr<AttachmentHookEnter> sdl_gl_swapWindow_hook;
 
   void init_imgui(SDL_Window* window);
+  void SDL_GL_SwapWindow_handler(GumInvocationContext* context);
 };
