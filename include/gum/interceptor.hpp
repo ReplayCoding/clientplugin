@@ -7,10 +7,23 @@
 #include "objectwrapper.hpp"
 
 namespace Gum {
-  class Listener : public GumObjectWrapper<GumInvocationListener> {
+  class ProbeListener : public GumObjectWrapper<GumInvocationListener> {
    public:
-    Listener();
-    virtual ~Listener();
+    ProbeListener();
+    virtual ~ProbeListener();
+    GumInvocationListener* get_listener();
+
+    virtual void on_hit(GumInvocationContext* context) = 0;
+
+   private:
+    static void on_hit_wrapper(GumInvocationContext* context,
+                                 void* user_data);
+  };
+
+  class CallListener : public GumObjectWrapper<GumInvocationListener> {
+   public:
+    CallListener();
+    virtual ~CallListener();
     GumInvocationListener* get_listener();
 
     virtual void on_enter(GumInvocationContext* context) = 0;
@@ -27,14 +40,22 @@ namespace Gum {
    public:
     Interceptor();
     ~Interceptor();
-    GumAttachReturn attach(void* address, Listener* listener, void* user_data);
+    GumAttachReturn attach(void* address, CallListener* listener, void* user_data);
     GumAttachReturn attach(std::uintptr_t address,
-                           Listener* listener,
+                           CallListener* listener,
                            void* user_data) {
       return attach(reinterpret_cast<void*>(address), listener, user_data);
     };
 
-    void detach(Listener* listener, bool erase = true);
+    void detach(CallListener* listener, bool erase = true);
+
+    GumAttachReturn attach(void* address, ProbeListener* listener, void* user_data);
+    GumAttachReturn attach(std::uintptr_t address,
+                           ProbeListener* listener,
+                           void* user_data) {
+      return attach(reinterpret_cast<void*>(address), listener, user_data);
+    };
+    void detach(ProbeListener* listener, bool erase = true);
 
     GumReplaceReturn replace(void* address,
                              void* replacement_address,
@@ -49,7 +70,8 @@ namespace Gum {
     };
 
    private:
-    std::set<Listener*> listeners{};
+    std::set<ProbeListener*> probe_listeners{};
+    std::set<CallListener*> call_listeners{};
   };
 
 }  // namespace Gum

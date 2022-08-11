@@ -9,29 +9,35 @@
 
 using attachment_hook_func_t = std::function<void(GumInvocationContext*)>;
 // Internal utility class
-class _AttachmentHook : private Gum::Listener {
+class _CallAttachmentHook : private Gum::CallListener {
  public:
-  _AttachmentHook(std::uintptr_t address) {
+  _CallAttachmentHook(std::uintptr_t address) {
     g_Interceptor->attach(address, this, nullptr);
   };
-  ~_AttachmentHook() { g_Interceptor->detach(this); };
+  ~_CallAttachmentHook() { g_Interceptor->detach(this); };
+};
+class _ProbeAttachmentHook : private Gum::ProbeListener {
+ public:
+  _ProbeAttachmentHook(std::uintptr_t address) {
+    g_Interceptor->attach(address, this, nullptr);
+  };
+  ~_ProbeAttachmentHook() { g_Interceptor->detach(this); };
 };
 
-class AttachmentHookEnter : public _AttachmentHook {
+class AttachmentHookEnter : public _ProbeAttachmentHook {
  public:
   AttachmentHookEnter(std::uintptr_t address, attachment_hook_func_t func)
-      : _AttachmentHook(address), func(func){};
+      : _ProbeAttachmentHook(address), func(func){};
 
  private:
-  void on_enter(GumInvocationContext* ctx) override { func(ctx); };
-  void on_leave(GumInvocationContext*) override{};
+  void on_hit(GumInvocationContext* ctx) override { func(ctx); };
   attachment_hook_func_t func;
 };
 
-class AttachmentHookLeave : public _AttachmentHook {
+class AttachmentHookLeave : public _CallAttachmentHook {
  public:
   AttachmentHookLeave(std::uintptr_t address, attachment_hook_func_t func)
-      : _AttachmentHook(address), func(func){};
+      : _CallAttachmentHook(address), func(func){};
 
  private:
   void on_enter(GumInvocationContext*) override{};
@@ -39,12 +45,12 @@ class AttachmentHookLeave : public _AttachmentHook {
   attachment_hook_func_t func;
 };
 
-class AttachmentHookBoth : public _AttachmentHook {
+class AttachmentHookBoth : public _CallAttachmentHook {
  public:
   AttachmentHookBoth(std::uintptr_t address,
                      attachment_hook_func_t enter_func,
                      attachment_hook_func_t leave_func)
-      : _AttachmentHook(address),
+      : _CallAttachmentHook(address),
         enter_func(enter_func),
         leave_func(leave_func){};
 
