@@ -1,7 +1,7 @@
 #include <frida-gum.h>
 
-#include <gum/interceptor.hpp>
-#include <gum/objectwrapper.hpp>
+#include <hook/gum/interceptor.hpp>
+#include <hook/gum/objectwrapper.hpp>
 
 namespace Gum {
 

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <gum/x86patcher.hpp>
+#include <hook/gum/x86patcher.hpp>
 #include <memory>
 
 X86Patcher::X86Patcher(std::uintptr_t address,

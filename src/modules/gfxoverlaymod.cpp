@@ -4,7 +4,6 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
 
-#include <gum/interceptor.hpp>
 #include <modules/gfxoverlaymod.hpp>
 #include <plugin.hpp>
 #include "hook/attachmenthook.hpp"

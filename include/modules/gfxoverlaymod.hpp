@@ -1,9 +1,8 @@
 #pragma once
 #include <SDL2/SDL.h>
 
-#include <gum/interceptor.hpp>
+#include <hook/attachmenthook.hpp>
 #include <modules/modules.hpp>
-#include "hook/attachmenthook.hpp"
 
 class GfxOverlayMod : public IModule {
  public:

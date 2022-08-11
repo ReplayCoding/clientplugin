@@ -7,8 +7,8 @@
 
 #include <algorithm>
 #include <fstream>
-#include <gum/interceptor.hpp>
-#include <gum/x86patcher.hpp>
+#include <hook/gum/interceptor.hpp>
+#include <hook/gum/x86patcher.hpp>
 #include <interfaces.hpp>
 #include <ios>
 #include <memory>

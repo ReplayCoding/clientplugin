@@ -3,7 +3,6 @@
 #include <igameevents.h>
 
 #include <functional>
-#include <gum/interceptor.hpp>
 #include <hook/attachmenthook.hpp>
 #include <interfaces.hpp>
 #include <modules/killfeedmod.hpp>

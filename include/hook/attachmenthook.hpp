@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstdint>
 #include <functional>
-#include <gum/interceptor.hpp>
+#include <hook/gum/interceptor.hpp>
 
 // POLYMORPHISM BE DAMNED
 

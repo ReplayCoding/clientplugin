@@ -5,7 +5,6 @@
 #include <igameevents.h>
 #include <interface.h>
 
-#include <gum/interceptor.hpp>
 #include <memory>
 #include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>

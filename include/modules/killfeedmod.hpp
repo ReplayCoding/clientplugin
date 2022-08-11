@@ -1,6 +1,6 @@
 #pragma once
-#include <gum/interceptor.hpp>
 #include <hook/attachmenthook.hpp>
+#include <hook/gum/interceptor.hpp>
 #include <memory>
 #include <modules/modules.hpp>
 

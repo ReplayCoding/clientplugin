@@ -3,9 +3,8 @@
 #include <materialsystem/MaterialSystemUtil.h>
 
 #include <fstream>
-#include <gum/interceptor.hpp>
-#include <gum/x86patcher.hpp>
 #include <hook/attachmenthook.hpp>
+#include <hook/gum/x86patcher.hpp>
 #include <modules/modules.hpp>
 #include <sdk-excluded.hpp>
 #include "x264encoder.hpp"
