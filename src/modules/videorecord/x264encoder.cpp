@@ -5,6 +5,7 @@
 #include <modules/videorecord/x264encoder.hpp>
 #include <ostream>
 #include <string>
+#include <util.hpp>
 
 X264Encoder::X264Encoder(int width,
                          int height,
@@ -13,7 +14,7 @@ X264Encoder::X264Encoder(int width,
                          std::ostream& output_stream)
     : output_stream(output_stream) {
   if (x264_param_default_preset(&param, preset.c_str(), nullptr) < 0) {
-    throw "Failed to create set params";
+    throw StringError("Failed to create set params");
   };
   // We assume Packed RGB 8:8:8
   param.i_bitdepth = 8;
@@ -28,21 +29,22 @@ X264Encoder::X264Encoder(int width,
   param.b_vfr_input = 0;
 
   param.i_log_level = X264_LOG_DEBUG;
-  // For some weird reason, the engine crashes if I set this any higher
+  // The engine gets really unstable with this any higher, and if its too high,
+  // we run out of memory.
   param.i_threads = 1;
 
   if (x264_param_apply_profile(&param, "high444") < 0) {
-    throw "Failed to apply profile";
+    throw StringError("Failed to apply profile");
   };
 
   if (x264_picture_alloc(&pic_in, param.i_csp, param.i_width, param.i_height) <
       0) {
-    throw "Failed to allocate input picture";
+    throw StringError("Failed to allocate input picture");
   };
 
   encoder = x264_encoder_open(&param);
   if (encoder == nullptr) {
-    throw "Failed to open encoder";
+    throw StringError("Failed to open encoder");
   };
 };
 
@@ -51,7 +53,7 @@ X264Encoder::~X264Encoder() {
     auto i_frame_size =
         x264_encoder_encode(encoder, &nal, &i_nal, NULL, &pic_out);
     if (i_frame_size < 0) {
-      throw "Failed to encode delayed frames";
+      throw StringError("Failed to encode delayed frames");
     };
     if (i_frame_size > 0) {
       output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
@@ -72,7 +74,7 @@ void X264Encoder::encode_frame(uint8_t* input_buf) {
   auto i_frame_size =
       x264_encoder_encode(encoder, &nal, &i_nal, &pic_in, &pic_out);
   if (i_frame_size < 0) {
-    throw "Failed to encode frame";
+    throw StringError("Failed to encode frame");
   };
   if (i_frame_size > 0) {
     output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
