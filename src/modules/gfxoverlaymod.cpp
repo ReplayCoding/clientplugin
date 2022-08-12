@@ -7,6 +7,7 @@
 #include <modules/gfxoverlaymod.hpp>
 #include <plugin.hpp>
 #include "hook/attachmenthook.hpp"
+#include "modules/modules.hpp"
 
 void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
@@ -60,7 +61,6 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
     ImGui::Text(
         "Simple overlay\n"
         "in the corner of the screen.\n");
-    ImGui::Separator();
   }
   ImGui::End();
   /* END DRAWING */
@@ -88,3 +88,5 @@ GfxOverlayMod::~GfxOverlayMod() {
   // context
   SDL_GL_DeleteContext(ourContext);
 };
+
+REGISTER_MODULE(GfxOverlayMod);

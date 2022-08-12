@@ -7,14 +7,10 @@
 #include <hook/attachmenthook.hpp>
 #include <interfaces.hpp>
 #include <modules/killfeedmod.hpp>
+#include <modules/modules.hpp>
 #include <offsets.hpp>
 #include <plugin.hpp>
 #include <sdk-excluded.hpp>
-
-static ConVar pe_killfeed_debug("pe_killfeed_debug",
-                                0,
-                                FCVAR_NONE,
-                                "Enable debugging of killfeed game events");
 
 void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   const auto gameEvent = context.get_arg<IGameEvent*>(1);
@@ -35,7 +31,11 @@ void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   };
 };
 
-KillfeedMod::KillfeedMod() {
+KillfeedMod::KillfeedMod()
+    : pe_killfeed_debug("pe_killfeed_debug",
+                        0,
+                        FCVAR_NONE,
+                        "Enable debugging of killfeed game events") {
   const GumAddress module_base = gum_module_find_base_address("client.so");
   const uintptr_t fireGameEvent_ptr =
       module_base + offsets::FIREGAMEEVENT_OFFSET;
@@ -44,3 +44,5 @@ KillfeedMod::KillfeedMod() {
                                    std::placeholders::_1));
 };
 KillfeedMod::~KillfeedMod(){};
+
+REGISTER_MODULE(KillfeedMod);

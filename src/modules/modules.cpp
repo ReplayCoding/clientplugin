@@ -1,14 +1,12 @@
 #include <memory>
-#include <modules/gfxoverlaymod.hpp>
-#include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
-#include <modules/unhidecvarsmod.hpp>
-#include <modules/videorecord/videorecordmod.hpp>
+
+ModuleDesc* g_ModuleList = nullptr;
 
 ModuleManager::ModuleManager() {
-  gfxOverlayModule = std::make_unique<GfxOverlayMod>();
-  killfeedModule = std::make_unique<KillfeedMod>();
-  videoRecordModule = std::make_unique<VideoRecordMod>();
-  unhideCvarsModule = std::make_unique<UnhideCVarsMod>();
+  for (auto module_desc = g_ModuleList; module_desc;
+       module_desc = module_desc->next) {
+    auto module = module_desc->factory();
+    modules.emplace_back(std::move(module));
+  }
 };
-ModuleManager::~ModuleManager(){};

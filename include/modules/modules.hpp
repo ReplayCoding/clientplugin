@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -8,14 +9,27 @@ class IModule {
   virtual ~IModule(){};
 };
 
+class ModuleDesc;
+extern ModuleDesc* g_ModuleList;
+class ModuleDesc {
+ public:
+  ModuleDesc(std::function<std::unique_ptr<IModule>()> factory)
+      : factory(factory) {
+    this->next = g_ModuleList;
+    g_ModuleList = this;
+  };
+
+  ModuleDesc* next;
+  std::function<std::unique_ptr<IModule>()> factory;
+};
+
+#define REGISTER_MODULE(M) \
+  static ModuleDesc mod_desc_##M([]() { return std::make_unique<M>(); });
+
 class ModuleManager {
  public:
   ModuleManager();
-  ~ModuleManager();
 
  private:
-  std::unique_ptr<IModule> killfeedModule;
-  std::unique_ptr<IModule> videoRecordModule;
-  std::unique_ptr<IModule> gfxOverlayModule;
-  std::unique_ptr<IModule> unhideCvarsModule;
+  std::vector<std::unique_ptr<IModule>> modules;
 };

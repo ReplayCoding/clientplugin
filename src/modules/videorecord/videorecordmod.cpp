@@ -18,6 +18,7 @@
 #include <ostream>
 #include <plugin.hpp>
 #include <string>
+#include "modules/modules.hpp"
 
 void VideoRecordMod::renderAudioFrame() {
   if (!pe_render.GetBool())
@@ -108,3 +109,5 @@ VideoRecordMod::VideoRecordMod()
       [this](InvocationContext) { renderAudioFrame(); });
 };
 VideoRecordMod::~VideoRecordMod(){};
+
+REGISTER_MODULE(VideoRecordMod)
