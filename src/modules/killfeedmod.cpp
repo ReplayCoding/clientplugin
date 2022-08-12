@@ -2,6 +2,7 @@
 #include <convar.h>
 #include <igameevents.h>
 
+#include <frida-gum.h>
 #include <functional>
 #include <hook/attachmenthook.hpp>
 #include <interfaces.hpp>
@@ -15,9 +16,8 @@ static ConVar pe_killfeed_debug("pe_killfeed_debug",
                                 FCVAR_NONE,
                                 "Enable debugging of killfeed game events");
 
-void KillfeedMod::FireGameEvent_handler(GumInvocationContext* context) {
-  const auto gameEvent = static_cast<IGameEvent*>(
-      gum_invocation_context_get_nth_argument(context, 1));
+void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
+  const auto gameEvent = context.get_arg<IGameEvent*>(1);
 
   const int customkill = gameEvent->GetInt("customkill", TF_DMG_CUSTOM_NONE);
 

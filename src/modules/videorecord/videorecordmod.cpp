@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <fstream>
-#include <hook/gum/interceptor.hpp>
+#include <hook/attachmenthook.hpp>
 #include <hook/gum/x86patcher.hpp>
 #include <interfaces.hpp>
 #include <ios>
@@ -102,9 +102,9 @@ VideoRecordMod::VideoRecordMod()
 
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
       module_base + offsets::SCR_UPDATESCREEN_OFFSET,
-      [this](GumInvocationContext*) { renderVideoFrame(); });
+      [this](InvocationContext) { renderVideoFrame(); });
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
       module_base + offsets::SND_RECORDBUFFER_OFFSET,
-      [this](GumInvocationContext*) { renderAudioFrame(); });
+      [this](InvocationContext) { renderAudioFrame(); });
 };
 VideoRecordMod::~VideoRecordMod(){};

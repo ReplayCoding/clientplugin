@@ -16,9 +16,8 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   ImGui_ImplOpenGL3_Init();
 };
 
-void GfxOverlayMod::SDL_GL_SwapWindow_handler(GumInvocationContext* context) {
-  auto window = static_cast<SDL_Window*>(
-      gum_invocation_context_get_nth_argument(context, 0));
+void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
+  auto window = context.get_arg<SDL_Window*>(0);
   auto theirContext = SDL_GL_GetCurrentContext();
   if (!haveWeInitedUI) {
     ourContext = SDL_GL_CreateContext(window);

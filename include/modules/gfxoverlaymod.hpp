@@ -19,5 +19,5 @@ class GfxOverlayMod : public IModule {
   std::unique_ptr<AttachmentHookEnter> sdl_gl_swapWindow_hook;
 
   void init_imgui(SDL_Window* window);
-  void SDL_GL_SwapWindow_handler(GumInvocationContext* context);
+  void SDL_GL_SwapWindow_handler(InvocationContext context);
 };

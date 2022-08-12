@@ -7,7 +7,7 @@
 #include <modules/modules.hpp>
 #include <plugin.hpp>
 
-// Defined in gum/interceptor.hpp
+// Defined in hook/gum/interceptor.hpp
 std::unique_ptr<Gum::Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
