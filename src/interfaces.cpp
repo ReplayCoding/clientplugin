@@ -8,7 +8,7 @@
 #include <tier3/tier3.h>
 #include <toolframework/ienginetool.h>
 
-#include <interfaces.hpp>
+#include "interfaces.hpp"
 
 void InterfaceManager::Load(CreateInterfaceFn factory) {
   ConnectTier1Libraries(&factory, 1);

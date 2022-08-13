@@ -3,11 +3,12 @@
 #include <materialsystem/MaterialSystemUtil.h>
 
 #include <fstream>
-#include <hook/attachmenthook.hpp>
-#include <hook/gum/x86patcher.hpp>
-#include <modules/modules.hpp>
-#include <sdk-excluded.hpp>
-#include "x264encoder.hpp"
+
+#include "hook/attachmenthook.hpp"
+#include "hook/gum/x86patcher.hpp"
+#include "modules/modules.hpp"
+#include "modules/videorecord/x264encoder.hpp"
+#include "sdk-excluded.hpp"
 
 class VideoRecordMod : public IModule {
  public:

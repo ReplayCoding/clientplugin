@@ -1,16 +1,16 @@
 #include <cdll_int.h>
 #include <convar.h>
-#include <igameevents.h>
-
 #include <frida-gum.h>
+#include <igameevents.h>
 #include <functional>
-#include <hook/attachmenthook.hpp>
-#include <interfaces.hpp>
-#include <modules/killfeed.hpp>
-#include <modules/modules.hpp>
-#include <offsets.hpp>
-#include <plugin.hpp>
-#include <sdk-excluded.hpp>
+
+#include "hook/attachmenthook.hpp"
+#include "interfaces.hpp"
+#include "modules/killfeed.hpp"
+#include "modules/modules.hpp"
+#include "offsets.hpp"
+#include "plugin.hpp"
+#include "sdk-excluded.hpp"
 
 void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   const auto gameEvent = context.get_arg<IGameEvent*>(1);

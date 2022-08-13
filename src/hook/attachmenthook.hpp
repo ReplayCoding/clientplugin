@@ -3,7 +3,8 @@
 #include <cassert>
 #include <cstdint>
 #include <functional>
-#include <hook/gum/interceptor.hpp>
+
+#include "hook/gum/interceptor.hpp"
 
 // Wrapper for GumInvocationContext
 class InvocationContext {

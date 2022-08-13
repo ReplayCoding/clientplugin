@@ -1,8 +1,9 @@
 #pragma once
-#include <hook/attachmenthook.hpp>
 #include <memory>
-#include <modules/modules.hpp>
 #include <convar.h>
+
+#include "modules/modules.hpp"
+#include "hook/attachmenthook.hpp"
 
 class KillfeedMod : public IModule {
  public:

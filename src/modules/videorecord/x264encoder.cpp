@@ -1,11 +1,11 @@
-// MUST be included before x264
 #include <cstdint>
-
+// cstdint MUST be included before x264
 #include <x264.h>
-#include <modules/videorecord/x264encoder.hpp>
 #include <ostream>
 #include <string>
-#include <util.hpp>
+
+#include "modules/videorecord/x264encoder.hpp"
+#include "util.hpp"
 
 X264Encoder::X264Encoder(int width,
                          int height,

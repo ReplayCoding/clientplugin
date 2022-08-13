@@ -1,11 +1,11 @@
 #include <convar.h>
+#include <memory>
 #include <interface.h>
 
-#include <interfaces.hpp>
-#include <memory>
-#include <modules/modules.hpp>
-#include <hook/gum/interceptor.hpp>
-#include <plugin.hpp>
+#include "interfaces.hpp"
+#include "modules/modules.hpp"
+#include "hook/gum/interceptor.hpp"
+#include "plugin.hpp"
 
 // Defined in hook/gum/interceptor.hpp
 std::unique_ptr<Gum::Interceptor> g_Interceptor;

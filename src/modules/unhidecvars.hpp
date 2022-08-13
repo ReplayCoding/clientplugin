@@ -1,5 +1,6 @@
 #include <convar.h>
-#include <modules/modules.hpp>
+
+#include "modules/modules.hpp"
 
 class UnhideCVarsMod : public IModule {
  public:
