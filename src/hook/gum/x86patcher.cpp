@@ -31,7 +31,7 @@ X86Patcher::X86Patcher(std::uintptr_t address,
         gum_x86_writer_unref(x86writer);
       },
       static_cast<void*>(&cons_callback_data));
-};
+}
 
 X86Patcher::~X86Patcher() {
   gum_memory_patch_code(
@@ -42,4 +42,4 @@ X86Patcher::~X86Patcher() {
       },
       static_cast<void*>(&des_callback_data));
   delete original_code;
-};
+}

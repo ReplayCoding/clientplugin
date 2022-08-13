@@ -10,4 +10,4 @@ ModuleManager::ModuleManager() {
     auto module = module_desc->factory();
     modules.emplace_back(std::move(module));
   }
-};
+}

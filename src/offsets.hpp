@@ -19,4 +19,4 @@ namespace offsets {
   const uintptr_t SND_G_LINEAR_COUNT =
       static_cast<uintptr_t>(0x00858900 - 0x10000);
   const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x008588f0 - 0x10000);
-};  // namespace offsets
+}  // namespace offsets

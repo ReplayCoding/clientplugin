@@ -4,7 +4,10 @@ x264_dep = subproject('x264', default_options: ['warning_level=0']).get_variable
 imgui_dep = subproject('imgui').get_variable('imgui_dep')
 gl_dep = dependency('gl')
 
-cflags = [ '-Wno-pedantic' ]
+cflags = [
+  '-Werror',
+  '-Wno-vla', # really?
+]
 
 install_data('ClientPlugin.vdf', install_dir: 'addons', install_tag: 'addon')
 shared_library(

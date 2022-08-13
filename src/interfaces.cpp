@@ -31,7 +31,7 @@ void InterfaceManager::Load(CreateInterfaceFn factory) {
 
   clientDll = static_cast<IBaseClientDLL*>(
       gameClientFactory(CLIENT_DLL_INTERFACE_VERSION, nullptr));
-};
+}
 
 void InterfaceManager::Unload() {
   engineClient = nullptr;
@@ -44,6 +44,6 @@ void InterfaceManager::Unload() {
   DisconnectTier2Libraries();
   ConVar_Unregister();
   DisconnectTier1Libraries();
-};
+}
 
 InterfaceManager Interfaces{};

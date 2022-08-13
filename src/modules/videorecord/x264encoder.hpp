@@ -12,7 +12,7 @@ class X264Encoder {
               int fps,
               std::string preset,
               std::ostream& output_stream);
-  ~X264Encoder();
+  ~X264Encoder() noexcept(false);
   void encode_frame(uint8_t* input_buf);
 
  private:

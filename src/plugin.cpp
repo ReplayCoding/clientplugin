@@ -1,10 +1,10 @@
 #include <convar.h>
-#include <memory>
 #include <interface.h>
+#include <memory>
 
+#include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
-#include "hook/gum/interceptor.hpp"
 #include "plugin.hpp"
 
 // Defined in hook/gum/interceptor.hpp
@@ -19,7 +19,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   moduleManager = std::make_unique<ModuleManager>();
 
   return true;
-};
+}
 
 // Called when the plugin should be shutdown
 void ServerPlugin::Unload(void) {
@@ -37,10 +37,10 @@ void ServerPlugin::Unload(void) {
 
   g_Interceptor.reset();
   gum_deinit_embedded();
-};
+}
 
 ServerPlugin plugin{};
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(ServerPlugin,
                                   IServerPluginCallbacks,
                                   INTERFACEVERSION_ISERVERPLUGINCALLBACKS,
-                                  plugin);
+                                  plugin)

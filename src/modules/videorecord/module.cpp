@@ -15,11 +15,11 @@
 #include "hook/attachmenthook.hpp"
 #include "hook/gum/x86patcher.hpp"
 #include "interfaces.hpp"
+#include "modules/modules.hpp"
 #include "modules/videorecord/module.hpp"
 #include "modules/videorecord/x264encoder.hpp"
 #include "offsets.hpp"
 #include "plugin.hpp"
-#include "modules/modules.hpp"
 
 void VideoRecordMod::renderAudioFrame() {
   if (!pe_render.GetBool())
@@ -35,7 +35,7 @@ void VideoRecordMod::renderAudioFrame() {
   };
   o_audfile.write(reinterpret_cast<char*>(clipped_samples),
                   (*snd_linear_count) * sizeof(int16_t));
-};
+}
 
 void VideoRecordMod::renderVideoFrame() {
   if (!pe_render.GetBool())
@@ -66,7 +66,7 @@ void VideoRecordMod::renderVideoFrame() {
   encoder->encode_frame(pic_buf);
   // o_vidfile.write(reinterpret_cast<const char *>(pic_buf), mem_required);
   renderContextPtr->PopRenderTargetAndViewport();
-};
+}
 
 void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
   materialSystem->BeginRenderTargetAllocation();
@@ -74,7 +74,7 @@ void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
       "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
       IMAGE_FORMAT_RGB888, MATERIAL_RT_DEPTH_SHARED));
   materialSystem->EndRenderTargetAllocation();
-};
+}
 
 VideoRecordMod::VideoRecordMod()
     : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
@@ -108,7 +108,7 @@ VideoRecordMod::VideoRecordMod()
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
       module_base + offsets::SND_RECORDBUFFER_OFFSET,
       [this](InvocationContext) { renderAudioFrame(); });
-};
-VideoRecordMod::~VideoRecordMod(){};
+}
+VideoRecordMod::~VideoRecordMod() {}
 
 REGISTER_MODULE(VideoRecordMod)

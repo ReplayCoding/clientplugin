@@ -46,9 +46,9 @@ X264Encoder::X264Encoder(int width,
   if (encoder == nullptr) {
     throw StringError("Failed to open encoder");
   };
-};
+}
 
-X264Encoder::~X264Encoder() {
+X264Encoder::~X264Encoder() noexcept(false) {
   while (x264_encoder_delayed_frames(encoder)) {
     auto i_frame_size =
         x264_encoder_encode(encoder, &nal, &i_nal, NULL, &pic_out);
@@ -66,7 +66,7 @@ X264Encoder::~X264Encoder() {
   // x264_picture_clean(&pic_in);
 
   x264_encoder_close(encoder);
-};
+}
 
 void X264Encoder::encode_frame(uint8_t* input_buf) {
   pic_in.img.plane[0] = input_buf;
@@ -80,4 +80,4 @@ void X264Encoder::encode_frame(uint8_t* input_buf) {
     output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
                         i_frame_size);
   };
-};
+}

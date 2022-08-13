@@ -29,7 +29,7 @@ void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   if (customkill == TF_DMG_CUSTOM_BACKSTAB) {
     gameEvent->SetInt("customkill", TF_DMG_CUSTOM_NONE);
   };
-};
+}
 
 KillfeedMod::KillfeedMod()
     : pe_killfeed_debug("pe_killfeed_debug",
@@ -42,7 +42,7 @@ KillfeedMod::KillfeedMod()
   fireGameEvent_attachment = std::make_unique<AttachmentHookEnter>(
       fireGameEvent_ptr, std::bind(&KillfeedMod::FireGameEvent_handler, this,
                                    std::placeholders::_1));
-};
-KillfeedMod::~KillfeedMod(){};
+}
+KillfeedMod::~KillfeedMod(){}
 
-REGISTER_MODULE(KillfeedMod);
+REGISTER_MODULE(KillfeedMod)

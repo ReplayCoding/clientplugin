@@ -15,7 +15,7 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   ImGui::StyleColorsDark();
   ImGui_ImplSDL2_InitForOpenGL(window, ourContext);
   ImGui_ImplOpenGL3_Init();
-};
+}
 
 void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   auto window = context.get_arg<SDL_Window*>(0);
@@ -70,7 +70,7 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   SDL_GL_MakeCurrent(window, theirContext);
-};
+}
 
 GfxOverlayMod::GfxOverlayMod() {
   SDL_version sdlversion;
@@ -81,12 +81,12 @@ GfxOverlayMod::GfxOverlayMod() {
                 std::placeholders::_1));
   // g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
   //                       reinterpret_cast<void*>(HookType::SDL_PollEvent));
-};
+}
 GfxOverlayMod::~GfxOverlayMod() {
   sdl_gl_swapWindow_hook.reset();
   // Do this AFTER we detach to avoid it being called with a deleted
   // context
   SDL_GL_DeleteContext(ourContext);
-};
+}
 
-REGISTER_MODULE(GfxOverlayMod);
+REGISTER_MODULE(GfxOverlayMod)
