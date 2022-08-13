@@ -23,7 +23,7 @@ shared_library(
   ),
   c_args: cflags,
   cpp_args: cflags,
-  include_directories: inc_dirs,
+  include_directories: include_directories('.'),
   dependencies: [frida_dep, sdk_dep, x264_dep, imgui_dep, gl_dep],
   install_dir: 'addons',
   install_tag: 'addon',
