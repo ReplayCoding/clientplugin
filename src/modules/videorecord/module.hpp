@@ -8,7 +8,6 @@
 #include "hook/gum/x86patcher.hpp"
 #include "modules/modules.hpp"
 #include "modules/videorecord/x264encoder.hpp"
-#include "sdk-excluded.hpp"
 
 class VideoRecordMod : public IModule {
  public:

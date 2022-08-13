@@ -10,7 +10,7 @@
 #include "modules/modules.hpp"
 #include "offsets.hpp"
 #include "plugin.hpp"
-#include "sdk-excluded.hpp"
+#include "sdk/tfdefs.hpp"
 
 void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   const auto gameEvent = context.get_arg<IGameEvent*>(1);

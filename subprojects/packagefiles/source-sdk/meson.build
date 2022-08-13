@@ -28,7 +28,6 @@ sdk_headers = include_directories(
   sdk_dir / 'public/tier0',
   sdk_dir / 'public/tier1',
   sdk_dir,
-  is_system : true
 )
 
 tier1_sources = [
