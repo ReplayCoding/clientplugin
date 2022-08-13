@@ -1,6 +1,7 @@
 #include <convar.h>
 #include <ccvar.hpp>
-#include <modules/unhidecvarsmod.hpp>
+#include <modules/unhidecvars.hpp>
+#include "modules/modules.hpp"
 
 UnhideCVarsMod::UnhideCVarsMod()
     : pe_unhide_cvars("pe_unhide_cvars", unhideCVars){};
@@ -12,3 +13,5 @@ void UnhideCVarsMod::unhideCVars() {
     CCvar::SetFlags(var, CCvar::GetFlags(var) & MASK);
   };
 };
+
+REGISTER_MODULE(UnhideCVarsMod)

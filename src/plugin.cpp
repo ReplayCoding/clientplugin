@@ -3,8 +3,8 @@
 
 #include <interfaces.hpp>
 #include <memory>
-#include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
+#include <hook/gum/interceptor.hpp>
 #include <plugin.hpp>
 
 // Defined in hook/gum/interceptor.hpp

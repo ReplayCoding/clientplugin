@@ -6,7 +6,7 @@
 #include <functional>
 #include <hook/attachmenthook.hpp>
 #include <interfaces.hpp>
-#include <modules/killfeedmod.hpp>
+#include <modules/killfeed.hpp>
 #include <modules/modules.hpp>
 #include <offsets.hpp>
 #include <plugin.hpp>

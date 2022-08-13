@@ -12,7 +12,7 @@
 #include <interfaces.hpp>
 #include <ios>
 #include <memory>
-#include <modules/videorecord/videorecordmod.hpp>
+#include <modules/videorecord/module.hpp>
 #include <modules/videorecord/x264encoder.hpp>
 #include <offsets.hpp>
 #include <ostream>

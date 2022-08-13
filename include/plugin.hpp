@@ -6,7 +6,6 @@
 #include <interface.h>
 
 #include <memory>
-#include <modules/killfeedmod.hpp>
 #include <modules/modules.hpp>
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
