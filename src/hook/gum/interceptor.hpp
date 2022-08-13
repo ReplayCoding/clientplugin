@@ -16,8 +16,7 @@ namespace Gum {
     virtual void on_hit(GumInvocationContext* context) = 0;
 
    private:
-    static void on_hit_wrapper(GumInvocationContext* context,
-                                 void* user_data);
+    static void on_hit_wrapper(GumInvocationContext* context, void* user_data);
   };
 
   class CallListener : public GumObjectWrapper<GumInvocationListener> {
@@ -40,7 +39,9 @@ namespace Gum {
    public:
     Interceptor();
     ~Interceptor();
-    GumAttachReturn attach(void* address, CallListener* listener, void* user_data);
+    GumAttachReturn attach(void* address,
+                           CallListener* listener,
+                           void* user_data);
     GumAttachReturn attach(std::uintptr_t address,
                            CallListener* listener,
                            void* user_data) {
@@ -49,7 +50,9 @@ namespace Gum {
 
     void detach(CallListener* listener, bool erase = true);
 
-    GumAttachReturn attach(void* address, ProbeListener* listener, void* user_data);
+    GumAttachReturn attach(void* address,
+                           ProbeListener* listener,
+                           void* user_data);
     GumAttachReturn attach(std::uintptr_t address,
                            ProbeListener* listener,
                            void* user_data) {

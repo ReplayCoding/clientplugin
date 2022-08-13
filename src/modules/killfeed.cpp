@@ -43,6 +43,6 @@ KillfeedMod::KillfeedMod()
       fireGameEvent_ptr, std::bind(&KillfeedMod::FireGameEvent_handler, this,
                                    std::placeholders::_1));
 }
-KillfeedMod::~KillfeedMod(){}
+KillfeedMod::~KillfeedMod() {}
 
 REGISTER_MODULE(KillfeedMod)
