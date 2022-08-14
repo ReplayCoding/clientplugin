@@ -1,6 +1,0 @@
-[wrap-git]
-url = https://github.com/alliedmodders/hl2sdk
-revision = sdk2013
-depth = 1
-
-patch_directory = source-sdk

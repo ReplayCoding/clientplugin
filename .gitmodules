@@ -1,0 +1,8 @@
+[submodule "subprojects/source-sdk"]
+	path = subprojects/source-sdk
+	url = https://github.com/alliedmodders/hl2sdk
+	branch = sdk2013
+[submodule "subprojects/x264"]
+	path = subprojects/x264
+	url = https://gitlab.freedesktop.org/gstreamer/meson-ports/x264
+	branch = meson

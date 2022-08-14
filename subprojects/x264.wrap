@@ -1,4 +1,0 @@
-[wrap-git]
-url = https://gitlab.freedesktop.org/gstreamer/meson-ports/x264
-revision = meson
-depth = 1
