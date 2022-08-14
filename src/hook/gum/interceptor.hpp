@@ -39,31 +39,20 @@ namespace Gum {
    public:
     Interceptor();
     ~Interceptor();
-    GumAttachReturn attach(void* address,
+    GumAttachReturn attach(const std::uintptr_t address,
                            CallListener* listener,
                            void* user_data);
-    GumAttachReturn attach(std::uintptr_t address,
-                           CallListener* listener,
-                           void* user_data) {
-      return attach(reinterpret_cast<void*>(address), listener, user_data);
-    };
-
-    void detach(CallListener* listener, bool erase = true);
-
-    GumAttachReturn attach(void* address,
+    GumAttachReturn attach(const std::uintptr_t address,
                            ProbeListener* listener,
                            void* user_data);
-    GumAttachReturn attach(std::uintptr_t address,
-                           ProbeListener* listener,
-                           void* user_data) {
-      return attach(reinterpret_cast<void*>(address), listener, user_data);
-    };
-    void detach(ProbeListener* listener, bool erase = true);
 
-    GumReplaceReturn replace(void* address,
-                             void* replacement_address,
+    void detach(CallListener* listener);
+    void detach(ProbeListener* listener);
+
+    GumReplaceReturn replace(const std::uintptr_t address,
+                             const std::uintptr_t replacement_address,
                              void* user_data);
-    void revert(void* address);
+    void revert(const std::uintptr_t address);
 
     inline void begin_transaction() {
       gum_interceptor_begin_transaction(get_obj());

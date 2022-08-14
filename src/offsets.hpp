@@ -1,22 +1,56 @@
+#pragma once
 #include <cstdint>
+#include <string>
 
 namespace offsets {
-  // TODO: We should search signatures
-  // CLIENT
-  const uintptr_t FIREGAMEEVENT_OFFSET = static_cast<uintptr_t>(0x1150830);
 
-  // ENGINE
-  const uintptr_t SCR_UPDATESCREEN_OFFSET = static_cast<uintptr_t>(0x39eab0);
-  const uintptr_t SND_RECORDBUFFER_OFFSET = static_cast<uintptr_t>(0x281410);
+  // UGLY HACK
+  class ManualOffset {
+   public:
+    ManualOffset() = default;
+    ManualOffset(std::uintptr_t address) : manual_address(address) {}
 
-  const uintptr_t GETSOUNDTIME_OFFSET = static_cast<uintptr_t>(0x2648c0);
+    template <typename T>
+    inline ManualOffset operator+(T rhs) const {
+      return ManualOffset(get_address() + rhs);
+    }
+
+    template <typename T>
+    inline operator T() const {
+      return reinterpret_cast<T>(get_address());
+    }
+
+   private:
+    virtual std::uintptr_t get_address() const { return manual_address; };
+
+    std::uintptr_t manual_address{};
+  };
+  // UGH
+  using Offset = ManualOffset;
+
+  class SharedLibOffset : public ManualOffset {
+   public:
+    SharedLibOffset(std::string module, uintptr_t offset)
+        : module(module), offset(offset){};
+
+   private:
+    std::uintptr_t get_address() const override;
+
+    std::string module;
+    std::uintptr_t offset;
+  };
+
+  const extern SharedLibOffset FIREGAMEEVENT_OFFSET;
+
+  const extern SharedLibOffset SCR_UPDATESCREEN_OFFSET;
+  const extern SharedLibOffset SND_RECORDBUFFER_OFFSET;
+
+  const extern SharedLibOffset GETSOUNDTIME_OFFSET;
 
   // This is in a vtable so we should probably fix that
-  const uintptr_t CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET =
-      static_cast<uintptr_t>(0x00387a50 - 0x10000);
+  const extern SharedLibOffset CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET;
 
-  const uintptr_t SND_G_P = static_cast<uintptr_t>(0x00858910 - 0x10000);
-  const uintptr_t SND_G_LINEAR_COUNT =
-      static_cast<uintptr_t>(0x00858900 - 0x10000);
-  const uintptr_t SND_G_VOL = static_cast<uintptr_t>(0x008588f0 - 0x10000);
+  const extern SharedLibOffset SND_G_P;
+  const extern SharedLibOffset SND_G_LINEAR_COUNT;
+  const extern SharedLibOffset SND_G_VOL;
 }  // namespace offsets

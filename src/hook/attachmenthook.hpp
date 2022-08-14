@@ -5,11 +5,12 @@
 #include <functional>
 
 #include "hook/gum/interceptor.hpp"
+#include "offsets.hpp"
 
 // Wrapper for GumInvocationContext
 class InvocationContext {
  public:
-  InvocationContext(GumInvocationContext* context) : context(context){}
+  InvocationContext(GumInvocationContext* context) : context(context) {}
 
   template <typename T>
   inline T get_arg(size_t index) {
@@ -45,14 +46,14 @@ using attachment_hook_func_t = std::function<void(InvocationContext)>;
 // Internal utility class
 class _CallAttachmentHook : private Gum::CallListener {
  public:
-  _CallAttachmentHook(std::uintptr_t address) {
+  _CallAttachmentHook(const offsets::Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
   ~_CallAttachmentHook() { g_Interceptor->detach(this); }
 };
 class _ProbeAttachmentHook : private Gum::ProbeListener {
  public:
-  _ProbeAttachmentHook(std::uintptr_t address) {
+  _ProbeAttachmentHook(const offsets::Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
   ~_ProbeAttachmentHook() { g_Interceptor->detach(this); }
@@ -60,7 +61,8 @@ class _ProbeAttachmentHook : private Gum::ProbeListener {
 
 class AttachmentHookEnter : public _ProbeAttachmentHook {
  public:
-  AttachmentHookEnter(std::uintptr_t address, attachment_hook_func_t func)
+  AttachmentHookEnter(const offsets::Offset& address,
+                      attachment_hook_func_t func)
       : _ProbeAttachmentHook(address), func(func) {}
 
  private:
@@ -72,7 +74,8 @@ class AttachmentHookEnter : public _ProbeAttachmentHook {
 
 class AttachmentHookLeave : public _CallAttachmentHook {
  public:
-  AttachmentHookLeave(std::uintptr_t address, attachment_hook_func_t func)
+  AttachmentHookLeave(const offsets::Offset& address,
+                      attachment_hook_func_t func)
       : _CallAttachmentHook(address), func(func) {}
 
  private:
@@ -85,7 +88,7 @@ class AttachmentHookLeave : public _CallAttachmentHook {
 
 class AttachmentHookBoth : public _CallAttachmentHook {
  public:
-  AttachmentHookBoth(std::uintptr_t address,
+  AttachmentHookBoth(offsets::Offset& address,
                      attachment_hook_func_t enter_func,
                      attachment_hook_func_t leave_func)
       : _CallAttachmentHook(address),

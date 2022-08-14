@@ -1,0 +1,31 @@
+#include <frida-gum.h>
+#include <cassert>
+#include <cstdint>
+
+#include "offsets.hpp"
+#include "util.hpp"
+
+namespace offsets {
+  std::uintptr_t SharedLibOffset::get_address() const {
+    auto base_address = gum_module_find_base_address(module.c_str());
+    // TODO: Use fmt to print the lib name
+    if (base_address == 0)
+      throw StringError("Failed to get address of module");
+    return base_address + offset;
+  }
+
+  const SharedLibOffset FIREGAMEEVENT_OFFSET{"client.so", 0x1150830};
+
+  const SharedLibOffset SCR_UPDATESCREEN_OFFSET{"engine.so", 0x39eab0};
+  const SharedLibOffset SND_RECORDBUFFER_OFFSET{"engine.so", 0x281410};
+
+  const SharedLibOffset GETSOUNDTIME_OFFSET{"engine.so", 0x2648c0};
+
+  // This is in a vtable so we should probably fix that
+  const SharedLibOffset CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET{
+      "engine.so", 0x00387a50 - 0x10000};
+
+  const SharedLibOffset SND_G_P{"engine.so", 0x00858910 - 0x10000};
+  const SharedLibOffset SND_G_LINEAR_COUNT{"engine.so", 0x00858900 - 0x10000};
+  const SharedLibOffset SND_G_VOL{"engine.so", 0x008588f0 - 0x10000};
+}  // namespace offsets

@@ -15,6 +15,7 @@ shared_library(
   files(
     'interfaces.cpp',
     'plugin.cpp',
+    'offsets.cpp',
     'modules/modules.cpp',
     'modules/unhidecvars.cpp',
     'modules/killfeed.cpp',

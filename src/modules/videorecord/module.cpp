@@ -87,26 +87,23 @@ VideoRecordMod::VideoRecordMod()
   o_vidfile = std::ofstream("output.h264", std::ios::binary);
   o_audfile = std::ofstream("output.aud", std::ios::binary);
 
-  const GumAddress module_base = gum_module_find_base_address("engine.so");
-
-  snd_vol = reinterpret_cast<int*>(module_base + offsets::SND_G_VOL);
-  snd_p = reinterpret_cast<int**>(module_base + offsets::SND_G_P);
-  snd_linear_count =
-      reinterpret_cast<int*>(module_base + offsets::SND_G_LINEAR_COUNT);
+  snd_vol = offsets::SND_G_VOL;
+  snd_p = offsets::SND_G_P;
+  snd_linear_count = offsets::SND_G_LINEAR_COUNT;
 
   getSoundTime_patch = std::make_unique<X86Patcher>(
-      module_base + offsets::GETSOUNDTIME_OFFSET + 0x69, 2,
+      offsets::GETSOUNDTIME_OFFSET + 0x69, 2,
       [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
 
   setSoundFrameTime_patch = std::make_unique<X86Patcher>(
-      module_base + offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6,
-      7, [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
+      offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6, 7,
+      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
-      module_base + offsets::SCR_UPDATESCREEN_OFFSET,
+      offsets::SCR_UPDATESCREEN_OFFSET,
       [this](InvocationContext) { renderVideoFrame(); });
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
-      module_base + offsets::SND_RECORDBUFFER_OFFSET,
+      offsets::SND_RECORDBUFFER_OFFSET,
       [this](InvocationContext) { renderAudioFrame(); });
 }
 VideoRecordMod::~VideoRecordMod() {}

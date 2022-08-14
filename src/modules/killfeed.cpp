@@ -36,12 +36,10 @@ KillfeedMod::KillfeedMod()
                         0,
                         FCVAR_NONE,
                         "Enable debugging of killfeed game events") {
-  const GumAddress module_base = gum_module_find_base_address("client.so");
-  const uintptr_t fireGameEvent_ptr =
-      module_base + offsets::FIREGAMEEVENT_OFFSET;
   fireGameEvent_attachment = std::make_unique<AttachmentHookEnter>(
-      fireGameEvent_ptr, std::bind(&KillfeedMod::FireGameEvent_handler, this,
-                                   std::placeholders::_1));
+      offsets::FIREGAMEEVENT_OFFSET,
+      std::bind(&KillfeedMod::FireGameEvent_handler, this,
+                std::placeholders::_1));
 }
 KillfeedMod::~KillfeedMod() {}
 

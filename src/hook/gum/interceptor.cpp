@@ -1,4 +1,5 @@
 #include <frida-gum.h>
+#include <cstdint>
 
 #include "hook/gum/interceptor.hpp"
 #include "hook/gum/objectwrapper.hpp"
@@ -46,54 +47,52 @@ namespace Gum {
       : GumObjectWrapper(gum_interceptor_obtain(), false) {}
   Interceptor::~Interceptor() {
     for (auto& listener : call_listeners) {
-      detach(listener, false);
+      detach(listener);
     }
     for (auto& listener : probe_listeners) {
-      detach(listener, false);
+      detach(listener);
     }
   }
 
-  GumAttachReturn Interceptor::attach(void* address,
+  GumAttachReturn Interceptor::attach(const std::uintptr_t address,
                                       CallListener* listener,
                                       void* user_data) {
-    auto retval = gum_interceptor_attach(get_obj(), address,
-                                         listener->get_listener(), user_data);
+    auto retval =
+        gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
+                               listener->get_listener(), user_data);
     if (retval == GUM_ATTACH_OK) {
       call_listeners.insert(listener);
     };
     return retval;
   }
-  void Interceptor::detach(CallListener* listener, bool erase) {
+  void Interceptor::detach(CallListener* listener) {
     gum_interceptor_detach(get_obj(), listener->get_listener());
-    if (erase) {
-      call_listeners.erase(listener);
-    };
   }
 
-  GumAttachReturn Interceptor::attach(void* address,
+  GumAttachReturn Interceptor::attach(const std::uintptr_t address,
                                       ProbeListener* listener,
                                       void* user_data) {
-    auto retval = gum_interceptor_attach(get_obj(), address,
-                                         listener->get_listener(), user_data);
+    auto retval =
+        gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
+                               listener->get_listener(), user_data);
     if (retval == GUM_ATTACH_OK) {
       probe_listeners.insert(listener);
     };
     return retval;
   }
-  void Interceptor::detach(ProbeListener* listener, bool erase) {
+  void Interceptor::detach(ProbeListener* listener) {
     gum_interceptor_detach(get_obj(), listener->get_listener());
-    if (erase) {
-      probe_listeners.erase(listener);
-    };
   }
 
-  GumReplaceReturn Interceptor::replace(void* address,
-                                        void* replacement_address,
-                                        void* user_data) {
-    return gum_interceptor_replace(get_obj(), address, replacement_address,
+  GumReplaceReturn Interceptor::replace(
+      const std::uintptr_t address,
+      const std::uintptr_t replacement_address,
+      void* user_data) {
+    return gum_interceptor_replace(get_obj(), reinterpret_cast<void*>(address),
+                                   reinterpret_cast<void*>(replacement_address),
                                    user_data);
   }
-  void Interceptor::revert(void* address) {
-    gum_interceptor_revert(get_obj(), address);
+  void Interceptor::revert(const std::uintptr_t address) {
+    gum_interceptor_revert(get_obj(), reinterpret_cast<void*>(address));
   }
 }  // namespace Gum
