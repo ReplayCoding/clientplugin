@@ -40,15 +40,15 @@ namespace offsets {
     std::uintptr_t offset;
   };
 
-  const extern SharedLibOffset FIREGAMEEVENT_OFFSET;
+  const extern SharedLibOffset CHudBaseDeathNotice_FireGameEvent;
 
-  const extern SharedLibOffset SCR_UPDATESCREEN_OFFSET;
-  const extern SharedLibOffset SND_RECORDBUFFER_OFFSET;
+  const extern SharedLibOffset SCR_UpdateScreen;
+  const extern SharedLibOffset SND_RecordBuffer;
 
-  const extern SharedLibOffset GETSOUNDTIME_OFFSET;
+  const extern SharedLibOffset GetSoundTime;
 
   // This is in a vtable so we should probably fix that
-  const extern SharedLibOffset CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET;
+  const extern SharedLibOffset CEngineSoundServices_SetSoundFrametime;
 
   const extern SharedLibOffset SND_G_P;
   const extern SharedLibOffset SND_G_LINEAR_COUNT;

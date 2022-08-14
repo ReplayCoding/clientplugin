@@ -14,15 +14,15 @@ namespace offsets {
     return base_address + offset;
   }
 
-  const SharedLibOffset FIREGAMEEVENT_OFFSET{"client.so", 0x1150830};
+  const SharedLibOffset CHudBaseDeathNotice_FireGameEvent{"client.so", 0x1150830};
 
-  const SharedLibOffset SCR_UPDATESCREEN_OFFSET{"engine.so", 0x39eab0};
-  const SharedLibOffset SND_RECORDBUFFER_OFFSET{"engine.so", 0x281410};
+  const SharedLibOffset SCR_UpdateScreen{"engine.so", 0x39eab0};
+  const SharedLibOffset SND_RecordBuffer{"engine.so", 0x281410};
 
-  const SharedLibOffset GETSOUNDTIME_OFFSET{"engine.so", 0x2648c0};
+  const SharedLibOffset GetSoundTime{"engine.so", 0x2648c0};
 
   // This is in a vtable so we should probably fix that
-  const SharedLibOffset CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET{
+  const SharedLibOffset CEngineSoundServices_SetSoundFrametime{
       "engine.so", 0x00387a50 - 0x10000};
 
   const SharedLibOffset SND_G_P{"engine.so", 0x00858910 - 0x10000};

@@ -1,6 +1,5 @@
 #include <cdll_int.h>
 #include <convar.h>
-#include <frida-gum.h>
 #include <igameevents.h>
 #include <functional>
 
@@ -37,7 +36,7 @@ KillfeedMod::KillfeedMod()
                         FCVAR_NONE,
                         "Enable debugging of killfeed game events") {
   fireGameEvent_attachment = std::make_unique<AttachmentHookEnter>(
-      offsets::FIREGAMEEVENT_OFFSET,
+      offsets::CHudBaseDeathNotice_FireGameEvent,
       std::bind(&KillfeedMod::FireGameEvent_handler, this,
                 std::placeholders::_1));
 }

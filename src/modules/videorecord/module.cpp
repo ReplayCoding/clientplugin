@@ -92,18 +92,18 @@ VideoRecordMod::VideoRecordMod()
   snd_linear_count = offsets::SND_G_LINEAR_COUNT;
 
   getSoundTime_patch = std::make_unique<X86Patcher>(
-      offsets::GETSOUNDTIME_OFFSET + 0x69, 2,
+      offsets::GetSoundTime + 0x69, 2,
       [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
 
   setSoundFrameTime_patch = std::make_unique<X86Patcher>(
-      offsets::CENGINESOUNDSERVICES_SETSOUNDFRAMETIME_OFFSET + 6, 7,
+      offsets::CEngineSoundServices_SetSoundFrametime + 6, 7,
       [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
 
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
-      offsets::SCR_UPDATESCREEN_OFFSET,
+      offsets::SCR_UpdateScreen,
       [this](InvocationContext) { renderVideoFrame(); });
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
-      offsets::SND_RECORDBUFFER_OFFSET,
+      offsets::SND_RecordBuffer,
       [this](InvocationContext) { renderAudioFrame(); });
 }
 VideoRecordMod::~VideoRecordMod() {}
