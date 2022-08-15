@@ -1,5 +1,8 @@
 #pragma once
 
+// Must be included before x264 headers
+#include <cstdint>
+
 #include <x264.h>
 #include <ostream>
 #include <string>

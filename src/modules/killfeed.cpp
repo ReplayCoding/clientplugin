@@ -8,7 +8,6 @@
 #include "modules/killfeed.hpp"
 #include "modules/modules.hpp"
 #include "offsets.hpp"
-#include "plugin.hpp"
 #include "sdk/tfdefs.hpp"
 
 void KillfeedMod::FireGameEvent_handler(InvocationContext context) {

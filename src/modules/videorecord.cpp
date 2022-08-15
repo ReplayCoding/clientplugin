@@ -18,7 +18,6 @@
 #include "modules/modules.hpp"
 #include "modules/videorecord.hpp"
 #include "offsets.hpp"
-#include "plugin.hpp"
 #include "x264encoder.hpp"
 
 void VideoRecordMod::renderAudioFrame() {

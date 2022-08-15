@@ -8,7 +8,6 @@
 namespace offsets {
   std::uintptr_t SharedLibOffset::get_address() const {
     auto base_address = gum_module_find_base_address(module.c_str());
-    // TODO: Use fmt to print the lib name
     if (base_address == 0)
       throw StringError("Failed to get address of module: {}", module);
     return base_address + offset;

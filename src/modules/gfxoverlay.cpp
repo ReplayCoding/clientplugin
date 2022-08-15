@@ -7,7 +7,6 @@
 #include "hook/attachmenthook.hpp"
 #include "modules/gfxoverlay.hpp"
 #include "modules/modules.hpp"
-#include "plugin.hpp"
 
 void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
