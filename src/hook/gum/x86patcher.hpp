@@ -15,16 +15,12 @@ class X86Patcher {
   ~X86Patcher();
 
  private:
-  struct cons_callback_data_t {
+  struct callback_data_t {
     std::uintptr_t address;
-    std::size_t size;
+    std::size_t code_size;
     std::function<void(GumX86Writer*)> function;
-  } cons_callback_data{};
-  struct des_callback_data_t {
-    void* address;
-    std::size_t size;
     uint8_t* original_code;
-  } des_callback_data{};
+  } callback_data{};
 
   uint8_t* original_code;
 };

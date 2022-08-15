@@ -1,6 +1,5 @@
 #pragma once
 #include <frida-gum.h>
-#include <cassert>
 #include <cstdint>
 #include <functional>
 

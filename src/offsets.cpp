@@ -1,5 +1,4 @@
 #include <frida-gum.h>
-#include <cassert>
 #include <cstdint>
 
 #include "offsets.hpp"
