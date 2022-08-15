@@ -13,7 +13,8 @@
 void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   const auto gameEvent = context.get_arg<IGameEvent*>(1);
 
-  const int customkill = gameEvent->GetInt("customkill", TF_DMG_CUSTOM_NONE);
+  const auto customkill = static_cast<ETFDmgCustom>(gameEvent->GetInt(
+      "customkill", static_cast<int>(ETFDmgCustom::TF_DMG_CUSTOM_NONE)));
 
   if (pe_killfeed_debug.GetBool()) {
     int i = 0;
@@ -24,8 +25,9 @@ void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
     Interfaces.engineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
   };
 
-  if (customkill == TF_DMG_CUSTOM_BACKSTAB) {
-    gameEvent->SetInt("customkill", TF_DMG_CUSTOM_NONE);
+  if (customkill == ETFDmgCustom::TF_DMG_CUSTOM_BACKSTAB) {
+    gameEvent->SetInt("customkill",
+                      static_cast<int>(ETFDmgCustom::TF_DMG_CUSTOM_NONE));
   };
 }
 
@@ -36,8 +38,7 @@ KillfeedMod::KillfeedMod()
                         "Enable debugging of killfeed game events") {
   fireGameEvent_attachment = std::make_unique<AttachmentHookEnter>(
       offsets::CHudBaseDeathNotice_FireGameEvent,
-      std::bind(&KillfeedMod::FireGameEvent_handler, this,
-                std::placeholders::_1));
+      [this](auto context) { FireGameEvent_handler(context); });
 }
 KillfeedMod::~KillfeedMod() {}
 

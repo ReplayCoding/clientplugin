@@ -1,7 +1,8 @@
 #pragma once
 
 // uh oh don't look at this i swear i didn't look at any leaks
-enum ETFDmgCustom {
+// TODO: Update this
+enum class ETFDmgCustom {
   TF_DMG_CUSTOM_NONE = 0,
   TF_DMG_CUSTOM_HEADSHOT,
   TF_DMG_CUSTOM_BACKSTAB,
@@ -80,9 +81,6 @@ enum ETFDmgCustom {
   TF_DMG_CUSTOM_KART,
   TF_DMG_CUSTOM_GIANT_HAMMER,
   TF_DMG_CUSTOM_RUNE_REFLECT,
-  //
-  // INSERT NEW ITEMS HERE TO AVOID BREAKING DEMOS
-  //
 
   TF_DMG_CUSTOM_END  // END
 };

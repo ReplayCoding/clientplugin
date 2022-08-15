@@ -76,8 +76,7 @@ GfxOverlayMod::GfxOverlayMod() {
   SDL_GetVersion(&sdlversion);
   sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
       reinterpret_cast<std::uintptr_t>(SDL_GL_SwapWindow),
-      std::bind(&GfxOverlayMod::SDL_GL_SwapWindow_handler, this,
-                std::placeholders::_1));
+      [this](auto context) { SDL_GL_SwapWindow_handler(context); });
   // g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
   //                       reinterpret_cast<void*>(HookType::SDL_PollEvent));
 }
