@@ -6,7 +6,6 @@ fmt_dep = subproject('fmt').get_variable('fmt_header_only_dep')
 gl_dep = dependency('gl')
 
 cflags = [
-  '-Werror',
   '-Wno-vla', # really?
 ]
 

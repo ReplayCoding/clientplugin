@@ -36,6 +36,7 @@
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
+          hardeningDisable = [ "all" ];
           buildInputs = with pkgs; [
             libGL
             pkgsi686Linux.SDL2

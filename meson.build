@@ -3,6 +3,7 @@ project('sdk-plugin', 'c', 'cpp',
   default_options :
     [
       'warning_level=3',
+      'werror=true',
       'cpp_std=gnu++20',
       'c_std=gnu99',
 
