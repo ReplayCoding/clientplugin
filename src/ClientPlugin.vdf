@@ -1,5 +1,5 @@
 Plugin
 {
-	file		"addons/libclientplugin.so"
+	file		"addons/clientplugin.so"
 }
 
