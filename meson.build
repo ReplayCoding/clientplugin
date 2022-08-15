@@ -9,7 +9,11 @@ project('sdk-plugin', 'c', 'cpp',
 
       'default_library=static',
       'b_ndebug=if-release',
+      'buildtype=debugoptimized'
     ]
 )
 
+if get_option('buildtype') == 'debug'
+  error('x264 is fucked, use debugoptimized or release')
+endif
 subdir('src')
