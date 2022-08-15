@@ -13,7 +13,7 @@ std::unique_ptr<Gum::Interceptor> g_Interceptor;
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
   gum_init_embedded();
-  Interfaces.Load(interfaceFactory);
+  Interfaces::Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
@@ -33,7 +33,7 @@ void ServerPlugin::Unload(void) {
   // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
   moduleManager.reset();
-  Interfaces.Unload();
+  Interfaces::Unload();
 
   g_Interceptor.reset();
   gum_deinit_embedded();

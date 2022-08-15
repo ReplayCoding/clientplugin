@@ -18,11 +18,11 @@ void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
 
   if (pe_killfeed_debug.GetBool()) {
     int i = 0;
-    Interfaces.engineClient->Con_NPrintf(i++, "event name: %s\n",
+    Interfaces::EngineClient->Con_NPrintf(i++, "event name: %s\n",
                                          gameEvent->GetName());
-    Interfaces.engineClient->Con_NPrintf(i++, "weapon name: %s\n",
+    Interfaces::EngineClient->Con_NPrintf(i++, "weapon name: %s\n",
                                          gameEvent->GetString("weapon"));
-    Interfaces.engineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
+    Interfaces::EngineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
   };
 
   if (customkill == ETFDmgCustom::TF_DMG_CUSTOM_BACKSTAB) {

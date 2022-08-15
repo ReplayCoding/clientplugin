@@ -49,14 +49,14 @@ void VideoRecordMod::renderVideoFrame() {
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
 
   CViewSetup viewSetup{};
-  CMatRenderContextPtr renderContextPtr(Interfaces.materialSystem);
+  CMatRenderContextPtr renderContextPtr(Interfaces::MaterialSystem);
   renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
                                                 height);
-  auto gotPlayerView = Interfaces.clientDll->GetPlayerView(viewSetup);
+  auto gotPlayerView = Interfaces::ClientDll->GetPlayerView(viewSetup);
   if (gotPlayerView) {
-    Interfaces
-        .clientDll->RenderView(viewSetup, VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
-                               RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
+    Interfaces::ClientDll->RenderView(viewSetup,
+                                      VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
+                                      RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
   };
   auto mem_required =
       ImageLoader::GetMemRequired(width, height, 1, image_format, false);
@@ -78,8 +78,8 @@ void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
 VideoRecordMod::VideoRecordMod()
     : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
   MaterialVideoMode_t mode;
-  Interfaces.materialSystem->GetDisplayMode(mode);
-  Interfaces.engineClientReplay->InitSoundRecord();
+  Interfaces::MaterialSystem->GetDisplayMode(mode);
+  Interfaces::EngineClientReplay->InitSoundRecord();
   width = mode.m_Width;
   height = mode.m_Height;
 

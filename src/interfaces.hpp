@@ -9,17 +9,14 @@ class IBaseClientDLL;
 class IEngineTool;
 class IMaterialSystem;
 
-class InterfaceManager {
- public:
+namespace Interfaces {
   void Load(CreateInterfaceFn factory);
   void Unload();
 
-  IVEngineClient* engineClient{};
-  IGameEventManager2* gameEventManager{};
-  IEngineClientReplay* engineClientReplay{};
-  IBaseClientDLL* clientDll{};
-  IEngineTool* engineTool{};
-  IMaterialSystem* materialSystem{};
-};
-
-extern InterfaceManager Interfaces;
+  extern IVEngineClient* EngineClient;
+  extern IGameEventManager2* GameEventManager;
+  extern IEngineClientReplay* EngineClientReplay;
+  extern IBaseClientDLL* ClientDll;
+  extern IEngineTool* EngineTool;
+  extern IMaterialSystem* MaterialSystem;
+}  // namespace Interfaces

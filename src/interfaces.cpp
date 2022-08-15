@@ -10,40 +10,49 @@
 
 #include "interfaces.hpp"
 
-void InterfaceManager::Load(CreateInterfaceFn factory) {
-  ConnectTier1Libraries(&factory, 1);
-  ConVar_Register();
-  ConnectTier2Libraries(&factory, 1);
-  ConnectTier3Libraries(&factory, 1);
+namespace Interfaces {
+  IVEngineClient* EngineClient;
+  IGameEventManager2* GameEventManager;
+  IEngineClientReplay* EngineClientReplay;
+  IBaseClientDLL* ClientDll;
+  IEngineTool* EngineTool;
+  IMaterialSystem* MaterialSystem;
 
-  engineClient = static_cast<IVEngineClient*>(
-      factory(VENGINE_CLIENT_INTERFACE_VERSION, nullptr));
-  gameEventManager = static_cast<IGameEventManager2*>(
-      factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
-  engineClientReplay = static_cast<IEngineClientReplay*>(
-      factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
-  engineTool = (IEngineTool*)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
-  materialSystem =
-      (IMaterialSystem*)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
+  void Load(CreateInterfaceFn factory) {
+    ConnectTier1Libraries(&factory, 1);
+    ConVar_Register();
+    ConnectTier2Libraries(&factory, 1);
+    ConnectTier3Libraries(&factory, 1);
 
-  CreateInterfaceFn gameClientFactory;
-  engineTool->GetClientFactory(gameClientFactory);
+    Interfaces::EngineClient = static_cast<IVEngineClient*>(
+        factory(VENGINE_CLIENT_INTERFACE_VERSION, nullptr));
+    Interfaces::GameEventManager = static_cast<IGameEventManager2*>(
+        factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
+    Interfaces::EngineClientReplay = static_cast<IEngineClientReplay*>(
+        factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
+    Interfaces::EngineTool =
+        (IEngineTool*)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
+    Interfaces::MaterialSystem =
+        (IMaterialSystem*)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
 
-  clientDll = static_cast<IBaseClientDLL*>(
-      gameClientFactory(CLIENT_DLL_INTERFACE_VERSION, nullptr));
-}
+    CreateInterfaceFn gameClientFactory;
+    EngineTool->GetClientFactory(gameClientFactory);
 
-void InterfaceManager::Unload() {
-  engineClient = nullptr;
-  gameEventManager = nullptr;
-  engineClientReplay = nullptr;
-  engineTool = nullptr;
-  materialSystem = nullptr;
+    Interfaces::ClientDll = static_cast<IBaseClientDLL*>(
+        gameClientFactory(CLIENT_DLL_INTERFACE_VERSION, nullptr));
+  }
 
-  DisconnectTier3Libraries();
-  DisconnectTier2Libraries();
-  ConVar_Unregister();
-  DisconnectTier1Libraries();
-}
+  void Unload() {
+    Interfaces::EngineClient = nullptr;
+    Interfaces::GameEventManager = nullptr;
+    Interfaces::EngineClientReplay = nullptr;
+    Interfaces::EngineTool = nullptr;
+    Interfaces::ClientDll = nullptr;
+    Interfaces::MaterialSystem = nullptr;
 
-InterfaceManager Interfaces{};
+    DisconnectTier3Libraries();
+    DisconnectTier2Libraries();
+    ConVar_Unregister();
+    DisconnectTier1Libraries();
+  }
+}  // namespace Interfaces
