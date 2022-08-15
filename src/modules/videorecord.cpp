@@ -16,10 +16,10 @@
 #include "hook/gum/x86patcher.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
-#include "modules/videorecord/module.hpp"
-#include "modules/videorecord/x264encoder.hpp"
+#include "modules/videorecord.hpp"
 #include "offsets.hpp"
 #include "plugin.hpp"
+#include "x264encoder.hpp"
 
 void VideoRecordMod::renderAudioFrame() {
   if (!pe_render.GetBool())

@@ -7,7 +7,7 @@
 #include "hook/attachmenthook.hpp"
 #include "hook/gum/x86patcher.hpp"
 #include "modules/modules.hpp"
-#include "modules/videorecord/x264encoder.hpp"
+#include "x264encoder.hpp"
 
 class VideoRecordMod : public IModule {
  public:

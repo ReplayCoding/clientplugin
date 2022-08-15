@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-#include "modules/videorecord/x264encoder.hpp"
+#include "x264encoder.hpp"
 #include "util.hpp"
 
 X264Encoder::X264Encoder(int width,
