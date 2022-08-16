@@ -2,6 +2,7 @@
 #include <interface.h>
 #include <memory>
 
+#include "clientclasses.hpp"
 #include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
@@ -17,6 +18,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
+  clientClassManager = std::make_unique<ClientClassManager>();
 
   return true;
 }
@@ -33,9 +35,10 @@ void ServerPlugin::Unload(void) {
   // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
   moduleManager.reset();
-  Interfaces::Unload();
-
+  clientClassManager.reset();
   g_Interceptor.reset();
+
+  Interfaces::Unload();
   gum_deinit_embedded();
 }
 

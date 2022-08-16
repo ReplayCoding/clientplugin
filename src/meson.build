@@ -21,6 +21,7 @@ plugin_lib = shared_library(
     'interfaces.cpp',
     'plugin.cpp',
     'offsets.cpp',
+    'clientclasses.cpp',
     'x264encoder.cpp',
     'modules/modules.cpp',
     'modules/unhidecvars.cpp',

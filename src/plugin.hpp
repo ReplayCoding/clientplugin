@@ -6,6 +6,7 @@
 #include <interface.h>
 #include <memory>
 
+#include "clientclasses.hpp"
 #include "modules/modules.hpp"
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
@@ -105,4 +106,5 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 
  private:
   std::unique_ptr<ModuleManager> moduleManager{};
+  std::unique_ptr<ClientClassManager> clientClassManager{};
 };

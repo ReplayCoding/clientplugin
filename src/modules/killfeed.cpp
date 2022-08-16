@@ -19,9 +19,9 @@ void KillfeedMod::FireGameEvent_handler(InvocationContext context) {
   if (pe_killfeed_debug.GetBool()) {
     int i = 0;
     Interfaces::EngineClient->Con_NPrintf(i++, "event name: %s\n",
-                                         gameEvent->GetName());
+                                          gameEvent->GetName());
     Interfaces::EngineClient->Con_NPrintf(i++, "weapon name: %s\n",
-                                         gameEvent->GetString("weapon"));
+                                          gameEvent->GetString("weapon"));
     Interfaces::EngineClient->Con_NPrintf(i++, "customkill: %d\n", customkill);
   };
 
