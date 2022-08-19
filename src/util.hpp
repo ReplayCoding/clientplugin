@@ -2,6 +2,7 @@
 #include <fmt/core.h>
 #include <exception>
 
+// An abuse of throwing to print out an error message
 class StringError : public std::exception {
  public:
   StringError(const std::string message) : message(message.c_str()){};

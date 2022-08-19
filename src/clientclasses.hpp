@@ -1,11 +1,46 @@
 #pragma once
+#include <convar.h>
+#include <dt_common.h>
+#include <dt_recv.h>
+#include <cstddef>
 #include <map>
+#include <vector>
 
-class RecvProp;
+#include "sdk/concommandwrapper.hpp"
+#include "util.hpp"
+
+// namespace to avoid some naming conflicts
+namespace clientclasses {
+  struct ClientProp {
+    ClientProp(std::string name, std::ptrdiff_t offset, SendPropType type)
+        : name(name), offset(offset), type(type){};
+    const std::string name;
+    const std::ptrdiff_t offset;
+    const SendPropType type;
+  };
+
+  class ClientClass {
+   public:
+    ClientClass(RecvTable* tbl) : name(tbl->GetName()), props(parse_tbl(tbl)) {}
+    inline const auto getName() { return name; }
+    inline const auto getProps() { return props; }
+
+   private:
+    std::vector<clientclasses::ClientProp> parse_tbl(RecvTable* tbl);
+
+    const std::string name;
+    std::vector<clientclasses::ClientProp> props;
+  };
+}  // namespace clientclasses
+
 class ClientClassManager {
  public:
   ClientClassManager();
 
  private:
-  std::map<const std::string, RecvProp*> datatables;
+  void dumpPropsToFile(const CCommand& cmd);
+  std::vector<clientclasses::ClientClass> clientclasses;
+
+  ConCommandCallbacks pe_dump_props_to_file_callback;
+  ConCommand pe_dump_props_to_file;
 };
