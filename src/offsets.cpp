@@ -12,9 +12,6 @@ namespace offsets {
     return base_address + offset;
   }
 
-  const SharedLibOffset CHudBaseDeathNotice_FireGameEvent{"client.so",
-                                                          0x1150830};
-
   const SharedLibOffset SCR_UpdateScreen{"engine.so", 0x39eab0};
   const SharedLibOffset SND_RecordBuffer{"engine.so", 0x281410};
 

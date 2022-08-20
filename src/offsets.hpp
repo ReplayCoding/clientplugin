@@ -40,8 +40,6 @@ namespace offsets {
     std::uintptr_t offset;
   };
 
-  const extern SharedLibOffset CHudBaseDeathNotice_FireGameEvent;
-
   const extern SharedLibOffset SCR_UpdateScreen;
   const extern SharedLibOffset SND_RecordBuffer;
 
