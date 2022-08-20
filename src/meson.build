@@ -25,7 +25,6 @@ plugin_lib = shared_library(
     'x264encoder.cpp',
     'modules/modules.cpp',
     'modules/unhidecvars.cpp',
-    'modules/killfeed.cpp',
     'modules/gfxoverlay.cpp',
     'modules/videorecord.cpp',
     'hook/gum/interceptor.cpp',
