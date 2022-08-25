@@ -1,3 +1,5 @@
+find_package(SDL2 REQUIRED)
+
 add_library(
   clientplugin SHARED
 
@@ -35,7 +37,15 @@ target_link_libraries(
   bitmap
 
   fmt::fmt
+  SDL2::SDL2
   frida-gum
+)
+
+# Remove SDL2 rpath
+add_custom_command(
+  TARGET clientplugin POST_BUILD
+  COMMAND patchelf --remove-rpath "$<TARGET_FILE:clientplugin>"
+  VERBATIM
 )
 
 install(
