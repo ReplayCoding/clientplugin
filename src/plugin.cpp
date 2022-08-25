@@ -7,6 +7,7 @@
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
 #include "plugin.hpp"
+#include "rtti.hpp"
 
 // Defined in hook/gum/interceptor.hpp
 std::unique_ptr<Gum::Interceptor> g_Interceptor;
@@ -19,13 +20,14 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   g_Interceptor = std::make_unique<Gum::Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
   clientClassManager = std::make_unique<ClientClassManager>();
+  fuckywucky();
 
   return true;
 }
 
 // Called when the plugin should be shutdown
 void ServerPlugin::Unload(void) {
-  // gum_interceptor_end_transcation crashes when you call it in a (library)
+  // gum_interceptor_end_transaction crashes when you call it in a (library)
   // destructor, and this function is used in gum_interceptor_detach, which is
   // called to cleanup loose hooks.
   // Is this really really stupid? Yes.

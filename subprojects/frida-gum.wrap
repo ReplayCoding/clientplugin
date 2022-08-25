@@ -1,8 +1,0 @@
-[wrap-file]
-directory = frida-gum
-lead_directory_missing = frida-gum
-source_url = https://github.com/frida/frida/releases/download/15.1.28/frida-gum-devkit-15.1.28-linux-x86.tar.xz
-source_filename = frida-gum-devkit-15.1.28-linux-x86.tar.xz
-source_hash = 45276051648a12f88b6763b06b31ac30fcd3e27c22b2b70623cd5da19ad92558
-
-patch_directory = frida-gum

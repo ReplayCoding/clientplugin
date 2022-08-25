@@ -1,14 +1,18 @@
 frida_dep = subproject('frida-gum').get_variable('frida_dep')
+
 sdk_dep = subproject('source-sdk').get_variable('sdk_dep')
+
+imgui_dep = subproject('imgui').get_variable('imgui_dep')
+gl_dep = dependency('gl')
+
+# fmt fails to link and i have no idea why but who cares LOL. deal with it.
+fmt_dep = subproject('fmt').get_variable('fmt_header_only_dep')
+
 x264_dep = subproject('x264', default_options: [
   'asm=enabled',
   'cli=false',
   'warning_level=0'
 ]).get_variable('libx264_dep')
-imgui_dep = subproject('imgui').get_variable('imgui_dep')
-# fmt fails to link and i have no idea why but who cares LOL. deal with it.
-fmt_dep = subproject('fmt').get_variable('fmt_header_only_dep')
-gl_dep = dependency('gl')
 
 cflags = [
   '-Wno-vla', # really?
@@ -22,6 +26,7 @@ plugin_lib = shared_library(
     'plugin.cpp',
     'offsets.cpp',
     'clientclasses.cpp',
+    'rtti.cpp',
     'x264encoder.cpp',
     'modules/modules.cpp',
     'modules/unhidecvars.cpp',

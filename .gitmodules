@@ -1,8 +1,11 @@
-[submodule "subprojects/source-sdk"]
-	path = subprojects/source-sdk
-	url = https://github.com/alliedmodders/hl2sdk
+[submodule "source-sdk"]
+	path = external/source-sdk
+	url = https://github.com/ReplayCoding/hl2sdk-meson
 	branch = sdk2013
-[submodule "subprojects/x264"]
-	path = subprojects/x264
+[submodule "x264"]
+	path = external/x264
 	url = https://gitlab.freedesktop.org/gstreamer/meson-ports/x264
 	branch = meson
+[submodule "fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt

@@ -39,15 +39,17 @@
           hardeningDisable = [ "all" ];
           buildInputs = with pkgs; [
             libGL
-            pkgsi686Linux.SDL2
+            SDL2
           ];
           nativeBuildInputs = with pkgs; [
             # For build
-            meson
+            cmake
             ninja
             pkg-config
+
             # Debugging
             lldb
+
             # x264
             nasm
           ];
