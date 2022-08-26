@@ -28,6 +28,9 @@ target_include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+find_package(fmt CONFIG REQUIRED)
+# fmt as a lib is fucked. make sure to catch errors like this BEFORE we run
+target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
   clientplugin PRIVATE
   tier0
@@ -36,7 +39,7 @@ target_link_libraries(
   tier3
   bitmap
 
-  fmt::fmt
+  fmt::fmt-header-only
   SDL2::SDL2
   frida-gum
 )

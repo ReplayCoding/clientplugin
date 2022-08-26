@@ -1,3 +1,6 @@
+# TODO: Make the frida stuff into a Find*.cmake file
+
+cmake_policy(SET CMP0135 NEW)
 include(FetchContent)
 FetchContent_Declare(
   _GUM
@@ -12,4 +15,3 @@ set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${_gum_SOURCE_DIR}/
 target_include_directories(frida-gum INTERFACE ${_gum_SOURCE_DIR})
 
 add_subdirectory("source-sdk")
-add_subdirectory("fmt")

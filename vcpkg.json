@@ -1,0 +1,6 @@
+{
+  "name": "clientplugin",
+  "dependencies": [
+    "fmt"
+  ]
+}

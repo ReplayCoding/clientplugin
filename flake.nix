@@ -47,6 +47,12 @@
             ninja
             pkg-config
 
+            # vcpkg
+            curl
+            zip
+            unzip
+            gnutar
+
             # Debugging
             lldb
 
