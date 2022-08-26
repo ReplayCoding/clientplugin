@@ -17,6 +17,8 @@ add_library(
   hook/gum/x86patcher.cpp
 )
 
+target_precompile_headers(clientplugin PRIVATE pch.hpp)
+
 target_compile_options(
   clientplugin PRIVATE
   -Wall -Wextra -Wpedantic -Werror
