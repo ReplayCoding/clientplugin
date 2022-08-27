@@ -39,7 +39,6 @@
           hardeningDisable = [ "all" ];
           buildInputs = with pkgs; [
             libGL
-            SDL2
           ];
           nativeBuildInputs = with pkgs; [
             # For build

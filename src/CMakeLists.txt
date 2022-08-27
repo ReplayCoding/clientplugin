@@ -1,5 +1,3 @@
-find_package(SDL2 REQUIRED)
-
 add_library(
   clientplugin SHARED
 
@@ -8,11 +6,11 @@ add_library(
   offsets.cpp
   clientclasses.cpp
   rtti.cpp
-  # x264encoder.cpp
+  x264encoder.cpp
   modules/modules.cpp
   modules/unhidecvars.cpp
-  # modules/gfxoverlay.cpp
-  # modules/videorecord.cpp
+  modules/gfxoverlay.cpp
+  modules/videorecord.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )
@@ -30,7 +28,14 @@ target_include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+find_package(PkgConfig REQUIRED)
+find_package(OpenGL REQUIRED)
+
 find_package(fmt CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
+
+find_package(SDL2 REQUIRED)
 # fmt as a lib is fucked. make sure to catch errors like this BEFORE we run
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
@@ -43,6 +48,9 @@ target_link_libraries(
 
   fmt::fmt-header-only
   SDL2::SDL2
+  PkgConfig::x264
+  OpenGL::GL
+  imgui::imgui
   frida-gum
 )
 

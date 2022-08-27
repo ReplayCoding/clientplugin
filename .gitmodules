@@ -4,4 +4,4 @@
 	branch = sdk2013
 [submodule "external/vcpkg"]
 	path = external/vcpkg
-	url = https://github.com/Microsoft/vcpkg.git
+	url = https://github.com/ReplayCoding/vcpkg.git
