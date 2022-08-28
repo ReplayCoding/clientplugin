@@ -36,6 +36,8 @@
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
+          # Make vcpkg x264 happy
+          AS = "nasm";
           hardeningDisable = [ "all" ];
           buildInputs = with pkgs; [
             libGL
