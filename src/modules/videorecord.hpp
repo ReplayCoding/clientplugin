@@ -7,6 +7,7 @@
 #include "hook/attachmenthook.hpp"
 #include "hook/gum/x86patcher.hpp"
 #include "modules/modules.hpp"
+#include "sdk/concommandwrapper.hpp"
 #include "x264encoder.hpp"
 
 class VideoRecordMod : public IModule {
@@ -17,18 +18,30 @@ class VideoRecordMod : public IModule {
  private:
   void renderVideoFrame();
   void renderAudioFrame();
-  void initRenderTexture(IMaterialSystem* materialSystem);
+
+  void startRender(const CCommand& c);
+  void stopRender(const CCommand& c);
+
+  void initRenderTexture();
 
   int width{};
   int height{};
+
   std::unique_ptr<X264Encoder> encoder;
 
-  std::ofstream o_vidfile;
-  std::ofstream o_audfile;
+  std::unique_ptr<std::ofstream> o_vidfile;
+  std::unique_ptr<std::ofstream> o_audfile;
   CTextureReference renderTexture;
 
-  ConVar pe_render;
+  ConCommandCallbacks pe_render_start_cbk;
+  ConCommandCallbacks pe_render_stop_cbk;
 
+  ConCommand pe_render_start;
+  ConCommand pe_render_stop;
+
+  bool isRendering{false};
+
+  // Globals extracted from engine
   int** snd_p{};
 
   int* snd_vol{};

@@ -10,7 +10,8 @@
 
 X86Patcher::X86Patcher(std::uintptr_t address,
                        std::size_t code_size,
-                       std::function<void(GumX86Writer*)> function) {
+                       std::function<void(GumX86Writer*)> function,
+                       bool enable) {
   original_code = new uint8_t[code_size];
   std::memcpy(original_code, reinterpret_cast<void*>(address), code_size);
 
@@ -19,8 +20,14 @@ X86Patcher::X86Patcher(std::uintptr_t address,
   callback_data.function = function;
   callback_data.original_code = original_code;
 
+  isEnabled = enable;
+  if (isEnabled)
+    Enable();
+}
+
+void X86Patcher::Enable() {
   gum_memory_patch_code(
-      reinterpret_cast<void*>(address), code_size,
+      reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
         auto callback_data = static_cast<callback_data_t*>(user_data);
         auto x86writer = gum_x86_writer_new(memory);
@@ -38,7 +45,7 @@ X86Patcher::X86Patcher(std::uintptr_t address,
       static_cast<void*>(&callback_data));
 }
 
-X86Patcher::~X86Patcher() {
+void X86Patcher::Disable() {
   gum_memory_patch_code(
       reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
@@ -47,5 +54,10 @@ X86Patcher::~X86Patcher() {
                callback_data->code_size);
       },
       static_cast<void*>(&callback_data));
+}
+
+X86Patcher::~X86Patcher() {
+  if (isEnabled)
+    Disable();
   delete original_code;
 }

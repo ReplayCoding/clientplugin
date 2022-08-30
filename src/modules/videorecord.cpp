@@ -1,6 +1,7 @@
 #include <bitmap/imageformat.h>
 #include <cdll_int.h>
 #include <convar.h>
+#include <dbg.h>
 #include <materialsystem/imaterialsystem.h>
 #include <replay/ienginereplay.h>
 #include <view_shared.h>
@@ -18,32 +19,27 @@
 #include "modules/modules.hpp"
 #include "modules/videorecord.hpp"
 #include "offsets.hpp"
+#include "util.hpp"
 #include "x264encoder.hpp"
 
 void VideoRecordMod::renderAudioFrame() {
-  if (!pe_render.GetBool())
+  if (!isRendering)
     return;
 
   int16_t clipped_samples[*snd_linear_count];
   for (auto i = 0; i < (*snd_linear_count); i++) {
-    auto sample = (*snd_p)[i] * (*snd_vol) >> 8;
+    auto sample = ((*snd_p)[i] * (*snd_vol)) >> 8;
 
     // Thank fucking god the AM SDK exists
     clipped_samples[i] = std::clamp(sample, -0x7fff, 0x7fff);
   };
-  o_audfile.write(reinterpret_cast<char*>(clipped_samples),
-                  (*snd_linear_count) * sizeof(int16_t));
+  o_audfile->write(reinterpret_cast<char*>(clipped_samples),
+                   (*snd_linear_count) * sizeof(int16_t));
 }
 
 void VideoRecordMod::renderVideoFrame() {
-  if (!pe_render.GetBool())
+  if (!isRendering)
     return;
-
-  // Width and height can't be set when the module is being setup
-  if (encoder == nullptr) {
-    encoder =
-        std::make_unique<X264Encoder>(width, height, 30, "medium", o_vidfile);
-  };
 
   constexpr auto image_format = IMAGE_FORMAT_RGB888;
 
@@ -56,7 +52,10 @@ void VideoRecordMod::renderVideoFrame() {
     Interfaces::ClientDll->RenderView(viewSetup,
                                       VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
                                       RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
+  } else {
+    throw StringError("Couldn't obtain player view? Whats going on!");
   };
+
   auto mem_required =
       ImageLoader::GetMemRequired(width, height, 1, image_format, false);
   uint8_t pic_buf[mem_required];
@@ -66,36 +65,61 @@ void VideoRecordMod::renderVideoFrame() {
   renderContextPtr->PopRenderTargetAndViewport();
 }
 
-void VideoRecordMod::initRenderTexture(IMaterialSystem* materialSystem) {
-  materialSystem->BeginRenderTargetAllocation();
-  renderTexture.Init(materialSystem->CreateNamedRenderTargetTextureEx2(
-      "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
-      IMAGE_FORMAT_RGB888, MATERIAL_RT_DEPTH_SHARED));
-  materialSystem->EndRenderTargetAllocation();
+void VideoRecordMod::initRenderTexture() {
+  Interfaces::MaterialSystem->BeginRenderTargetAllocation();
+  renderTexture.Init(
+      Interfaces::MaterialSystem->CreateNamedRenderTargetTextureEx2(
+          "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
+          IMAGE_FORMAT_RGB888, MATERIAL_RT_DEPTH_SHARED));
+  Interfaces::MaterialSystem->EndRenderTargetAllocation();
 }
 
-VideoRecordMod::VideoRecordMod()
-    : pe_render("pe_render", 0, FCVAR_DONTRECORD, "Render using x264") {
+void VideoRecordMod::startRender(const CCommand& c) {
   MaterialVideoMode_t mode;
   Interfaces::MaterialSystem->GetDisplayMode(mode);
   Interfaces::EngineClientReplay->InitSoundRecord();
   width = mode.m_Width;
   height = mode.m_Height;
 
-  o_vidfile = std::ofstream("output.h264", std::ios::binary);
-  o_audfile = std::ofstream("output.aud", std::ios::binary);
+  o_vidfile = std::make_unique<std::ofstream>("output.h264", std::ios::binary);
+  o_audfile = std::make_unique<std::ofstream>("output.aud", std::ios::binary);
 
+  encoder =
+      std::make_unique<X264Encoder>(width, height, 30, "medium", *o_vidfile);
+
+  getSoundTime_patch->Enable();
+  setSoundFrameTime_patch->Enable();
+
+  isRendering = true;
+}
+
+void VideoRecordMod::stopRender(const CCommand& c) {
+  getSoundTime_patch->Disable();
+  setSoundFrameTime_patch->Disable();
+
+  isRendering = false;
+}
+
+VideoRecordMod::VideoRecordMod()
+    : pe_render_start_cbk([&](auto c) { startRender(c); }),
+      pe_render_stop_cbk([&](auto c) { stopRender(c); }),
+      pe_render_start("pe_render_stop", &pe_render_stop_cbk),
+      pe_render_stop("pe_render_start", &pe_render_start_cbk) {
   snd_vol = offsets::SND_G_VOL;
   snd_p = offsets::SND_G_P;
   snd_linear_count = offsets::SND_G_LINEAR_COUNT;
 
+  initRenderTexture();
+
   getSoundTime_patch = std::make_unique<X86Patcher>(
       offsets::GetSoundTime + 0x69, 2,
-      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); });
+      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 2); },
+      false);
 
   setSoundFrameTime_patch = std::make_unique<X86Patcher>(
       offsets::CEngineSoundServices_SetSoundFrametime + 6, 7,
-      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); });
+      [](auto x86writer) { gum_x86_writer_put_nop_padding(x86writer, 7); },
+      false);
 
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
       offsets::SCR_UpdateScreen,

@@ -3,6 +3,7 @@
   "dependencies": [
     "fmt",
     "x264",
+    "elfutils",
     {
       "name": "imgui",
       "features": ["sdl2-binding", "opengl3-binding"]

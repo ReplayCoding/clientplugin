@@ -54,6 +54,13 @@
             unzip
             gnutar
 
+            # elfutils
+            flex
+            bison
+            autoconf
+            automake
+            gettext
+
             # Debugging
             lldb
 

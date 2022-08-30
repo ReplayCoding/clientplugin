@@ -11,8 +11,12 @@ class X86Patcher {
  public:
   X86Patcher(std::uintptr_t address,
              std::size_t size,
-             std::function<void(GumX86Writer*)> function);
+             std::function<void(GumX86Writer*)> function,
+             bool enable = true);
   ~X86Patcher();
+
+  void Enable();
+  void Disable();
 
  private:
   struct callback_data_t {
@@ -23,4 +27,5 @@ class X86Patcher {
   } callback_data{};
 
   uint8_t* original_code;
+  bool isEnabled;
 };
