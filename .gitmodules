@@ -4,7 +4,4 @@
 	branch = sdk2013
 [submodule "external/vcpkg"]
 	path = external/vcpkg
-	url = https://github.com/ReplayCoding/vcpkg.git
-[submodule "external/LIEF"]
-	path = external/LIEF
-	url = https://github.com/lief-project/LIEF
+	url = https://github.com/microsoft/vcpkg.git

@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-#include "util.hpp"
+#include "util/error.hpp"
 #include "x264encoder.hpp"
 
 X264Encoder::X264Encoder(int width,

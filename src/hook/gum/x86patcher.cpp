@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "hook/gum/x86patcher.hpp"
-#include "util.hpp"
+#include "util/error.hpp"
 
 X86Patcher::X86Patcher(std::uintptr_t address,
                        std::size_t code_size,

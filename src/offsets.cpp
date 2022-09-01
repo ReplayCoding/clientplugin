@@ -2,7 +2,7 @@
 #include <cstdint>
 
 #include "offsets.hpp"
-#include "util.hpp"
+#include "util/error.hpp"
 
 namespace offsets {
   std::uintptr_t SharedLibOffset::get_address() const {

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "sdk/concommandwrapper.hpp"
-#include "util.hpp"
 
 // namespace to avoid some naming conflicts
 namespace clientclasses {

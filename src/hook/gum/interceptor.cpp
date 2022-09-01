@@ -3,7 +3,7 @@
 
 #include "hook/gum/interceptor.hpp"
 #include "hook/gum/objectwrapper.hpp"
-#include "util.hpp"
+#include "util/error.hpp"
 
 namespace Gum {
 
