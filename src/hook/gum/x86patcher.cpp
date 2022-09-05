@@ -50,7 +50,7 @@ void X86Patcher::Disable() {
       reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
         auto callback_data = static_cast<callback_data_t*>(user_data);
-        memcpy(memory, reinterpret_cast<void*>(callback_data->address),
+        memcpy(memory, reinterpret_cast<void*>(callback_data->original_code),
                callback_data->code_size);
       },
       static_cast<void*>(&callback_data));

@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <string>
 
 #include "./mmap.hpp"
 #include "util/error.hpp"

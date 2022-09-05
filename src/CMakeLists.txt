@@ -16,7 +16,9 @@ add_library(
   hook/gum/x86patcher.cpp
 )
 
-target_precompile_headers(clientplugin PRIVATE pch.hpp)
+if (CMAKE_BUILD_TYPE MATCHES Release)
+  target_precompile_headers(clientplugin PRIVATE pch.hpp)
+endif()
 
 target_compile_options(
   clientplugin PRIVATE

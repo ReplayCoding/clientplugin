@@ -36,7 +36,7 @@
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
-          # Make vcpkg x264 happy
+          # Make vcpkg x264 happy. THIS DOESN'T WORK!
           AS = "nasm";
           hardeningDisable = [ "all" ];
           buildInputs = with pkgs; [

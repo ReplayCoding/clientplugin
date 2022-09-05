@@ -20,7 +20,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   g_Interceptor = std::make_unique<Gum::Interceptor>();
   moduleManager = std::make_unique<ModuleManager>();
   clientClassManager = std::make_unique<ClientClassManager>();
-  fuckywucky();
+  LoadRtti();
 
   return true;
 }

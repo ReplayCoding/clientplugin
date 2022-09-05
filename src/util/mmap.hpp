@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 // TODO: Currently read only
 class MemoryMappedFile {

@@ -41,8 +41,6 @@ void VideoRecordMod::renderVideoFrame() {
   if (!isRendering)
     return;
 
-  constexpr auto image_format = IMAGE_FORMAT_RGB888;
-
   CViewSetup viewSetup{};
   CMatRenderContextPtr renderContextPtr(Interfaces::MaterialSystem);
   renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
@@ -56,11 +54,12 @@ void VideoRecordMod::renderVideoFrame() {
     throw StringError("Couldn't obtain player view? Whats going on!");
   };
 
-  auto mem_required =
-      ImageLoader::GetMemRequired(width, height, 1, image_format, false);
-  uint8_t pic_buf[mem_required];
-  renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
-  encoder->encode_frame(pic_buf);
+  // constexpr auto image_format = IMAGE_FORMAT_RGB888;
+  // auto mem_required =
+  //     ImageLoader::GetMemRequired(width, height, 1, image_format, false);
+  // uint8_t pic_buf[mem_required];
+  // renderContextPtr->ReadPixels(0, 0, width, height, pic_buf, image_format);
+  // encoder->encode_frame(pic_buf);
   // o_vidfile.write(reinterpret_cast<const char *>(pic_buf), mem_required);
   renderContextPtr->PopRenderTargetAndViewport();
 }
@@ -84,8 +83,8 @@ void VideoRecordMod::startRender(const CCommand& c) {
   o_vidfile = std::make_unique<std::ofstream>("output.h264", std::ios::binary);
   o_audfile = std::make_unique<std::ofstream>("output.aud", std::ios::binary);
 
-  encoder =
-      std::make_unique<X264Encoder>(width, height, 30, "medium", *o_vidfile);
+  // encoder =
+  //     std::make_unique<X264Encoder>(width, height, 30, "medium", *o_vidfile);
 
   getSoundTime_patch->Enable();
   setSoundFrameTime_patch->Enable();
