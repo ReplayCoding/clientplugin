@@ -19,7 +19,7 @@ class ElfRttiDumper {
 
   std::uintptr_t eh_frame_hdr_addr;
 
-  void handle_relocations(Elf_Scn *scn, GElf_Shdr *shdr);
+  void handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr);
 };
 
 void LoadRtti();
