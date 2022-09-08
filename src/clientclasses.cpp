@@ -15,20 +15,25 @@
 std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
     RecvTable* tbl) {
   std::vector<clientclasses::ClientProp> props;
+
   for (auto idx = 0; idx < tbl->GetNumProps(); idx++) {
     auto prop = tbl->GetProp(idx);
+
     if (prop->GetType() == SendPropType::DPT_DataTable) {
       auto subtable = prop->GetDataTable();
       auto parsed_subtable = parse_tbl(subtable);
+
       for (const auto subprop : parsed_subtable) {
         const auto subprop_fixed =
             ClientProp(std::string(subtable->GetName()) + "::" + subprop.name,
                        prop->GetOffset() + subprop.offset, subprop.type);
+
         props.emplace_back(subprop_fixed);
       };
     } else {
       const auto wrapped_prop = clientclasses::ClientProp(
           prop->GetName(), prop->GetOffset(), prop->GetType());
+
       props.emplace_back(wrapped_prop);
     }
   }
@@ -43,6 +48,7 @@ ClientClassManager::ClientClassManager()
        client_class = client_class->m_pNext) {
     auto recv_tbl = client_class->m_pRecvTable;
     auto clientclass_parsed = clientclasses::ClientClass(recv_tbl);
+
     clientclasses.emplace_back(clientclass_parsed);
   }
 }
@@ -57,6 +63,7 @@ void ClientClassManager::dumpPropsToFile(const CCommand& cmd) {
 
   for (auto clientclass : clientclasses) {
     fmt::print(output_file, "CLIENTCLASS: {}\n", clientclass.getName());
+
     for (auto prop : clientclass.getProps()) {
       fmt::print(output_file, "\t{}: {:08X}\n", prop.name, prop.offset);
     };

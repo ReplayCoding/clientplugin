@@ -50,9 +50,11 @@ void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
   Elf_Scn* symbol_section;
   if ((symbol_section = elf_getscn(elf, shdr->sh_link)) == nullptr)
     throw StringError("failed to get sh_link section");
+
   GElf_Shdr symbol_section_header;
   if (gelf_getshdr(symbol_section, &symbol_section_header) == nullptr)
     throw StringError("failed to get sh_link section header");
+
   Elf_Data* symbol_section_data = elf_getdata(symbol_section, nullptr);
 
   for (size_t relidx = 0; relidx < number_of_relocs; ++relidx) {
@@ -62,16 +64,19 @@ void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
                         elf_strptr(elf, string_header_index, shdr->sh_name),
                         relidx);
     }
+
     if (GELF_R_TYPE(rel.r_info) != 0 /* NONE rel type */ &&
         GELF_R_SYM(rel.r_info) != STN_UNDEF /* no symbol */) {
       GElf_Sym symbol;
       if (gelf_getsymshndx(symbol_section_data, nullptr, GELF_R_SYM(rel.r_info),
                            &symbol, nullptr) == nullptr)
         throw StringError("Failed to get symbol index for reloc: {}", relidx);
+
       auto symbol_name =
           elf_strptr(elf, symbol_section_header.sh_link, symbol.st_name);
       if (symbol_name == nullptr)
         throw StringError("Failed to get symbol name");
+
       fmt::print("got reloc offset: {:08X} (type: {}, sym: {}, sym name: {})\n",
                  rel.r_offset, GELF_R_TYPE(rel.r_info), GELF_R_SYM(rel.r_info),
                  symbol_name);
@@ -82,6 +87,7 @@ void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
 ElfRttiDumper::ElfRttiDumper(const std::string path) {
   // Ugh, i don't want to use a unique_ptr. FIXME
   std::unique_ptr<MemoryMappedFile> mapped_file;
+
   try {
     mapped_file = std::make_unique<MemoryMappedFile>(path);
   } catch (std::exception& e) {
@@ -120,8 +126,10 @@ ElfRttiDumper::ElfRttiDumper(const std::string path) {
   Elf_Scn* cur_scn = nullptr;
   while ((cur_scn = elf_nextscn(elf, cur_scn)) != nullptr) {
     GElf_Shdr hdr{};
+
     if (gelf_getshdr(cur_scn, &hdr) == nullptr)
       throw StringError("Error getting section {}", elf_ndxscn(cur_scn));
+
     std::string_view section_name =
         elf_strptr(elf, string_header_index, hdr.sh_name);
 

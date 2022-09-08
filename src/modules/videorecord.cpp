@@ -33,6 +33,7 @@ void VideoRecordMod::renderAudioFrame() {
     // Thank fucking god the AM SDK exists
     clipped_samples[i] = std::clamp(sample, -0x7fff, 0x7fff);
   };
+
   o_audfile->write(reinterpret_cast<char*>(clipped_samples),
                    (*snd_linear_count) * sizeof(int16_t));
 }
@@ -43,8 +44,10 @@ void VideoRecordMod::renderVideoFrame() {
 
   CViewSetup viewSetup{};
   CMatRenderContextPtr renderContextPtr(Interfaces::MaterialSystem);
+
   renderContextPtr->PushRenderTargetAndViewport(renderTexture, 0, 0, width,
                                                 height);
+
   auto gotPlayerView = Interfaces::ClientDll->GetPlayerView(viewSetup);
   if (gotPlayerView) {
     Interfaces::ClientDll->RenderView(viewSetup,
@@ -66,19 +69,23 @@ void VideoRecordMod::renderVideoFrame() {
 
 void VideoRecordMod::initRenderTexture() {
   Interfaces::MaterialSystem->BeginRenderTargetAllocation();
+
   renderTexture.Init(
       Interfaces::MaterialSystem->CreateNamedRenderTargetTextureEx2(
           "_rt_pe_rendertexture", width, height, RT_SIZE_OFFSCREEN,
           IMAGE_FORMAT_RGB888, MATERIAL_RT_DEPTH_SHARED));
+
   Interfaces::MaterialSystem->EndRenderTargetAllocation();
 }
 
 void VideoRecordMod::startRender(const CCommand& c) {
   MaterialVideoMode_t mode;
   Interfaces::MaterialSystem->GetDisplayMode(mode);
-  Interfaces::EngineClientReplay->InitSoundRecord();
+
   width = mode.m_Width;
   height = mode.m_Height;
+
+  Interfaces::EngineClientReplay->InitSoundRecord();
 
   o_vidfile = std::make_unique<std::ofstream>("output.h264", std::ios::binary);
   o_audfile = std::make_unique<std::ofstream>("output.aud", std::ios::binary);
@@ -123,6 +130,7 @@ VideoRecordMod::VideoRecordMod()
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
       offsets::SCR_UpdateScreen,
       [this](InvocationContext) { renderVideoFrame(); });
+
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
       offsets::SND_RecordBuffer,
       [this](InvocationContext) { renderAudioFrame(); });

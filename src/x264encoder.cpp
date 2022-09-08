@@ -50,15 +50,7 @@ X264Encoder::X264Encoder(int width,
 
 X264Encoder::~X264Encoder() noexcept(false) {
   while (x264_encoder_delayed_frames(encoder)) {
-    auto i_frame_size =
-        x264_encoder_encode(encoder, &nal, &i_nal, NULL, &pic_out);
-    if (i_frame_size < 0) {
-      throw StringError("Failed to encode delayed frames");
-    };
-    if (i_frame_size > 0) {
-      output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
-                          i_frame_size);
-    }
+    actually_encode_frame(nullptr);
   }
 
   // WHAT THE FUCK IT CRASHES MY ASS
@@ -68,16 +60,22 @@ X264Encoder::~X264Encoder() noexcept(false) {
   x264_encoder_close(encoder);
 }
 
-void X264Encoder::encode_frame(uint8_t* input_buf) {
-  pic_in.img.plane[0] = input_buf;
-  pic_in.i_pts = current_frame++;
+void X264Encoder::actually_encode_frame(x264_picture_t* _pic_in) {
   auto i_frame_size =
-      x264_encoder_encode(encoder, &nal, &i_nal, &pic_in, &pic_out);
+      x264_encoder_encode(encoder, &nal, &i_nal, _pic_in, &pic_out);
+
   if (i_frame_size < 0) {
     throw StringError("Failed to encode frame");
   };
+
   if (i_frame_size > 0) {
     output_stream.write(reinterpret_cast<const char*>(nal->p_payload),
                         i_frame_size);
   };
+}
+
+void X264Encoder::encode_frame(uint8_t* input_buf) {
+  pic_in.img.plane[0] = input_buf;
+  pic_in.i_pts = current_frame++;
+  actually_encode_frame(&pic_in);
 }

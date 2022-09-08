@@ -13,6 +13,7 @@ namespace clientclasses {
   struct ClientProp {
     ClientProp(std::string name, std::ptrdiff_t offset, SendPropType type)
         : name(name), offset(offset), type(type){};
+
     const std::string name;
     const std::ptrdiff_t offset;
     const SendPropType type;

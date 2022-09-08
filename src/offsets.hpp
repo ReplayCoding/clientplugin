@@ -23,7 +23,7 @@ namespace offsets {
    private:
     virtual std::uintptr_t get_address() const { return manual_address; };
 
-    std::uintptr_t manual_address{};
+    const std::uintptr_t manual_address{};
   };
   // UGH
   using Offset = ManualOffset;
@@ -36,8 +36,8 @@ namespace offsets {
    private:
     std::uintptr_t get_address() const override;
 
-    std::string module;
-    std::uintptr_t offset;
+    const std::string module;
+    const std::uintptr_t offset;
   };
 
   const extern SharedLibOffset SCR_UpdateScreen;

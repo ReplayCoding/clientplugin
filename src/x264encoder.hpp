@@ -19,6 +19,8 @@ class X264Encoder {
   void encode_frame(uint8_t* input_buf);
 
  private:
+  // If _pic_in is null, encode delayed frame
+  void actually_encode_frame(x264_picture_t* _pic_in);
   x264_t* encoder{};
   x264_param_t param{};
   x264_picture_t pic_in{};
