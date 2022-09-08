@@ -12,7 +12,7 @@
 #include "util/error.hpp"
 #include "util/mmap.hpp"
 
-GElf_Addr ElfRttiDumper::calculate_offline_baseaddr() {
+GElf_Addr ElfModuleRttiDumper::calculate_offline_baseaddr() {
   GElf_Ehdr ehdr;
   gelf_getehdr(elf, &ehdr);
 
@@ -31,12 +31,12 @@ GElf_Addr ElfRttiDumper::calculate_offline_baseaddr() {
   throw StringError("Failed to find base address");
 }
 
-std::uintptr_t ElfRttiDumper::get_online_address_from_offline(
+std::uintptr_t ElfModuleRttiDumper::get_online_address_from_offline(
     GElf_Addr offline_addr) {
   return online_baseaddr + (offline_addr - offline_baseaddr);
 }
 
-void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
+void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
   // This really really looks like a memory leak :(
   Elf_Data* section_data = elf_getdata(scn, nullptr);
   if (section_data == nullptr) {
@@ -72,19 +72,22 @@ void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
                            &symbol, nullptr) == nullptr)
         throw StringError("Failed to get symbol index for reloc: {}", relidx);
 
-      auto symbol_name =
+      auto _symbol_name =
           elf_strptr(elf, symbol_section_header.sh_link, symbol.st_name);
-      if (symbol_name == nullptr)
+      if (_symbol_name == nullptr)
         throw StringError("Failed to get symbol name");
 
-      fmt::print("got reloc offset: {:08X} (type: {}, sym: {}, sym name: {})\n",
-                 rel.r_offset, GELF_R_TYPE(rel.r_info), GELF_R_SYM(rel.r_info),
-                 symbol_name);
+      // Clone this so we can store it
+      std::string symbol_name{_symbol_name};
+      std::uintptr_t online_reladdress =
+          get_online_address_from_offline(rel.r_offset);
+
+      relocations[online_reladdress] = symbol_name;
     }
   }
 }
 
-ElfRttiDumper::ElfRttiDumper(const std::string path) {
+ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
   // Ugh, i don't want to use a unique_ptr. FIXME
   std::unique_ptr<MemoryMappedFile> mapped_file;
 
@@ -119,9 +122,6 @@ ElfRttiDumper::ElfRttiDumper(const std::string path) {
     throw StringError("WARNING: online_baseaddress is nullptr");
   };
 
-  fmt::print("Got baddr for {}: offline is {:08X}, online is {:08X}\n", path,
-             offline_baseaddr, online_baseaddr);
-
   // if the section is null, we read the first section
   Elf_Scn* cur_scn = nullptr;
   while ((cur_scn = elf_nextscn(elf, cur_scn)) != nullptr) {
@@ -139,10 +139,8 @@ ElfRttiDumper::ElfRttiDumper(const std::string path) {
 
     if (section_name == ".eh_frame_hdr") {
       eh_frame_hdr_addr = get_online_address_from_offline(hdr.sh_addr);
-      fmt::print(
-          "Got desired sections for {}:\n"
-          "\t .eh_frame_hdr: {:08X}\n",
-          path, eh_frame_hdr_addr);
+      (void)eh_frame_hdr_addr;
+      // TODO
     }
   }
 }
@@ -157,7 +155,7 @@ void LoadRtti() {
           return 1;
 
         try {
-          ElfRttiDumper dumped_rtti{details->path};
+          ElfModuleRttiDumper dumped_rtti{details->path};
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"

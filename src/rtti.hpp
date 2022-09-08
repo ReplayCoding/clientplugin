@@ -2,11 +2,12 @@
 
 #include <gelf.h>
 #include <cstdint>
+#include <map>
 
-class ElfRttiDumper {
+class ElfModuleRttiDumper {
  public:
-  ElfRttiDumper(const std::string details);
-  ~ElfRttiDumper() { elf_end(elf); }
+  ElfModuleRttiDumper(const std::string details);
+  ~ElfModuleRttiDumper() { elf_end(elf); }
 
  private:
   Elf* elf;
@@ -20,6 +21,8 @@ class ElfRttiDumper {
   std::uintptr_t eh_frame_hdr_addr;
 
   void handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr);
+
+  std::map<std::uintptr_t, std::string> relocations{};
 };
 
 void LoadRtti();
