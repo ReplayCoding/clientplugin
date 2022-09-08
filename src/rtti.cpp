@@ -37,9 +37,46 @@ std::uintptr_t ElfRttiDumper::get_online_address_from_offline(
 }
 
 void ElfRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
+  // This really really looks like a memory leak :(
+  Elf_Data* section_data = elf_getdata(scn, nullptr);
+  if (section_data == nullptr) {
+    throw StringError("failed to get data for section {}: {}", shdr->sh_name);
+  };
+
   auto reloc_struct_size = gelf_fsize(elf, ELF_T_REL, 1, EV_CURRENT);
   auto number_of_relocs = shdr->sh_size / reloc_struct_size;
-  (void)number_of_relocs;
+
+  // really well designed api we have here
+  Elf_Scn* symbol_section;
+  if ((symbol_section = elf_getscn(elf, shdr->sh_link)) == nullptr)
+    throw StringError("failed to get sh_link section");
+  GElf_Shdr symbol_section_header;
+  if (gelf_getshdr(symbol_section, &symbol_section_header) == nullptr)
+    throw StringError("failed to get sh_link section header");
+  Elf_Data* symbol_section_data = elf_getdata(symbol_section, nullptr);
+
+  for (size_t relidx = 0; relidx < number_of_relocs; ++relidx) {
+    GElf_Rel rel;
+    if (gelf_getrel(section_data, relidx, &rel) == nullptr) {
+      throw StringError("couldn't get relocation for section {}: {}",
+                        elf_strptr(elf, string_header_index, shdr->sh_name),
+                        relidx);
+    }
+    if (GELF_R_TYPE(rel.r_info) != 0 /* NONE rel type */ &&
+        GELF_R_SYM(rel.r_info) != STN_UNDEF /* no symbol */) {
+      GElf_Sym symbol;
+      if (gelf_getsymshndx(symbol_section_data, nullptr, GELF_R_SYM(rel.r_info),
+                           &symbol, nullptr) == nullptr)
+        throw StringError("Failed to get symbol index for reloc: {}", relidx);
+      auto symbol_name =
+          elf_strptr(elf, symbol_section_header.sh_link, symbol.st_name);
+      if (symbol_name == nullptr)
+        throw StringError("Failed to get symbol name");
+      fmt::print("got reloc offset: {:08X} (type: {}, sym: {}, sym name: {})\n",
+                 rel.r_offset, GELF_R_TYPE(rel.r_info), GELF_R_SYM(rel.r_info),
+                 symbol_name);
+    }
+  }
 }
 
 ElfRttiDumper::ElfRttiDumper(const std::string path) {
@@ -48,19 +85,19 @@ ElfRttiDumper::ElfRttiDumper(const std::string path) {
   try {
     mapped_file = std::make_unique<MemoryMappedFile>(path);
   } catch (std::exception& e) {
-    throw StringError("WARNING: failed to load module {} ({})\n", path,
-                      e.what());
+    throw StringError("WARNING: failed to load module {} ({})", path, e.what());
   }
 
   elf = elf_memory(static_cast<char*>(mapped_file->getAddress()),
                    mapped_file->getLength());
   // If we failed to load the file, just continue on
   if (elf == nullptr) {
-    throw StringError("note: failed to load module: {}\n",
-                      elf_errmsg(elf_errno()));
+    throw StringError("note: failed to load module: {}", path);
   };
 
-  elf_getshdrstrndx(elf, &string_header_index);
+  if (elf_getshdrstrndx(elf, &string_header_index) < 0) {
+    throw StringError("failed to get sh string section");
+  };
 
   // Find online & offline load addresses
   online_baseaddr = gum_module_find_base_address(path.c_str());
@@ -89,7 +126,6 @@ ElfRttiDumper::ElfRttiDumper(const std::string path) {
         elf_strptr(elf, string_header_index, hdr.sh_name);
 
     if (hdr.sh_type == SHT_REL) {
-      fmt::print("Found SHT_REL: {}\n", section_name);
       handle_relocations(cur_scn, &hdr);
     }
 
@@ -115,7 +151,6 @@ void LoadRtti() {
         try {
           ElfRttiDumper dumped_rtti{details->path};
         } catch (std::exception& e) {
-          std::string_view{e.what()};
           fmt::print(
               "while handling module {}:\n"
               "\t{}\n",
