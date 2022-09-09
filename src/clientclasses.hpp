@@ -22,8 +22,8 @@ namespace clientclasses {
   class ClientClass {
    public:
     ClientClass(RecvTable* tbl) : name(tbl->GetName()), props(parse_tbl(tbl)) {}
-    inline const auto getName() { return name; }
-    inline const auto getProps() { return props; }
+    inline const auto get_name() { return name; }
+    inline const auto get_props() { return props; }
 
    private:
     std::vector<clientclasses::ClientProp> parse_tbl(RecvTable* tbl);
@@ -38,7 +38,7 @@ class ClientClassManager {
   ClientClassManager();
 
  private:
-  void dumpPropsToFile(const CCommand& cmd);
+  void dump_props_to_file(const CCommand& cmd);
   std::vector<clientclasses::ClientClass> clientclasses;
 
   ConCommandCallbacks pe_dump_props_to_file_callback;

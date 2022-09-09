@@ -18,8 +18,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   Interfaces::Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
-  moduleManager = std::make_unique<ModuleManager>();
-  clientClassManager = std::make_unique<ClientClassManager>();
+  module_manager = std::make_unique<ModuleManager>();
+  client_class_manager = std::make_unique<ClientClassManager>();
   LoadRtti();
 
   return true;
@@ -36,8 +36,8 @@ void ServerPlugin::Unload(void) {
   //
   // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
-  moduleManager.reset();
-  clientClassManager.reset();
+  module_manager.reset();
+  client_class_manager.reset();
   g_Interceptor.reset();
 
   Interfaces::Unload();

@@ -16,13 +16,13 @@ class VideoRecordMod : public IModule {
   virtual ~VideoRecordMod();
 
  private:
-  void renderVideoFrame();
-  void renderAudioFrame();
+  void render_video_frame();
+  void render_audio_frame();
 
-  void startRender(const CCommand& c);
-  void stopRender(const CCommand& c);
+  void start_render(const CCommand& c);
+  void stop_render(const CCommand& c);
 
-  void initRenderTexture();
+  void init_render_texture();
 
   int width{};
   int height{};

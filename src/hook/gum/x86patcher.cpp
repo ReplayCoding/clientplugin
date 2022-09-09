@@ -20,12 +20,12 @@ X86Patcher::X86Patcher(std::uintptr_t address,
   callback_data.function = function;
   callback_data.original_code = original_code;
 
-  isEnabled = enable;
-  if (isEnabled)
-    Enable();
+  is_enabled = enable;
+  if (is_enabled)
+    this->enable();
 }
 
-void X86Patcher::Enable() {
+void X86Patcher::enable() {
   gum_memory_patch_code(
       reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
@@ -45,7 +45,7 @@ void X86Patcher::Enable() {
       static_cast<void*>(&callback_data));
 }
 
-void X86Patcher::Disable() {
+void X86Patcher::disable() {
   gum_memory_patch_code(
       reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
@@ -57,7 +57,7 @@ void X86Patcher::Disable() {
 }
 
 X86Patcher::~X86Patcher() {
-  if (isEnabled)
-    Disable();
+  if (is_enabled)
+    disable();
   delete original_code;
 }

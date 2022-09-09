@@ -41,7 +41,7 @@ std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
 }
 
 ClientClassManager::ClientClassManager()
-    : pe_dump_props_to_file_callback([&](auto c) { dumpPropsToFile(c); }),
+    : pe_dump_props_to_file_callback([&](auto c) { dump_props_to_file(c); }),
       pe_dump_props_to_file("pe_dump_netvars_to_file",
                             &pe_dump_props_to_file_callback) {
   for (auto client_class = Interfaces::ClientDll->GetAllClasses(); client_class;
@@ -53,7 +53,7 @@ ClientClassManager::ClientClassManager()
   }
 }
 
-void ClientClassManager::dumpPropsToFile(const CCommand& cmd) {
+void ClientClassManager::dump_props_to_file(const CCommand& cmd) {
   if (cmd.ArgC() != 2) {
     Warning(fmt::format("usage: {} <output file>\n", cmd[0]).c_str());
     return;
@@ -62,9 +62,9 @@ void ClientClassManager::dumpPropsToFile(const CCommand& cmd) {
   auto output_file = std::ofstream(cmd[1]);
 
   for (auto clientclass : clientclasses) {
-    fmt::print(output_file, "CLIENTCLASS: {}\n", clientclass.getName());
+    fmt::print(output_file, "CLIENTCLASS: {}\n", clientclass.get_name());
 
-    for (auto prop : clientclass.getProps()) {
+    for (auto prop : clientclass.get_props()) {
       fmt::print(output_file, "\t{}: {:08X}\n", prop.name, prop.offset);
     };
   }

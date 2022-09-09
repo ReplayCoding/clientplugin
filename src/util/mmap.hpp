@@ -6,8 +6,8 @@ class MemoryMappedFile {
  public:
   MemoryMappedFile(std::string fname);
   ~MemoryMappedFile();
-  inline void* getAddress() { return mapped_address; }
-  inline size_t getLength() { return mapped_length; }
+  inline void* address() { return mapped_address; }
+  inline size_t length() { return mapped_length; }
 
  private:
   size_t mapped_length;

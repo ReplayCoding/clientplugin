@@ -105,6 +105,6 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
   virtual void FireGameEvent(IGameEvent* event){};
 
  private:
-  std::unique_ptr<ModuleManager> moduleManager{};
-  std::unique_ptr<ClientClassManager> clientClassManager{};
+  std::unique_ptr<ModuleManager> module_manager{};
+  std::unique_ptr<ClientClassManager> client_class_manager{};
 };

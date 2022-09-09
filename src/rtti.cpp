@@ -5,6 +5,7 @@
 #include <gelf.h>
 #include <libelf.h>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <string_view>
 
@@ -97,8 +98,8 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
     throw StringError("WARNING: failed to load module {} ({})", path, e.what());
   }
 
-  elf = elf_memory(static_cast<char*>(mapped_file->getAddress()),
-                   mapped_file->getLength());
+  elf = elf_memory(static_cast<char*>(mapped_file->address()),
+                   mapped_file->length());
   // If we failed to load the file, just continue on
   if (elf == nullptr) {
     throw StringError("note: failed to load module: {}", path);
@@ -155,7 +156,12 @@ void LoadRtti() {
           return 1;
 
         try {
+          std::chrono::high_resolution_clock timer;
+          auto start_time = timer.now();
           ElfModuleRttiDumper dumped_rtti{details->path};
+          auto end_time = timer.now();
+          // fmt::print("Handling module {} took {}", details->name,
+          //            end_time - start_time);
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"

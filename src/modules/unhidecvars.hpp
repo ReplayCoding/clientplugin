@@ -7,7 +7,7 @@ class UnhideCVarsMod : public IModule {
   UnhideCVarsMod();
 
  private:
-  static void unhideCVars();
+  static void unhide_cvars();
 
   ConCommand pe_unhide_cvars;
 };

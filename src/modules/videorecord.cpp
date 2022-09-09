@@ -22,7 +22,7 @@
 #include "util/error.hpp"
 #include "x264encoder.hpp"
 
-void VideoRecordMod::renderAudioFrame() {
+void VideoRecordMod::render_audio_frame() {
   if (!isRendering)
     return;
 
@@ -38,7 +38,7 @@ void VideoRecordMod::renderAudioFrame() {
                    (*snd_linear_count) * sizeof(int16_t));
 }
 
-void VideoRecordMod::renderVideoFrame() {
+void VideoRecordMod::render_video_frame() {
   if (!isRendering)
     return;
 
@@ -67,7 +67,7 @@ void VideoRecordMod::renderVideoFrame() {
   renderContextPtr->PopRenderTargetAndViewport();
 }
 
-void VideoRecordMod::initRenderTexture() {
+void VideoRecordMod::init_render_texture() {
   Interfaces::MaterialSystem->BeginRenderTargetAllocation();
 
   renderTexture.Init(
@@ -78,7 +78,7 @@ void VideoRecordMod::initRenderTexture() {
   Interfaces::MaterialSystem->EndRenderTargetAllocation();
 }
 
-void VideoRecordMod::startRender(const CCommand& c) {
+void VideoRecordMod::start_render(const CCommand& c) {
   MaterialVideoMode_t mode;
   Interfaces::MaterialSystem->GetDisplayMode(mode);
 
@@ -93,29 +93,29 @@ void VideoRecordMod::startRender(const CCommand& c) {
   // encoder =
   //     std::make_unique<X264Encoder>(width, height, 30, "medium", *o_vidfile);
 
-  getSoundTime_patch->Enable();
-  setSoundFrameTime_patch->Enable();
+  getSoundTime_patch->enable();
+  setSoundFrameTime_patch->enable();
 
   isRendering = true;
 }
 
-void VideoRecordMod::stopRender(const CCommand& c) {
-  getSoundTime_patch->Disable();
-  setSoundFrameTime_patch->Disable();
+void VideoRecordMod::stop_render(const CCommand& c) {
+  getSoundTime_patch->disable();
+  setSoundFrameTime_patch->disable();
 
   isRendering = false;
 }
 
 VideoRecordMod::VideoRecordMod()
-    : pe_render_start_cbk([&](auto c) { startRender(c); }),
-      pe_render_stop_cbk([&](auto c) { stopRender(c); }),
+    : pe_render_start_cbk([&](auto c) { start_render(c); }),
+      pe_render_stop_cbk([&](auto c) { stop_render(c); }),
       pe_render_start("pe_render_stop", &pe_render_stop_cbk),
       pe_render_stop("pe_render_start", &pe_render_start_cbk) {
   snd_vol = offsets::SND_G_VOL;
   snd_p = offsets::SND_G_P;
   snd_linear_count = offsets::SND_G_LINEAR_COUNT;
 
-  initRenderTexture();
+  init_render_texture();
 
   getSoundTime_patch = std::make_unique<X86Patcher>(
       offsets::GetSoundTime + 0x69, 2,
@@ -129,11 +129,11 @@ VideoRecordMod::VideoRecordMod()
 
   scr_updateScreen_hook = std::make_unique<AttachmentHookLeave>(
       offsets::SCR_UpdateScreen,
-      [this](InvocationContext) { renderVideoFrame(); });
+      [this](InvocationContext) { render_video_frame(); });
 
   snd_recordBuffer_hook = std::make_unique<AttachmentHookLeave>(
       offsets::SND_RecordBuffer,
-      [this](InvocationContext) { renderAudioFrame(); });
+      [this](InvocationContext) { render_audio_frame(); });
 }
 VideoRecordMod::~VideoRecordMod() {}
 

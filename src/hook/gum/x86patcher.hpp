@@ -15,8 +15,8 @@ class X86Patcher {
              bool enable = true);
   ~X86Patcher();
 
-  void Enable();
-  void Disable();
+  void enable();
+  void disable();
 
  private:
   struct callback_data_t {
@@ -27,5 +27,5 @@ class X86Patcher {
   } callback_data{};
 
   uint8_t* original_code;
-  bool isEnabled;
+  bool is_enabled;
 };
