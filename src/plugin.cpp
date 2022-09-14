@@ -1,5 +1,6 @@
 #include <convar.h>
 #include <interface.h>
+#include <unistd.h>
 #include <memory>
 
 #include "clientclasses.hpp"
@@ -14,6 +15,10 @@ std::unique_ptr<Gum::Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
+  // lolololololol
+  printf("Waiting to attach BIG CHUNGUS!\n");
+  sleep(3);
+
   gum_init_embedded();
   Interfaces::Load(interfaceFactory);
 

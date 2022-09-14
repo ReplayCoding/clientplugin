@@ -23,7 +23,7 @@ endif()
 target_compile_options(
   clientplugin PRIVATE
   -Wall -Wextra -Wpedantic -Werror
-  -Wno-vla
+  -Wno-vla # this is stupid
 )
 
 target_include_directories(
