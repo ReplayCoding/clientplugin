@@ -11,8 +11,8 @@
 #include <string_view>
 
 #include "rtti.hpp"
+#include "util/data_view.hpp"
 #include "util/error.hpp"
-#include "util/leb128.h"
 #include "util/mmap.hpp"
 
 GElf_Addr ElfModuleRttiDumper::calculate_offline_baseaddr() {
@@ -92,20 +92,19 @@ void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
 
 void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
                                           const std::uintptr_t end_address) {
-  auto current_address{start_address};
-  while (current_address < end_address) {
+  DataView fde_data{start_address};
+  while (fde_data.data_pointer() < end_address) {
     // A 4 byte unsigned value indicating the length in bytes of the CIE
     // structure, not including the Length field itself
-    const uint32_t length = *(reinterpret_cast<uint32_t*>(current_address));
-    current_address += sizeof(uint32_t);
+    const uint32_t length = fde_data.read_u32();
 
     // This can happen due to section padding
-    if (current_address >= end_address || length == 0)
+    if (fde_data.data_pointer() >= end_address || length == 0)
       break;
 
     // Do this after incrementing current_address, so we exclude the length
     // pointer.
-    const auto next_record_address = current_address + length;
+    const auto next_record_address = fde_data.data_pointer() + length;
 
     // If Length contains the value 0xffffffff, then the length is contained in
     // the Extended Length field.
@@ -116,9 +115,7 @@ void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
     // If it's nonzero, it's a value that when subtracted from the offset
     // of the CIE Pointer in the current FDE yields the offset of the
     // start of the associated CIE.
-    uint32_t cie_id_or_cie_offset =
-        *(reinterpret_cast<uint32_t*>(current_address));
-    current_address += sizeof(uint32_t);
+    uint32_t cie_id_or_cie_offset = fde_data.read_u32();
 
     // // If this is zero, it's a CIE, otherwise it's an FDE
     if (cie_id_or_cie_offset == 0) {
@@ -128,68 +125,40 @@ void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
       // Pointer in the current FDE yields the offset of the start of the
       // associated CIE.
       const auto cie_pointer =
-          current_address - cie_id_or_cie_offset -
+          fde_data.data_pointer() - cie_id_or_cie_offset -
           sizeof(uint32_t);  // We need to subtract the sizeof because it's
-                             // added in the lines above
-      auto current_cie_address{cie_pointer};
+                             // added when grabbing the offset
+      DataView cie_data{cie_pointer};
 
-      uint32_t cie_length = *(reinterpret_cast<uint32_t*>(current_cie_address));
-      current_cie_address += sizeof(uint32_t);
+      uint32_t cie_length = cie_data.read_u32();
 
       // If Length contains the value 0xffffffff, then the length is
       // contained in the Extended Length field.
       if (cie_length == UINT32_MAX)
         throw StringError("TODO");
 
-      const uint32_t cie_id =
-          *(reinterpret_cast<uint32_t*>(current_cie_address));
-      current_cie_address += sizeof(uint32_t);
+      const uint32_t cie_id = cie_data.read_u32();
 
       // Make sure this is a CIE
       if (cie_id != 0)
         throw StringError("CIE ID is {}, not 0 (@ {:08X}, start {:08X})",
-                          cie_id, current_cie_address - sizeof(uint32_t),
+                          cie_id, cie_data.data_pointer() - sizeof(uint32_t),
                           cie_pointer);
 
-      const uint8_t cie_version =
-          *(reinterpret_cast<uint8_t*>(current_cie_address));
-      current_cie_address += sizeof(uint8_t);
+      const uint8_t cie_version = cie_data.read_u8();
 
       if (cie_version != 1)
         throw StringError("CIE version is {}, not 1 (@ {:08X})", cie_version,
-                          current_cie_address);
+                          cie_data.data_pointer());
 
-      const char* cie_augmentation_string_raw =
-          reinterpret_cast<char*>(current_cie_address);
-      current_cie_address +=
-          strlen(cie_augmentation_string_raw) + 1 /* null byte */;
+      const std::string_view cie_augmentation_string = cie_data.read_string();
 
-      const std::string_view cie_augmentation_string{
-          cie_augmentation_string_raw};
+      auto cie_code_alignment_factor = cie_data.read_uleb128();
+      auto cie_data_alignment_factor = cie_data.read_sleb128();
 
-      const char* leb_error{};
-
-      unsigned caf_leb_size{};
-      auto cie_code_alignment_factor =
-          decodeULEB128(reinterpret_cast<uint8_t*>(current_cie_address),
-                        &caf_leb_size, nullptr, &leb_error);
-      if (leb_error != nullptr)
-        throw StringError("Error while decoding CAF: {}", leb_error);
-      current_cie_address += caf_leb_size;
-
-      unsigned daf_leb_size{};
-      auto cie_data_alignment_factor =
-          decodeSLEB128(reinterpret_cast<uint8_t*>(current_cie_address),
-                        &daf_leb_size, nullptr, &leb_error);
-      if (leb_error != nullptr)
-        throw StringError("Error while decoding DAF: {}", leb_error);
-      current_cie_address += daf_leb_size;
-
-      // I want to fucking strangle whoever put this in but didn't add
-      // documentation for it
-      // uint8_t return_address_register =
-      //     *(reinterpret_cast<uint8_t*>(current_cie_address));
-      current_cie_address += sizeof(uint8_t);
+      // I want to fucking strangle whoever put the return address register
+      // field in but didn't add documentation for it
+      cie_data.read_u8();  // unused
 
       // This field is only present if the Augmentation String contains the
       // character 'z'.
@@ -198,37 +167,53 @@ void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
       // A 'z' may be present as the first character of the string. If present,
       // the Augmentation Data field shall be present.
       if (cie_augmentation_string[0] == 'z') {
-        unsigned auglen_leb_size{};
-        cie_augmentation_length =
-            decodeSLEB128(reinterpret_cast<uint8_t*>(current_cie_address),
-                          &auglen_leb_size, nullptr, &leb_error);
-        if (leb_error != nullptr)
-          throw StringError("Error while decoding augmentaion length: {}",
-                            leb_error);
-        current_cie_address += auglen_leb_size;
+        cie_augmentation_length = cie_data.read_uleb128();
+
+        uint8_t fde_pointer_encoding{};
+        for (const auto augmentation : cie_augmentation_string) {
+          switch (augmentation) {
+            case 'z': {
+              // Already handled above
+              break;
+            }
+            case 'R': {
+              fde_pointer_encoding = cie_data.read_u8();
+              fmt::print("poooooo: {:X}\n", fde_pointer_encoding);
+              break;
+            }
+            case 'P': {
+              break;
+            }
+            default: {
+              throw StringError("Unknown augmentation '{}'", augmentation);
+              break;
+            }
+          }
+        }
       }
 
       fmt::print(
           "BLAH: {:08X} = {:X} ({:08X})\n"
           "\t(cie aug str is {}, CAF is {}, DAF is {})\n"
           "\taugmentation length: {}\n",
-          current_address, cie_id_or_cie_offset, cie_pointer,
+          fde_data.data_pointer(), cie_id_or_cie_offset, cie_pointer,
           cie_augmentation_string, cie_code_alignment_factor,
           cie_data_alignment_factor, cie_augmentation_length);
     }
 
     // We don't parse the entire structure, but if we overflow into the next
     // record, something is wrong
-    if (current_address >= next_record_address) {
+    if (fde_data.data_pointer() >= next_record_address) {
       throw StringError(
-          "current_address ({:08X}) is more than next_record_address ({:08X})",
-          current_address, next_record_address);
+          "fde data pointer ({:08X}) is more than next_record_address ({:08X})",
+          fde_data.data_pointer(), next_record_address);
     };
-    current_address = next_record_address;
+    fde_data.set_data_pointer(next_record_address);
 
     // Both CIEs and FDEs shall be aligned to an addressing unit sized boundary.
-    while ((current_address % sizeof(void*)) != 0)
-      current_address++;
+    while ((fde_data.data_pointer() % sizeof(void*)) != 0)
+      // ugh
+      fde_data.set_data_pointer(fde_data.data_pointer() + 1);
   }
 }
 
@@ -286,7 +271,6 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
 
       fmt::print("{}: {:08X} ({:08X}) [offline start: {:08X}]\n", path,
                  eh_frame_address, eh_frame_end_addr, hdr.sh_addr);
-      // HACK
       if (path.ends_with("hl2_linux"))
         handle_eh_frame(eh_frame_address, eh_frame_end_addr);
     }
@@ -319,6 +303,7 @@ void LoadRtti() {
               "while handling module {}:\n"
               "\t{}\n",
               details->name, e.what());
+          throw;
         };
         // this is stupid
         return 1;

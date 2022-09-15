@@ -52,7 +52,7 @@ void VideoRecordMod::render_video_frame() {
   if (gotPlayerView) {
     Interfaces::ClientDll->RenderView(viewSetup,
                                       VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH,
-                                      RENDERVIEW_DRAWVIEWMODEL | RENDERVIEW_DRAWHUD /* This seems to be broken when the menu is up */);
+                                      RENDERVIEW_DRAWVIEWMODEL);
   } else {
     throw StringError("Couldn't obtain player view? Whats going on!");
   };
