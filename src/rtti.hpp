@@ -29,6 +29,12 @@ class ElfModuleRttiDumper {
   std::uintptr_t get_online_address_from_offline(GElf_Addr offline_addr);
 
   void handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr);
+
+  struct cie_info_t {
+    uint8_t fde_pointer_encoding;
+  };
+
+  cie_info_t handle_cie(const std::uintptr_t cie_address);
   void handle_eh_frame(const std::uintptr_t start_address,
                        const std::uintptr_t end_address);
 };
