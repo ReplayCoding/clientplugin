@@ -29,8 +29,8 @@ X264Encoder::X264Encoder(int width,
   param.b_vfr_input = 0;
 
   param.i_log_level = X264_LOG_DEBUG;
-  // The engine gets really unstable with this any higher, and if its too high,
-  // we run out of memory.
+
+  // The engine gets really unstable with this any higher.
   param.i_threads = 1;
 
   if (x264_param_apply_profile(&param, "high444") < 0) {
@@ -53,8 +53,7 @@ X264Encoder::~X264Encoder() noexcept(false) {
     actually_encode_frame(nullptr);
   }
 
-  // WHAT THE FUCK IT CRASHES MY ASS
-  // this is a memory leak. deal with it
+  // this is a memory leak. deal with it.
   // x264_picture_clean(&pic_in);
 
   x264_encoder_close(encoder);
@@ -77,5 +76,6 @@ void X264Encoder::actually_encode_frame(x264_picture_t* _pic_in) {
 void X264Encoder::encode_frame(uint8_t* input_buf) {
   pic_in.img.plane[0] = input_buf;
   pic_in.i_pts = current_frame++;
+
   actually_encode_frame(&pic_in);
 }

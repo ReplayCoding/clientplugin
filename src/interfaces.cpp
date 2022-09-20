@@ -30,10 +30,10 @@ namespace Interfaces {
         factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
     Interfaces::EngineClientReplay = static_cast<IEngineClientReplay*>(
         factory(ENGINE_REPLAY_CLIENT_INTERFACE_VERSION, nullptr));
-    Interfaces::EngineTool =
-        (IEngineTool*)factory(VENGINETOOL_INTERFACE_VERSION, nullptr);
-    Interfaces::MaterialSystem =
-        (IMaterialSystem*)factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr);
+    Interfaces::EngineTool = static_cast<IEngineTool*>(
+        factory(VENGINETOOL_INTERFACE_VERSION, nullptr));
+    Interfaces::MaterialSystem = static_cast<IMaterialSystem*>(
+        factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr));
 
     CreateInterfaceFn gameClientFactory;
     EngineTool->GetClientFactory(gameClientFactory);
@@ -43,13 +43,6 @@ namespace Interfaces {
   }
 
   void Unload() {
-    Interfaces::EngineClient = nullptr;
-    Interfaces::GameEventManager = nullptr;
-    Interfaces::EngineClientReplay = nullptr;
-    Interfaces::EngineTool = nullptr;
-    Interfaces::ClientDll = nullptr;
-    Interfaces::MaterialSystem = nullptr;
-
     DisconnectTier3Libraries();
     DisconnectTier2Libraries();
     ConVar_Unregister();

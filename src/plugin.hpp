@@ -1,7 +1,6 @@
 #pragma once
 #include <edict.h>
 #include <engine/iserverplugin.h>
-#include <frida-gum.h>
 #include <igameevents.h>
 #include <interface.h>
 #include <memory>

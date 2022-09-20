@@ -12,20 +12,23 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
-  ImGui_ImplSDL2_InitForOpenGL(window, ourContext);
+  ImGui_ImplSDL2_InitForOpenGL(window, our_context);
   ImGui_ImplOpenGL3_Init();
 }
 
 void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   auto window = context.get_arg<SDL_Window*>(0);
-  auto theirContext = SDL_GL_GetCurrentContext();
-  if (!haveWeInitedUI) {
-    ourContext = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, ourContext);
+  auto their_context = SDL_GL_GetCurrentContext();
+
+  if (!have_we_inited_ui) {
+    our_context = SDL_GL_CreateContext(window);
+
+    SDL_GL_MakeCurrent(window, our_context);
     init_imgui(window);
-    haveWeInitedUI = true;
+
+    have_we_inited_ui = true;
   } else {
-    SDL_GL_MakeCurrent(window, ourContext);
+    SDL_GL_MakeCurrent(window, our_context);
   };
 
   ImGuiIO& io = ImGui::GetIO();
@@ -34,11 +37,12 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   ImGui_ImplSDL2_NewFrame();
   ImGui::NewFrame();
 
-  /* BEGIN DRAWING */
+  /* Begin drawing, this is just a test of imgui currently */
   ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
       ImGuiWindowFlags_NoNav;
+
   if (corner != -1) {
     const float PAD = 10.0f;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -55,20 +59,23 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
     window_flags |= ImGuiWindowFlags_NoMove;
   }
+
   ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
   if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags)) {
     ImGui::Text(
         "Simple overlay\n"
         "in the corner of the screen.\n");
   }
+
   ImGui::End();
-  /* END DRAWING */
+  /* End drawing */
 
   ImGui::Render();
-  glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+  glViewport(0, 0, static_cast<int>(io.DisplaySize.x),
+             static_cast<int>(io.DisplaySize.y));
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-  SDL_GL_MakeCurrent(window, theirContext);
+  SDL_GL_MakeCurrent(window, their_context);
 }
 
 GfxOverlayMod::GfxOverlayMod() {
@@ -77,14 +84,12 @@ GfxOverlayMod::GfxOverlayMod() {
   sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
       reinterpret_cast<std::uintptr_t>(SDL_GL_SwapWindow),
       [this](auto context) { SDL_GL_SwapWindow_handler(context); });
-  // g_Interceptor->attach(reinterpret_cast<void*>(SDL_PollEvent), this,
-  //                       reinterpret_cast<void*>(HookType::SDL_PollEvent));
 }
 GfxOverlayMod::~GfxOverlayMod() {
   sdl_gl_swapWindow_hook.reset();
   // Do this AFTER we detach to avoid it being called with a deleted
   // context
-  SDL_GL_DeleteContext(ourContext);
+  SDL_GL_DeleteContext(our_context);
 }
 
 REGISTER_MODULE(GfxOverlayMod)

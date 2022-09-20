@@ -7,7 +7,7 @@ class GumObjectWrapper {
     if (obtain_ref)
       gum_object_ref(obj);
   };
-  ~GumObjectWrapper() { gum_object_unref(obj); };
+  virtual ~GumObjectWrapper() { gum_object_unref(obj); };
 
  protected:
   T* get_obj() { return obj; };

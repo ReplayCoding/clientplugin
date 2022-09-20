@@ -15,7 +15,7 @@ std::unique_ptr<Gum::Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
-  // lolololololol
+  // FIXME: This is terrible
   printf("Waiting to attach BIG CHUNGUS!\n");
   sleep(3);
 
@@ -38,8 +38,6 @@ void ServerPlugin::Unload(void) {
   // Is this really really stupid? Yes.
   // (TLDR: Reset all hooks in here, or else they will be freed in a library
   // destructor, which will crash)
-  //
-  // Also REMEMBER TO *NOT* FREE INTERFACES YOU FUCKING MORON!
 
   module_manager.reset();
   client_class_manager.reset();

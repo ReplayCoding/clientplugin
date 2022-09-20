@@ -10,8 +10,6 @@
 #include "clientclasses.hpp"
 #include "interfaces.hpp"
 
-// This code was written by me, myself, and noone else.
-
 std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
     RecvTable* tbl) {
   std::vector<clientclasses::ClientProp> props;
@@ -24,9 +22,10 @@ std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
       auto parsed_subtable = parse_tbl(subtable);
 
       for (const auto subprop : parsed_subtable) {
-        const auto subprop_fixed =
-            ClientProp(std::string(subtable->GetName()) + "::" + subprop.name,
-                       prop->GetOffset() + subprop.offset, subprop.type);
+        const auto subprop_name =
+            fmt::format("{}::{}", subtable->GetName(), subprop.name);
+        const auto subprop_fixed = ClientProp(
+            subprop_name, prop->GetOffset() + subprop.offset, subprop.type);
 
         props.emplace_back(subprop_fixed);
       };

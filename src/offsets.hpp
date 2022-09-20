@@ -4,7 +4,6 @@
 
 namespace offsets {
 
-  // UGLY HACK
   class ManualOffset {
    public:
     ManualOffset() = default;
@@ -25,7 +24,7 @@ namespace offsets {
 
     const std::uintptr_t manual_address{};
   };
-  // UGH
+
   using Offset = ManualOffset;
 
   class SharedLibOffset : public ManualOffset {

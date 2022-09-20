@@ -17,10 +17,6 @@ add_library(
   hook/gum/x86patcher.cpp
 )
 
-if (CMAKE_BUILD_TYPE MATCHES Release)
-  target_precompile_headers(clientplugin PRIVATE pch.hpp)
-endif()
-
 target_compile_options(
   clientplugin PRIVATE
   -Wall -Wextra -Wpedantic -Werror
@@ -42,7 +38,8 @@ pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
 pkg_check_modules(elfutils REQUIRED IMPORTED_TARGET libelf)
 
 find_package(SDL2 REQUIRED)
-# fmt as a lib is fucked. make sure to catch errors like this BEFORE we run
+
+# using fmt as a library is broken. make sure to catch errors like this BEFORE we run
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
   clientplugin PRIVATE

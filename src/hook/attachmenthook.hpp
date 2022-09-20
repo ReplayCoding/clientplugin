@@ -39,22 +39,24 @@ class InvocationContext {
   GumInvocationContext* context;
 };
 
-// POLYMORPHISM BE DAMNED
-
 using attachment_hook_func_t = std::function<void(InvocationContext)>;
+
 // Internal utility class
 class _CallAttachmentHook : private Gum::CallListener {
  public:
   _CallAttachmentHook(const offsets::Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
+
   ~_CallAttachmentHook() { g_Interceptor->detach(this); }
 };
+
 class _ProbeAttachmentHook : private Gum::ProbeListener {
  public:
   _ProbeAttachmentHook(const offsets::Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
+
   ~_ProbeAttachmentHook() { g_Interceptor->detach(this); }
 };
 
@@ -68,6 +70,7 @@ class AttachmentHookEnter : public _ProbeAttachmentHook {
   void on_hit(GumInvocationContext* ctx) override {
     func(InvocationContext(ctx));
   }
+
   attachment_hook_func_t func;
 };
 
@@ -82,6 +85,7 @@ class AttachmentHookLeave : public _CallAttachmentHook {
   void on_leave(GumInvocationContext* ctx) override {
     func(InvocationContext(ctx));
   }
+
   attachment_hook_func_t func;
 };
 
@@ -98,9 +102,11 @@ class AttachmentHookBoth : public _CallAttachmentHook {
   void on_enter(GumInvocationContext* ctx) override {
     enter_func(InvocationContext(ctx));
   }
+
   void on_leave(GumInvocationContext* ctx) override {
     leave_func(InvocationContext(ctx));
   }
+
   attachment_hook_func_t enter_func;
   attachment_hook_func_t leave_func;
 };

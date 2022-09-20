@@ -12,8 +12,8 @@ class GfxOverlayMod : public IModule {
  private:
   // Needed because we can't setup ourContext in the constructor, as we would
   // need the window
-  bool haveWeInitedUI = false;
-  SDL_GLContext ourContext;
+  bool have_we_inited_ui = false;
+  SDL_GLContext our_context;
 
   int corner = 0;
   std::unique_ptr<AttachmentHookEnter> sdl_gl_swapWindow_hook;

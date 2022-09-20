@@ -30,7 +30,6 @@ void VideoRecordMod::render_audio_frame() {
   for (auto i = 0; i < (*snd_linear_count); i++) {
     auto sample = ((*snd_p)[i] * (*snd_vol)) >> 8;
 
-    // Thank fucking god the AM SDK exists
     clipped_samples[i] = std::clamp(sample, -0x7fff, 0x7fff);
   };
 

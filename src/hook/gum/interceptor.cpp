@@ -10,7 +10,7 @@ namespace Gum {
   ProbeListener::ProbeListener()
       : GumObjectWrapper(gum_make_probe_listener(on_hit_wrapper, this, nullptr),
                          true) {}
-  ProbeListener::~ProbeListener() {}
+
   GumInvocationListener* ProbeListener::get_listener() {
     return get_obj();
   }
@@ -27,7 +27,7 @@ namespace Gum {
                                                 this,
                                                 nullptr),
                          true) {}
-  CallListener::~CallListener() {}
+
   GumInvocationListener* CallListener::get_listener() {
     return get_obj();
   }
@@ -46,6 +46,7 @@ namespace Gum {
   // Interceptor
   Interceptor::Interceptor()
       : GumObjectWrapper(gum_interceptor_obtain(), false) {}
+
   Interceptor::~Interceptor() {
     for (auto& listener : call_listeners) {
       detach(listener);
@@ -81,6 +82,7 @@ namespace Gum {
     probe_listeners.insert(listener);
     return retval;
   }
+
   void Interceptor::detach(ProbeListener* listener) {
     gum_interceptor_detach(get_obj(), listener->get_listener());
   }
@@ -93,6 +95,7 @@ namespace Gum {
                                    reinterpret_cast<void*>(replacement_address),
                                    user_data);
   }
+
   void Interceptor::revert(const std::uintptr_t address) {
     gum_interceptor_revert(get_obj(), reinterpret_cast<void*>(address));
   }

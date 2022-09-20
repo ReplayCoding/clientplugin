@@ -10,7 +10,6 @@ namespace Gum {
   class ProbeListener : public GumObjectWrapper<GumInvocationListener> {
    public:
     ProbeListener();
-    virtual ~ProbeListener();
     GumInvocationListener* get_listener();
 
     virtual void on_hit(GumInvocationContext* context) = 0;
@@ -22,7 +21,6 @@ namespace Gum {
   class CallListener : public GumObjectWrapper<GumInvocationListener> {
    public:
     CallListener();
-    virtual ~CallListener();
     GumInvocationListener* get_listener();
 
     virtual void on_enter(GumInvocationContext* context) = 0;

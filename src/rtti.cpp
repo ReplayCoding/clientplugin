@@ -121,8 +121,7 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
   /* auto cie_code_alignment_factor =  */ cie_data.read_uleb128();
   /* auto cie_data_alignment_factor =  */ cie_data.read_sleb128();
 
-  // I want to fucking strangle whoever put this field in but didn't add
-  // documentation for it
+  // Really nice of them to not document this field
   /* uint8_t return_address_register =  */ cie_data.read<uint8_t>();
 
   // A 'z' may be present as the first character of the string. If present,
