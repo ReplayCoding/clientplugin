@@ -168,11 +168,12 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
 
-DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
+std::unique_ptr<DataRangeChecker> ElfModuleRttiDumper::handle_eh_frame(
     const std::uintptr_t start_address,
     const std::uintptr_t end_address) {
   // Ugly name, but we need to do this to avoid conflicts
-  DataRangeChecker _function_ranges_to_return{};
+  auto _function_ranges_to_return =
+      std::make_unique<DataRangeChecker>(online_baseaddr);
   DataView fde_data{start_address};
 
   while (fde_data.data_ptr < end_address) {
@@ -219,7 +220,7 @@ DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
       }
 
       std::uintptr_t fde_pc_range = fde_data.read<std::uintptr_t>();
-      _function_ranges_to_return.add_range(fde_pc_begin.value(), fde_pc_range);
+      _function_ranges_to_return->add_range(fde_pc_begin.value(), fde_pc_range);
     }
 
     // We don't parse the entire structure, but if we overflow into the next
@@ -291,7 +292,6 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
       std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
 
       _function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
-      _function_ranges.optimise_ranges();
     }
   }
 }
@@ -312,14 +312,14 @@ void LoadRtti() {
           fmt::print("HANDLING {}\n", details->name);
           ElfModuleRttiDumper dumped_rtti{details->path};
           for (const auto& [addr, name] : dumped_rtti.relocations()) {
-            if (name.ends_with("_class_type_infoE") &&
-                dumped_rtti.function_ranges().is_position_in_range(addr)) {
+            if (name.ends_with("_class_type_infoE")) {
               if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
                   name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
                   name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
-                fmt::print("Found reloc: {:08X} -> {} ({})\n",
-                           addr - details->range->base_address, name,
-                           details->name);
+                fmt::print(
+                    "Found reloc: {:08X} -> {} ({}) [is code? {}]\n",
+                    addr - details->range->base_address, name, details->name,
+                    dumped_rtti.function_ranges()->is_position_in_range(addr));
               }
             }
           }

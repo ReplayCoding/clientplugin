@@ -27,8 +27,9 @@ class ElfModuleRttiDumper {
 
   cie_info_t handle_cie(const std::uintptr_t cie_address);
 
-  DataRangeChecker handle_eh_frame(const std::uintptr_t start_address,
-                                   const std::uintptr_t end_address);
+  std::unique_ptr<DataRangeChecker> handle_eh_frame(
+      const std::uintptr_t start_address,
+      const std::uintptr_t end_address);
 
   // keep this in memory until we free elf
   std::unique_ptr<MemoryMappedFile> mapped_file{};
@@ -40,7 +41,8 @@ class ElfModuleRttiDumper {
   size_t online_baseaddr{};
 
   std::map<std::uintptr_t, std::string> _relocations{};
-  DataRangeChecker _function_ranges;
+  // NOTE: needs to be on the heap, as it will easily overflow the stack
+  std::unique_ptr<DataRangeChecker> _function_ranges;
 };
 
 void LoadRtti();
