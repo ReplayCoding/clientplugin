@@ -8,6 +8,7 @@ add_library(
   rtti.cpp
   x264encoder.cpp
   util/mmap.cpp
+  util/data_range_checker.cpp
   modules/modules.cpp
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp

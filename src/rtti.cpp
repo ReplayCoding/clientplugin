@@ -9,8 +9,11 @@
 #include <chrono>
 #include <cstdint>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "rtti.hpp"
+#include "util/data_range_checker.hpp"
 #include "util/data_view.hpp"
 #include "util/error.hpp"
 #include "util/mmap.hpp"
@@ -30,8 +33,7 @@ GElf_Addr ElfModuleRttiDumper::calculate_offline_baseaddr() {
     }
   }
 
-  // We failed to find a base address for this binary
-  throw StringError("Failed to find base address");
+  throw StringError("failed to find base address");
 }
 
 std::uintptr_t ElfModuleRttiDumper::get_online_address_from_offline(
@@ -73,12 +75,12 @@ void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
       GElf_Sym symbol;
       if (gelf_getsymshndx(symbol_section_data, nullptr, GELF_R_SYM(rel.r_info),
                            &symbol, nullptr) == nullptr)
-        throw StringError("Failed to get symbol index for reloc: {}", relidx);
+        throw StringError("failed to get symbol index for reloc: {}", relidx);
 
       auto _symbol_name =
           elf_strptr(elf, symbol_section_header.sh_link, symbol.st_name);
       if (_symbol_name == nullptr)
-        throw StringError("Failed to get symbol name");
+        throw StringError("failed to get symbol name");
 
       // Clone this so we can store it
       std::string symbol_name{_symbol_name};
@@ -121,7 +123,7 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
 
   // I want to fucking strangle whoever put this field in but didn't add
   // documentation for it
-  /* uint8_t return_address_register =  */ cie_data.read<uint8_t>();  // unused
+  /* uint8_t return_address_register =  */ cie_data.read<uint8_t>();
 
   // A 'z' may be present as the first character of the string. If present,
   // the Augmentation Data field shall be present.
@@ -165,9 +167,14 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
 
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
-void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
-                                          const std::uintptr_t end_address) {
+
+DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
+    const std::uintptr_t start_address,
+    const std::uintptr_t end_address) {
+  // Ugly name, but we need to do this to avoid conflicts
+  DataRangeChecker _function_ranges_to_return{};
   DataView fde_data{start_address};
+
   while (fde_data.data_ptr < end_address) {
     // A 4 byte unsigned value indicating the length in bytes of the CIE
     // structure, not including the Length field itself
@@ -202,18 +209,17 @@ void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
       const auto cie_pointer =
           fde_data.data_ptr - cie_id_or_cie_offset -
           sizeof(uint32_t);  // We need to subtract the sizeof because it's
-                             // added when grabbing the offset
+                             // added when grabbing the CIE offset
       const auto cie_data = handle_cie(cie_pointer);
 
-      if (auto fde_pointer =
-              fde_data.read_dwarf_encoded(cie_data.fde_pointer_encoding)) {
-        fmt::print("PCBEGIN: {:08X}\n", fde_pointer.value());
-      } else {
+      std::optional<std::uintptr_t> fde_pc_begin =
+          fde_data.read_dwarf_encoded(cie_data.fde_pointer_encoding);
+      if (!fde_pc_begin) {
         throw StringError("PC Begin required, but not provided");
       }
 
-      auto fde_pc_range = fde_data.read<std::uintptr_t>();
-      fmt::print("PCRANGE: {:X}\n", fde_pc_range);
+      std::uintptr_t fde_pc_range = fde_data.read<std::uintptr_t>();
+      _function_ranges_to_return.add_range(fde_pc_begin.value(), fde_pc_range);
     }
 
     // We don't parse the entire structure, but if we overflow into the next
@@ -229,6 +235,8 @@ void ElfModuleRttiDumper::handle_eh_frame(const std::uintptr_t start_address,
     while ((fde_data.data_ptr % sizeof(void*)) != 0)
       fde_data.data_ptr += 1;
   }
+
+  return _function_ranges_to_return;
 }
 
 ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
@@ -278,14 +286,12 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
       handle_relocations(cur_scn, &hdr);
     }
 
-    // FIXME
     if (section_name == ".eh_frame") {
       auto eh_frame_address = get_online_address_from_offline(hdr.sh_addr);
       std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
 
-      fmt::print("{}: {:08X} ({:08X}) [offline start: {:08X}]\n", path,
-                 eh_frame_address, eh_frame_end_addr, hdr.sh_addr);
-      handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+      _function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+      _function_ranges.optimise_ranges();
     }
   }
 }
@@ -293,34 +299,41 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
 void LoadRtti() {
   elf_version(EV_CURRENT);
   auto start_time = std::chrono::high_resolution_clock::now();
+
   gum_process_enumerate_modules(
+      // This uses a gboolean, so we need to return `1` instead of `true`.
       [](const GumModuleDetails* details, void* user_data) {
         // ignore vdso
-        constexpr std::string_view vdso_path = "linux-vdso.so.1";
-        if (vdso_path == details->name)
+        constexpr auto vdso_path = "linux-vdso.so.1";
+        if (std::string_view(details->name) == vdso_path)
           return 1;
 
         try {
+          fmt::print("HANDLING {}\n", details->name);
           ElfModuleRttiDumper dumped_rtti{details->path};
-          // for (const auto& [addr, name] : dumped_rtti.relocations()) {
-          //   if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
-          //       name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
-          //       name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
-          //     fmt::print("Found reloc: {:08X} -> {} ({})\n",
-          //                addr - details->range->base_address, name,
-          //                details->name);
-          //   }
-          // }
+          for (const auto& [addr, name] : dumped_rtti.relocations()) {
+            if (name.ends_with("_class_type_infoE") &&
+                dumped_rtti.function_ranges().is_position_in_range(addr)) {
+              if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
+                  name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
+                  name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
+                fmt::print("Found reloc: {:08X} -> {} ({})\n",
+                           addr - details->range->base_address, name,
+                           details->name);
+              }
+            }
+          }
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"
               "\t{}\n",
               details->name, e.what());
         };
-        // this is stupid
+
         return 1;
       },
       nullptr);
+
   auto duration = std::chrono::high_resolution_clock::now() - start_time;
   fmt::print("Handling modules took {}\n",
              std::chrono::duration_cast<std::chrono::milliseconds>(duration));
