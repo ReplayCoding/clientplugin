@@ -87,7 +87,7 @@ void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
       std::uintptr_t online_reladdress =
           get_online_address_from_offline(rel.r_offset);
 
-      _relocations[online_reladdress] = symbol_name;
+      relocations[online_reladdress] = symbol_name;
     }
   }
 }
@@ -167,12 +167,11 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
 
-std::unique_ptr<DataRangeChecker> ElfModuleRttiDumper::handle_eh_frame(
+DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
     const std::uintptr_t start_address,
     const std::uintptr_t end_address) {
   // Ugly name, but we need to do this to avoid conflicts
-  auto _function_ranges_to_return =
-      std::make_unique<DataRangeChecker>(online_baseaddr);
+  auto function_ranges_to_return = DataRangeChecker(online_baseaddr);
   DataView fde_data{start_address};
 
   while (fde_data.data_ptr < end_address) {
@@ -219,7 +218,7 @@ std::unique_ptr<DataRangeChecker> ElfModuleRttiDumper::handle_eh_frame(
       }
 
       std::uintptr_t fde_pc_range = fde_data.read<std::uintptr_t>();
-      _function_ranges_to_return->add_range(fde_pc_begin.value(), fde_pc_range);
+      function_ranges_to_return.add_range(fde_pc_begin.value(), fde_pc_range);
     }
 
     // We don't parse the entire structure, but if we overflow into the next
@@ -236,7 +235,7 @@ std::unique_ptr<DataRangeChecker> ElfModuleRttiDumper::handle_eh_frame(
       fde_data.data_ptr += 1;
   }
 
-  return _function_ranges_to_return;
+  return function_ranges_to_return;
 }
 
 ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
@@ -290,7 +289,18 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
       auto eh_frame_address = get_online_address_from_offline(hdr.sh_addr);
       std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
 
-      _function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+      function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+    }
+  }
+
+  for (const auto& [addr, name] : relocations) {
+    if (name.ends_with("_class_type_infoE")) {
+      if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
+          name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
+          name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
+        fmt::print("Found reloc: {:08X} -> {} [is code? {}]\n", addr, name,
+                   function_ranges.is_position_in_range(addr));
+      }
     }
   }
 }
@@ -310,18 +320,6 @@ void LoadRtti() {
         try {
           fmt::print("HANDLING {}\n", details->name);
           ElfModuleRttiDumper dumped_rtti{details->path};
-          for (const auto& [addr, name] : dumped_rtti.relocations()) {
-            if (name.ends_with("_class_type_infoE")) {
-              if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
-                  name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
-                  name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
-                fmt::print(
-                    "Found reloc: {:08X} -> {} ({}) [is code? {}]\n",
-                    addr - details->range->base_address, name, details->name,
-                    dumped_rtti.function_ranges()->is_position_in_range(addr));
-              }
-            }
-          }
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"

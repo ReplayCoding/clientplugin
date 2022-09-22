@@ -12,8 +12,6 @@ class ElfModuleRttiDumper {
  public:
   ElfModuleRttiDumper(const std::string details);
   ~ElfModuleRttiDumper() { elf_end(elf); }
-  inline auto& relocations() { return _relocations; }
-  inline auto& function_ranges() { return _function_ranges; }
 
  private:
   struct cie_info_t {
@@ -27,9 +25,8 @@ class ElfModuleRttiDumper {
 
   cie_info_t handle_cie(const std::uintptr_t cie_address);
 
-  std::unique_ptr<DataRangeChecker> handle_eh_frame(
-      const std::uintptr_t start_address,
-      const std::uintptr_t end_address);
+  DataRangeChecker handle_eh_frame(const std::uintptr_t start_address,
+                                   const std::uintptr_t end_address);
 
   // keep this in memory until we free elf
   std::unique_ptr<MemoryMappedFile> mapped_file{};
@@ -40,9 +37,8 @@ class ElfModuleRttiDumper {
   GElf_Addr offline_baseaddr{};
   size_t online_baseaddr{};
 
-  std::map<std::uintptr_t, std::string> _relocations{};
-  // NOTE: needs to be on the heap, as it will easily overflow the stack
-  std::unique_ptr<DataRangeChecker> _function_ranges;
+  std::map<std::uintptr_t, std::string> relocations{};
+  DataRangeChecker function_ranges;
 };
 
 void LoadRtti();
