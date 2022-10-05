@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdint>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -18,7 +19,7 @@
 #include "util/error.hpp"
 #include "util/mmap.hpp"
 
-GElf_Addr ElfModuleRttiDumper::calculate_offline_baseaddr() {
+GElf_Addr ElfModuleVtableDumper::calculate_offline_baseaddr() {
   GElf_Ehdr ehdr;
   gelf_getehdr(elf, &ehdr);
 
@@ -36,12 +37,17 @@ GElf_Addr ElfModuleRttiDumper::calculate_offline_baseaddr() {
   throw StringError("failed to find base address");
 }
 
-std::uintptr_t ElfModuleRttiDumper::get_online_address_from_offline(
+std::uintptr_t ElfModuleVtableDumper::get_online_address_from_offline(
     GElf_Addr offline_addr) {
   return online_baseaddr + (offline_addr - offline_baseaddr);
 }
 
-void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
+std::uintptr_t ElfModuleVtableDumper::get_offline_address_from_online(
+    std::uintptr_t online_addr) {
+  return offline_baseaddr + (online_addr - online_baseaddr);
+}
+
+void ElfModuleVtableDumper::get_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
   // This really really looks like a memory leak :(
   Elf_Data* section_data = elf_getdata(scn, nullptr);
   if (section_data == nullptr) {
@@ -92,7 +98,7 @@ void ElfModuleRttiDumper::handle_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
   }
 }
 
-ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
+ElfModuleVtableDumper::cie_info_t ElfModuleVtableDumper::handle_cie(
     const std::uintptr_t cie_address) {
   DataView cie_data{cie_address};
 
@@ -150,8 +156,8 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
         }
         case 'P': {
           uint8_t pointer_encoding = cie_data.read<uint8_t>();
-          // Theres some unhandled applications, so just skip them as we don't
-          // use the value
+          // There are some unhandled applications, so just skip them as we
+          // don't use the value
           if (!cie_data.read_dwarf_encoded_no_application(pointer_encoding))
             throw StringError("Expected personality routine.");
           break;
@@ -167,7 +173,7 @@ ElfModuleRttiDumper::cie_info_t ElfModuleRttiDumper::handle_cie(
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
 
-DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
+DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     const std::uintptr_t start_address,
     const std::uintptr_t end_address) {
   // Ugly name, but we need to do this to avoid conflicts
@@ -238,7 +244,107 @@ DataRangeChecker ElfModuleRttiDumper::handle_eh_frame(
   return function_ranges_to_return;
 }
 
-ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
+void ElfModuleVtableDumper::generate_data_from_sections() {
+  // if the section is null, we read the first section
+  Elf_Scn* cur_scn = nullptr;
+  DataRangeChecker section_ranges_{online_baseaddr};
+
+  while ((cur_scn = elf_nextscn(elf, cur_scn)) != nullptr) {
+    GElf_Shdr hdr{};
+
+    if (gelf_getshdr(cur_scn, &hdr) == nullptr)
+      throw StringError("Error getting section {}", elf_ndxscn(cur_scn));
+
+    std::string_view section_name =
+        elf_strptr(elf, string_header_index, hdr.sh_name);
+
+    if (hdr.sh_addr != 0)
+      section_ranges_.add_range(get_online_address_from_offline(hdr.sh_addr),
+                                hdr.sh_size);
+
+    if (hdr.sh_type == SHT_REL) {
+      get_relocations(cur_scn, &hdr);
+    }
+
+    if (section_name == ".eh_frame") {
+      auto eh_frame_address = get_online_address_from_offline(hdr.sh_addr);
+      std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
+
+      function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+    }
+  }
+
+  section_ranges = std::move(section_ranges_);
+}
+
+size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
+  const auto start_addr = addr;
+  const auto vtable_type = relocations[addr];
+  addr += 2 * sizeof(void*); /* vtable ptr + name ptr */
+
+  if (vtable_type.ends_with("__si_class_type_infoE")) {
+    addr += sizeof(void*);
+  } else if (vtable_type.ends_with("__vmi_class_type_infoE")) {
+    addr += sizeof(unsigned int);  // __flags
+
+    auto base_count = *reinterpret_cast<unsigned int*>(addr);
+    addr += sizeof(unsigned int);
+
+    for (unsigned int base{0}; base < base_count; base++) {
+      addr += sizeof(void*);
+      addr += sizeof(long);
+    }
+  } else if (vtable_type.ends_with("__class_type_infoE")) {
+    // already handled
+  } else {
+    throw StringError("Unkown RTTI type {}", vtable_type);
+  }
+
+  return addr - start_addr;
+}
+
+void ElfModuleVtableDumper::locate_vtables() {
+  std::unordered_set<std::uintptr_t> instances_of_typeinfo_relocs{};
+  for (const auto& [addr, name] : relocations) {
+    if (name.ends_with("_class_type_infoE"))
+      instances_of_typeinfo_relocs.insert(addr);
+  }
+
+  std::vector<std::uintptr_t> vtable_candidates{};
+  DataRangeChecker typeinfo_ranges{online_baseaddr};
+
+  for (std::uintptr_t addr{online_baseaddr};
+       addr < (online_baseaddr + online_size); addr += sizeof(void*)) {
+    // Is this address even mapped? If not, we would get a segfault
+    if (!section_ranges.is_position_in_range(addr))
+      continue;
+
+    uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
+    if (!function_ranges.is_position_in_range(addr) &&
+        instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
+      auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
+
+      vtable_candidates.push_back(addr);
+      typeinfo_ranges.add_range(potential_typeinfo_addr, typeinfo_size);
+    }
+  }
+
+  for (auto& candidate : vtable_candidates) {
+    // This is a reference inside of a typeinfo graph, not a vtable
+    if (typeinfo_ranges.is_position_in_range(candidate))
+      continue;
+
+    uintptr_t typeinfo_addr = *reinterpret_cast<uintptr_t*>(candidate);
+
+    fmt::print("{:08X} {:08X} {}!\n",
+               get_offline_address_from_online(candidate), typeinfo_addr,
+               *(char**)(typeinfo_addr + 4));
+  }
+}
+
+ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
+                                             size_t baddr,
+                                             size_t size) {
   try {
     mapped_file = std::make_unique<MemoryMappedFile>(path);
   } catch (std::exception& e) {
@@ -247,7 +353,6 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
 
   elf = elf_memory(static_cast<char*>(mapped_file->address()),
                    mapped_file->length());
-  // If we failed to load the file, just continue on
   if (elf == nullptr) {
     throw StringError("note: failed to load module: {}", path);
   };
@@ -257,7 +362,8 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
   };
 
   // Find online & offline load addresses
-  online_baseaddr = gum_module_find_base_address(path.c_str());
+  online_baseaddr = baddr;
+  online_size = size;
   try {
     offline_baseaddr = calculate_offline_baseaddr();
   } catch (std::exception& e) {
@@ -270,39 +376,9 @@ ElfModuleRttiDumper::ElfModuleRttiDumper(const std::string path) {
     throw StringError("WARNING: online_baseaddress is nullptr");
   };
 
-  // if the section is null, we read the first section
-  Elf_Scn* cur_scn = nullptr;
-  while ((cur_scn = elf_nextscn(elf, cur_scn)) != nullptr) {
-    GElf_Shdr hdr{};
-
-    if (gelf_getshdr(cur_scn, &hdr) == nullptr)
-      throw StringError("Error getting section {}", elf_ndxscn(cur_scn));
-
-    std::string_view section_name =
-        elf_strptr(elf, string_header_index, hdr.sh_name);
-
-    if (hdr.sh_type == SHT_REL) {
-      handle_relocations(cur_scn, &hdr);
-    }
-
-    if (section_name == ".eh_frame") {
-      auto eh_frame_address = get_online_address_from_offline(hdr.sh_addr);
-      std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
-
-      function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
-    }
-  }
-
-  for (const auto& [addr, name] : relocations) {
-    if (name.ends_with("_class_type_infoE")) {
-      if (name == "_ZTVN10__cxxabiv117__class_type_infoE" ||
-          name == "_ZTVN10__cxxabiv120__si_class_type_infoE" ||
-          name == "_ZTVN10__cxxabiv121__vmi_class_type_infoE") {
-        fmt::print("Found reloc: {:08X} -> {} [is code? {}]\n", addr, name,
-                   function_ranges.is_position_in_range(addr));
-      }
-    }
-  }
+  generate_data_from_sections();
+  if (path.ends_with("ServerBrowser.so"))
+    locate_vtables();
 }
 
 void LoadRtti() {
@@ -319,7 +395,9 @@ void LoadRtti() {
 
         try {
           fmt::print("HANDLING {}\n", details->name);
-          ElfModuleRttiDumper dumped_rtti{details->path};
+          ElfModuleVtableDumper dumped_rtti{
+              details->path, static_cast<size_t>(details->range->base_address),
+              details->range->size};
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"
