@@ -5,6 +5,7 @@
     "x264",
     "abseil",
     "elfutils",
+    "range-v3",
     {
       "name": "imgui",
       "features": ["sdl2-binding", "opengl3-binding"]

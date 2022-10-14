@@ -34,6 +34,7 @@ find_package(OpenGL REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(absl CONFIG REQUIRED)
+find_package(range-v3 CONFIG REQUIRED)
 pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
 pkg_check_modules(elfutils REQUIRED IMPORTED_TARGET libelf)
 
@@ -56,6 +57,7 @@ target_link_libraries(
   OpenGL::GL
   imgui::imgui
   absl::numeric
+  range-v3::range-v3
 
   frida-gum
 )

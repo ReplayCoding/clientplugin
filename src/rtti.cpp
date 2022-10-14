@@ -5,9 +5,12 @@
 #include <frida-gum.h>
 #include <gelf.h>
 #include <libelf.h>
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <iterator>
+#include <range/v3/all.hpp>
 #include <string_view>
 #include <unordered_set>
 #include <utility>
@@ -310,7 +313,7 @@ void ElfModuleVtableDumper::locate_vtables() {
       instances_of_typeinfo_relocs.insert(addr);
   }
 
-  std::vector<std::uintptr_t> vtable_candidates{};
+  std::vector<std::uintptr_t> vftable_candidates_with_cvtables{};
   DataRangeChecker typeinfo_ranges{online_baseaddr};
 
   for (std::uintptr_t addr{online_baseaddr};
@@ -324,21 +327,48 @@ void ElfModuleVtableDumper::locate_vtables() {
         instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
       auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
 
-      vtable_candidates.push_back(addr);
+      vftable_candidates_with_cvtables.push_back(addr);
       typeinfo_ranges.add_range(potential_typeinfo_addr, typeinfo_size);
     }
   }
 
-  for (auto& candidate : vtable_candidates) {
-    // This is a reference inside of a typeinfo graph, not a vtable
-    if (typeinfo_ranges.is_position_in_range(candidate))
-      continue;
+  vftable_candidates_with_cvtables |=
+      ranges::actions::remove_if([&typeinfo_ranges](auto candidate) {
+        // This is a reference inside of a typeinfo graph, not a vtable
+        return typeinfo_ranges.is_position_in_range(candidate);
+      });
 
+  ranges::sort(vftable_candidates_with_cvtables);
+
+  // Generate a list of constructor vtables, this unfortunately means we lose
+  // some real vtables
+  std::unordered_set<std::uintptr_t> invalid_typeinfo{};
+  std::unordered_set<std::uintptr_t> seen_typeinfo{};
+  std::uintptr_t prev_typeinfo{0};
+
+  for (auto& candidate : vftable_candidates_with_cvtables) {
     uintptr_t typeinfo_addr = *reinterpret_cast<uintptr_t*>(candidate);
 
-    fmt::print("{:08X} {:08X} {}!\n",
-               get_offline_address_from_online(candidate), typeinfo_addr,
-               *(char**)(typeinfo_addr + 4));
+    // Avoid constructor vftables while keeping normal consecutive subtables
+    if ((typeinfo_addr != prev_typeinfo) &&
+        seen_typeinfo.contains(typeinfo_addr)) {
+      invalid_typeinfo.insert(typeinfo_addr);
+    }
+
+    prev_typeinfo = typeinfo_addr;
+    seen_typeinfo.insert(typeinfo_addr);
+  }
+
+  for (auto& vftable : vftable_candidates_with_cvtables) {
+    uintptr_t typeinfo_addr = *reinterpret_cast<uintptr_t*>(vftable);
+    if (invalid_typeinfo.contains(typeinfo_addr))
+      continue;
+
+    std::string_view typeinfo_name =
+        *reinterpret_cast<char**>(typeinfo_addr + 4);
+
+    fmt::print("{:08X} {:08X} {}!\n", get_offline_address_from_online(vftable),
+               typeinfo_addr, typeinfo_name);
   }
 }
 
@@ -377,7 +407,7 @@ ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
   };
 
   generate_data_from_sections();
-  if (path.ends_with("ServerBrowser.so"))
+  if (path.ends_with("engine.so"))
     locate_vtables();
 }
 
