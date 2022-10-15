@@ -136,4 +136,4 @@ VideoRecordMod::VideoRecordMod()
 }
 VideoRecordMod::~VideoRecordMod() {}
 
-REGISTER_MODULE(VideoRecordMod)
+// REGISTER_MODULE(VideoRecordMod)

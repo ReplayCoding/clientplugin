@@ -14,6 +14,8 @@ class ElfModuleVtableDumper {
   ElfModuleVtableDumper(const std::string path, size_t baddr, size_t size);
   ~ElfModuleVtableDumper() { elf_end(elf); }
 
+  std::map<std::string, std::vector<std::uintptr_t>> get_vtables();
+
  private:
   struct cie_info_t {
     uint8_t fde_pointer_encoding;
@@ -33,7 +35,8 @@ class ElfModuleVtableDumper {
                                    const std::uintptr_t end_address);
 
   size_t get_typeinfo_size(std::uintptr_t size);
-  void locate_vtables();
+
+  std::vector<std::uintptr_t> locate_vftables();
 
   // keep this in memory until we free elf
   std::unique_ptr<MemoryMappedFile> mapped_file{};

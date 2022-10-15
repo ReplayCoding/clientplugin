@@ -306,14 +306,18 @@ size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
   return addr - start_addr;
 }
 
-void ElfModuleVtableDumper::locate_vtables() {
+std::uintptr_t get_typeinfo_addr(std::uintptr_t v) {
+  return *reinterpret_cast<uintptr_t*>(v - sizeof(void*));
+}
+
+std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   std::unordered_set<std::uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
       instances_of_typeinfo_relocs.insert(addr);
   }
 
-  std::vector<std::uintptr_t> vftable_candidates_with_cvtables{};
+  std::vector<std::uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
   DataRangeChecker typeinfo_ranges{online_baseaddr};
 
   for (std::uintptr_t addr{online_baseaddr};
@@ -327,27 +331,33 @@ void ElfModuleVtableDumper::locate_vtables() {
         instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
       auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
 
-      vftable_candidates_with_cvtables.push_back(addr);
+      vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
       typeinfo_ranges.add_range(potential_typeinfo_addr, typeinfo_size);
     }
   }
 
-  vftable_candidates_with_cvtables |=
+  vftable_candidates_rtti_ptr_with_cvtables |=
       ranges::actions::remove_if([&typeinfo_ranges](auto candidate) {
         // This is a reference inside of a typeinfo graph, not a vtable
         return typeinfo_ranges.is_position_in_range(candidate);
       });
 
-  ranges::sort(vftable_candidates_with_cvtables);
+  ranges::sort(vftable_candidates_rtti_ptr_with_cvtables);
 
-  // Generate a list of constructor vtables, this unfortunately means we lose
-  // some real vtables
+  // Now actually make this a list of vftables
+  std::vector<std::uintptr_t> vftable_candidates =
+      std::move(vftable_candidates_rtti_ptr_with_cvtables);
+  ranges::for_each(vftable_candidates,
+                   [](std::uintptr_t& v) { v += sizeof(void*); });
+
+  // Generate a list of constructor vtables, this unfortunately means we
+  // lose some real vtables
   std::unordered_set<std::uintptr_t> invalid_typeinfo{};
   std::unordered_set<std::uintptr_t> seen_typeinfo{};
   std::uintptr_t prev_typeinfo{0};
 
-  for (auto& candidate : vftable_candidates_with_cvtables) {
-    uintptr_t typeinfo_addr = *reinterpret_cast<uintptr_t*>(candidate);
+  for (auto& candidate : vftable_candidates) {
+    uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
 
     // Avoid constructor vftables while keeping normal consecutive subtables
     if ((typeinfo_addr != prev_typeinfo) &&
@@ -359,17 +369,32 @@ void ElfModuleVtableDumper::locate_vtables() {
     seen_typeinfo.insert(typeinfo_addr);
   }
 
-  for (auto& vftable : vftable_candidates_with_cvtables) {
-    uintptr_t typeinfo_addr = *reinterpret_cast<uintptr_t*>(vftable);
-    if (invalid_typeinfo.contains(typeinfo_addr))
-      continue;
+  vftable_candidates |=
+      ranges::actions::remove_if([&invalid_typeinfo](auto candidate) {
+        uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
+        return invalid_typeinfo.contains(typeinfo_addr);
+      });
 
-    std::string_view typeinfo_name =
-        *reinterpret_cast<char**>(typeinfo_addr + 4);
+  return vftable_candidates;
+}
 
-    fmt::print("{:08X} {:08X} {}!\n", get_offline_address_from_online(vftable),
-               typeinfo_addr, typeinfo_name);
-  }
+std::map<std::string, std::vector<std::uintptr_t>>
+ElfModuleVtableDumper::get_vtables() {
+  auto vf_tables = locate_vftables();
+
+  std::map<std::string, std::vector<std::uintptr_t>> vtables{};
+  for (const auto& vtable_rng :
+       vf_tables |
+           ranges::views::chunk_by([](std::uintptr_t a, std::uintptr_t b) {
+             return get_typeinfo_addr(a) == get_typeinfo_addr(b);
+           })) {
+    auto vtable = ranges::to<std::vector>(vtable_rng);
+    std::string typeinfo_name =
+        *reinterpret_cast<char**>(get_typeinfo_addr(vtable[0]) + sizeof(void*));
+    vtables[typeinfo_name] = vtable;
+  };
+
+  return vtables;
 }
 
 ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
@@ -407,8 +432,6 @@ ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
   };
 
   generate_data_from_sections();
-  if (path.ends_with("engine.so"))
-    locate_vtables();
 }
 
 void LoadRtti() {
@@ -428,6 +451,19 @@ void LoadRtti() {
           ElfModuleVtableDumper dumped_rtti{
               details->path, static_cast<size_t>(details->range->base_address),
               details->range->size};
+
+          // HACK
+          if (!(std::string_view(details->name).ends_with("client.so"))) {
+            return 1;
+          }
+          auto vtables = dumped_rtti.get_vtables();
+          for (auto& [name, vtable] : vtables) {
+            fmt::print("VTABLE: {}\n", name);
+            for (auto& vftable : vtable) {
+              fmt::print("\t VF: {:08X}\n", vftable);
+            }
+            fmt::print("----------\n");
+          }
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"
