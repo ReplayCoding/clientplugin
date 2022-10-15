@@ -32,7 +32,7 @@
         };
         pkgs = pkgs_.__splicedPackages;
       in {
-        default = pkgs.stdenv.mkDerivation {
+        default = pkgs.gcc10Stdenv.mkDerivation {
           name = "devshell";
           # For systemd-coredump
           SYSTEMD_DEBUGGER = "lldb";
