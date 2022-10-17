@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gelf.h>
+#include <libelf.h>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -14,7 +15,9 @@ class ElfModuleVtableDumper {
   ElfModuleVtableDumper(const std::string path, size_t baddr, size_t size);
   ~ElfModuleVtableDumper() { elf_end(elf); }
 
-  std::map<std::string, std::vector<std::uintptr_t>> get_vtables();
+  using vtables_t =
+      std::unordered_map<std::string, std::vector<std::uintptr_t>>;
+  vtables_t get_vtables();
 
  private:
   struct cie_info_t {
@@ -54,4 +57,17 @@ class ElfModuleVtableDumper {
   DataRangeChecker section_ranges;
 };
 
-void LoadRtti();
+class RttiManager {
+ public:
+  RttiManager();
+
+  // This is stupid.
+  inline void submit_vtables(std::string mname,
+                             ElfModuleVtableDumper::vtables_t vtables) {
+    module_vtables[mname] = vtables;
+  };
+
+ private:
+  std::unordered_map<std::string, ElfModuleVtableDumper::vtables_t>
+      module_vtables{};
+};

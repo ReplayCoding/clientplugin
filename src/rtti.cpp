@@ -378,11 +378,10 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   return vftable_candidates;
 }
 
-std::map<std::string, std::vector<std::uintptr_t>>
-ElfModuleVtableDumper::get_vtables() {
+ElfModuleVtableDumper::vtables_t ElfModuleVtableDumper::get_vtables() {
   auto vf_tables = locate_vftables();
 
-  std::map<std::string, std::vector<std::uintptr_t>> vtables{};
+  ElfModuleVtableDumper::vtables_t vtables{};
   for (const auto& vtable_rng :
        vf_tables |
            ranges::views::chunk_by([](std::uintptr_t a, std::uintptr_t b) {
@@ -434,36 +433,29 @@ ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
   generate_data_from_sections();
 }
 
-void LoadRtti() {
+RttiManager::RttiManager() {
   elf_version(EV_CURRENT);
   auto start_time = std::chrono::high_resolution_clock::now();
 
   gum_process_enumerate_modules(
       // This uses a gboolean, so we need to return `1` instead of `true`.
       [](const GumModuleDetails* details, void* user_data) {
+        auto self = static_cast<RttiManager*>(user_data);
         // ignore vdso
-        constexpr auto vdso_path = "linux-vdso.so.1";
-        if (std::string_view(details->name) == vdso_path)
+        constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
+                                                       "libclientplugin.so"};
+        if (ranges::any_of(excluded_paths,
+                           [&](auto b) { return b == details->name; })) {
           return 1;
+        }
 
         try {
-          fmt::print("HANDLING {}\n", details->name);
           ElfModuleVtableDumper dumped_rtti{
               details->path, static_cast<size_t>(details->range->base_address),
               details->range->size};
 
-          // HACK
-          if (!(std::string_view(details->name).ends_with("client.so"))) {
-            return 1;
-          }
           auto vtables = dumped_rtti.get_vtables();
-          for (auto& [name, vtable] : vtables) {
-            fmt::print("VTABLE: {}\n", name);
-            for (auto& vftable : vtable) {
-              fmt::print("\t VF: {:08X}\n", vftable);
-            }
-            fmt::print("----------\n");
-          }
+          self->submit_vtables(details->name, vtables);
         } catch (std::exception& e) {
           fmt::print(
               "while handling module {}:\n"
@@ -473,7 +465,18 @@ void LoadRtti() {
 
         return 1;
       },
-      nullptr);
+      this);
+
+  for (auto& [mod_name, vtables] : module_vtables) {
+    fmt::print("MODULE: {}\n", mod_name);
+    for (auto& [vtable_name, vtable] : vtables) {
+      fmt::print("VTABLE: {}\n", vtable_name);
+      for (auto& vftable : vtable) {
+        fmt::print("\t VF: {:08X}\n", vftable);
+      }
+      fmt::print("----------\n");
+    }
+  }
 
   auto duration = std::chrono::high_resolution_clock::now() - start_time;
   fmt::print("Handling modules took {}\n",
