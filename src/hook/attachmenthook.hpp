@@ -4,7 +4,7 @@
 #include <functional>
 
 #include "hook/gum/interceptor.hpp"
-#include "offsets.hpp"
+#include "offsets/offsets.hpp"
 
 // Wrapper for GumInvocationContext
 class InvocationContext {
@@ -44,7 +44,7 @@ using attachment_hook_func_t = std::function<void(InvocationContext)>;
 // Internal utility class
 class _CallAttachmentHook : private Gum::CallListener {
  public:
-  _CallAttachmentHook(const offsets::Offset& address) {
+  _CallAttachmentHook(const Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
 
@@ -53,7 +53,7 @@ class _CallAttachmentHook : private Gum::CallListener {
 
 class _ProbeAttachmentHook : private Gum::ProbeListener {
  public:
-  _ProbeAttachmentHook(const offsets::Offset& address) {
+  _ProbeAttachmentHook(const Offset& address) {
     g_Interceptor->attach(address, this, nullptr);
   }
 
@@ -62,7 +62,7 @@ class _ProbeAttachmentHook : private Gum::ProbeListener {
 
 class AttachmentHookEnter : public _ProbeAttachmentHook {
  public:
-  AttachmentHookEnter(const offsets::Offset& address,
+  AttachmentHookEnter(const Offset& address,
                       attachment_hook_func_t func)
       : _ProbeAttachmentHook(address), func(func) {}
 
@@ -76,7 +76,7 @@ class AttachmentHookEnter : public _ProbeAttachmentHook {
 
 class AttachmentHookLeave : public _CallAttachmentHook {
  public:
-  AttachmentHookLeave(const offsets::Offset& address,
+  AttachmentHookLeave(const Offset& address,
                       attachment_hook_func_t func)
       : _CallAttachmentHook(address), func(func) {}
 
@@ -91,7 +91,7 @@ class AttachmentHookLeave : public _CallAttachmentHook {
 
 class AttachmentHookBoth : public _CallAttachmentHook {
  public:
-  AttachmentHookBoth(offsets::Offset& address,
+  AttachmentHookBoth(Offset& address,
                      attachment_hook_func_t enter_func,
                      attachment_hook_func_t leave_func)
       : _CallAttachmentHook(address),

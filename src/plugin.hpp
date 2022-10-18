@@ -7,7 +7,7 @@
 
 #include "clientclasses.hpp"
 #include "modules/modules.hpp"
-#include "rtti.hpp"
+#include "offsets/rtti.hpp"
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  public:

@@ -7,8 +7,8 @@
 #include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
+#include "offsets/rtti.hpp"
 #include "plugin.hpp"
-#include "rtti.hpp"
 
 // Defined in hook/gum/interceptor.hpp
 std::unique_ptr<Gum::Interceptor> g_Interceptor;

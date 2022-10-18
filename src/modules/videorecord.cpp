@@ -18,7 +18,7 @@
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
 #include "modules/videorecord.hpp"
-#include "offsets.hpp"
+#include "offsets/offsets.hpp"
 #include "util/error.hpp"
 #include "x264encoder.hpp"
 
