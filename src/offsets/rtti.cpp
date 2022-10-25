@@ -22,6 +22,8 @@
 #include "util/error.hpp"
 #include "util/mmap.hpp"
 
+std::unique_ptr<RttiManager> g_RTTI{};
+
 GElf_Addr ElfModuleVtableDumper::calculate_offline_baseaddr() {
   GElf_Ehdr ehdr;
   gelf_getehdr(elf, &ehdr);
@@ -433,6 +435,15 @@ ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
   generate_data_from_sections();
 }
 
+std::uintptr_t RttiManager::get_function(std::string module,
+                                         std::string name,
+                                         uint16_t vftable,
+                                         uint16_t function) {
+  auto vftable_ptr = module_vtables[module][name][vftable];
+  return *reinterpret_cast<std::uintptr_t*>(vftable_ptr +
+                                            (sizeof(void*) * function));
+}
+
 RttiManager::RttiManager() {
   elf_version(EV_CURRENT);
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -466,17 +477,6 @@ RttiManager::RttiManager() {
         return 1;
       },
       this);
-
-  for (auto& [mod_name, vtables] : module_vtables) {
-    fmt::print("MODULE: {}\n", mod_name);
-    for (auto& [vtable_name, vtable] : vtables) {
-      fmt::print("VTABLE: {}\n", vtable_name);
-      for (auto& vftable : vtable) {
-        fmt::print("\t VF: {:08X}\n", vftable);
-      }
-      fmt::print("----------\n");
-    }
-  }
 
   auto duration = std::chrono::high_resolution_clock::now() - start_time;
   fmt::print("Handling modules took {}\n",

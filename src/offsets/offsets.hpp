@@ -37,14 +37,30 @@ class SharedLibOffset : public ManualOffset {
   const std::uintptr_t offset;
 };
 
+class VtableOffset : public ManualOffset {
+ public:
+  VtableOffset(std::string module,
+               std::string name,
+               uint32_t function,
+               uint16_t vftable = 0)
+      : module(module), name(name), function(function), vftable(vftable){};
+
+ private:
+  std::uintptr_t get_address() const override;
+
+  const std::string module;
+  const std::string name;
+  const uint16_t function;
+  const uint16_t vftable;
+};
+
 namespace offsets {
   const extern SharedLibOffset SCR_UpdateScreen;
   const extern SharedLibOffset SND_RecordBuffer;
 
   const extern SharedLibOffset GetSoundTime;
 
-  // This is in a vtable so we should probably fix that
-  const extern SharedLibOffset CEngineSoundServices_SetSoundFrametime;
+  const extern VtableOffset CEngineSoundServices_SetSoundFrametime;
 
   const extern SharedLibOffset SND_G_P;
   const extern SharedLibOffset SND_G_LINEAR_COUNT;

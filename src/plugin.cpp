@@ -7,11 +7,9 @@
 #include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
+#include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 #include "plugin.hpp"
-
-// Defined in hook/gum/interceptor.hpp
-std::unique_ptr<Gum::Interceptor> g_Interceptor;
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
@@ -23,9 +21,12 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   Interfaces::Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
-  module_manager = std::make_unique<ModuleManager>();
+  g_RTTI = std::make_unique<RttiManager>();
+
+  (void)static_cast<uintptr_t>(offsets::CEngineSoundServices_SetSoundFrametime);
+
   client_class_manager = std::make_unique<ClientClassManager>();
-  rtti_manager = std::make_unique<RttiManager>();
+  module_manager = std::make_unique<ModuleManager>();
 
   return true;
 }
@@ -41,7 +42,8 @@ void ServerPlugin::Unload(void) {
 
   module_manager.reset();
   client_class_manager.reset();
-  rtti_manager.reset();
+
+  g_RTTI.reset();
   g_Interceptor.reset();
 
   Interfaces::Unload();

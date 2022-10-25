@@ -100,3 +100,5 @@ namespace Gum {
     gum_interceptor_revert(get_obj(), reinterpret_cast<void*>(address));
   }
 }  // namespace Gum
+
+std::unique_ptr<Gum::Interceptor> g_Interceptor;

@@ -107,5 +107,4 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  private:
   std::unique_ptr<ModuleManager> module_manager{};
   std::unique_ptr<ClientClassManager> client_class_manager{};
-  std::unique_ptr<RttiManager> rtti_manager{};
 };

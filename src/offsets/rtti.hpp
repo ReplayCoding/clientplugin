@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include "util/data_range_checker.hpp"
 #include "util/mmap.hpp"
@@ -67,7 +69,14 @@ class RttiManager {
     module_vtables[mname] = vtables;
   };
 
+  std::uintptr_t get_function(std::string module,
+                              std::string name,
+                              uint16_t vftable,
+                              uint16_t function);
+
  private:
   std::unordered_map<std::string, ElfModuleVtableDumper::vtables_t>
       module_vtables{};
 };
+
+extern std::unique_ptr<RttiManager> g_RTTI;
