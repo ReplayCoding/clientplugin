@@ -21,9 +21,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   Interfaces::Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
-  g_RTTI = std::make_unique<RttiManager>();
-
-  (void)static_cast<uintptr_t>(offsets::CEngineSoundServices_SetSoundFrametime);
+  // g_RTTI = std::make_unique<RttiManager>();
 
   client_class_manager = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();

@@ -65,4 +65,6 @@ namespace offsets {
   const extern SharedLibOffset SND_G_P;
   const extern SharedLibOffset SND_G_LINEAR_COUNT;
   const extern SharedLibOffset SND_G_VOL;
+
+  const extern SharedLibOffset FindAndHealTargets;
 }  // namespace offsets

@@ -12,7 +12,8 @@ add_library(
   modules/modules.cpp
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp
-  modules/videorecord.cpp
+  modules/mediguns.cpp
+  # modules/videorecord.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )

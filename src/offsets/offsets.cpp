@@ -29,4 +29,6 @@ namespace offsets {
   const SharedLibOffset SND_G_P{"engine.so", 0x00858910 - 0x10000};
   const SharedLibOffset SND_G_LINEAR_COUNT{"engine.so", 0x00858900 - 0x10000};
   const SharedLibOffset SND_G_VOL{"engine.so", 0x008588f0 - 0x10000};
+
+  const SharedLibOffset FindAndHealTargets{"client.so", 0x00ddf150 - 0x10000};
 }  // namespace offsets
