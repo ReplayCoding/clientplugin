@@ -7,7 +7,6 @@
 #include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
-#include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 #include "plugin.hpp"
 

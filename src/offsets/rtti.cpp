@@ -8,7 +8,12 @@
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <iterator>
-#include <range/v3/all.hpp>
+#include <range/v3/action/remove_if.hpp>
+#include <range/v3/algorithm/any_of.hpp>
+#include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/to_container.hpp>
+#include <range/v3/view/chunk_by.hpp>
 #include <string_view>
 #include <unordered_set>
 #include <utility>
@@ -401,7 +406,6 @@ RttiManager::RttiManager() {
       // This uses a gboolean, so we need to return `1` instead of `true`.
       [](const GumModuleDetails* details, void* user_data) {
         auto self = static_cast<RttiManager*>(user_data);
-        // ignore vdso
         constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
                                                        "libclientplugin.so"};
         if (ranges::any_of(excluded_paths,
