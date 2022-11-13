@@ -1,9 +1,8 @@
 #pragma once
 
-#include <gelf.h>
-#include <libelf.h>
 #include <cstddef>
 #include <cstdint>
+#include <elfio/elfio.hpp>
 #include <map>
 #include <memory>
 #include <unordered_map>
@@ -15,7 +14,6 @@
 class ElfModuleVtableDumper {
  public:
   ElfModuleVtableDumper(const std::string path, size_t baddr, size_t size);
-  ~ElfModuleVtableDumper() { elf_end(elf); }
 
   using vtables_t =
       std::unordered_map<std::string, std::vector<std::uintptr_t>>;
@@ -28,11 +26,10 @@ class ElfModuleVtableDumper {
 
   void generate_data_from_sections();
 
-  GElf_Addr calculate_offline_baseaddr();
-  std::uintptr_t get_online_address_from_offline(GElf_Addr offline_addr);
+  std::uintptr_t get_online_address_from_offline(std::uintptr_t offline_addr);
   std::uintptr_t get_offline_address_from_online(std::uintptr_t online_addr);
 
-  void get_relocations(Elf_Scn* scn, GElf_Shdr* shdr);
+  void get_relocations(ELFIO::section* section);
 
   cie_info_t handle_cie(const std::uintptr_t cie_address);
 
@@ -43,15 +40,11 @@ class ElfModuleVtableDumper {
 
   std::vector<std::uintptr_t> locate_vftables();
 
-  // keep this in memory until we free elf
-  std::unique_ptr<MemoryMappedFile> mapped_file{};
-  Elf* elf{};
+  ELFIO::elfio elf{};
 
-  size_t string_header_index{};
+  std::uintptr_t offline_baseaddr{};
 
-  GElf_Addr offline_baseaddr{};
-
-  size_t online_baseaddr{};
+  std::uintptr_t online_baseaddr{};
   size_t online_size{};
 
   std::unordered_map<std::uintptr_t, std::string> relocations{};

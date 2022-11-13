@@ -13,7 +13,7 @@ add_library(
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp
   modules/mediguns.cpp
-  # modules/videorecord.cpp
+  modules/videorecord.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )
@@ -36,9 +36,8 @@ find_package(fmt CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
+find_package(elfio CONFIG REQUIRED)
 pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
-pkg_check_modules(elfutils REQUIRED IMPORTED_TARGET libelf)
-
 find_package(SDL2 REQUIRED)
 
 # using fmt as a library is broken. make sure to catch errors like this BEFORE we run
@@ -54,11 +53,11 @@ target_link_libraries(
   fmt::fmt-header-only
   SDL2::SDL2
   PkgConfig::x264
-  PkgConfig::elfutils
   OpenGL::GL
   imgui::imgui
   absl::numeric
   range-v3::range-v3
+  elfio::elfio
 
   frida-gum
 )

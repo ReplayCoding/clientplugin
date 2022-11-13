@@ -1,14 +1,12 @@
-#include <elf.h>
 #include <fcntl.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <frida-gum.h>
-#include <gelf.h>
-#include <libelf.h>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <elfio/elfio.hpp>
 #include <iterator>
 #include <range/v3/all.hpp>
 #include <string_view>
@@ -24,26 +22,8 @@
 
 std::unique_ptr<RttiManager> g_RTTI{};
 
-GElf_Addr ElfModuleVtableDumper::calculate_offline_baseaddr() {
-  GElf_Ehdr ehdr;
-  gelf_getehdr(elf, &ehdr);
-
-  auto phdr_count = ehdr.e_phnum;
-
-  for (auto idx = 0; idx != phdr_count; idx++) {
-    GElf_Phdr phdr;
-    gelf_getphdr(elf, idx, &phdr);
-
-    if (phdr.p_type == PT_LOAD && phdr.p_offset == 0) {
-      return phdr.p_vaddr;
-    }
-  }
-
-  throw StringError("failed to find base address");
-}
-
 std::uintptr_t ElfModuleVtableDumper::get_online_address_from_offline(
-    GElf_Addr offline_addr) {
+    std::uintptr_t offline_addr) {
   return online_baseaddr + (offline_addr - offline_baseaddr);
 }
 
@@ -52,54 +32,42 @@ std::uintptr_t ElfModuleVtableDumper::get_offline_address_from_online(
   return offline_baseaddr + (online_addr - online_baseaddr);
 }
 
-void ElfModuleVtableDumper::get_relocations(Elf_Scn* scn, GElf_Shdr* shdr) {
-  // This really really looks like a memory leak :(
-  Elf_Data* section_data = elf_getdata(scn, nullptr);
-  if (section_data == nullptr) {
-    throw StringError("failed to get data for section {}: {}", shdr->sh_name);
-  };
+void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
+  const ELFIO::relocation_section_accessor relocations{elf, section};
+  const ELFIO::symbol_section_accessor symbols{
+      elf, elf.sections[section->get_link()]};
 
-  auto reloc_struct_size = gelf_fsize(elf, ELF_T_REL, 1, EV_CURRENT);
-  auto number_of_relocs = shdr->sh_size / reloc_struct_size;
+  // TODO: Range
+  for (size_t relidx = 0; relidx < relocations.get_entries_num(); ++relidx) {
+    ELFIO::Elf64_Addr offset{};
+    ELFIO::Elf_Word symbol{};
+    uint8_t type{};
+    ELFIO::Elf_Sxword _addend{};
 
-  // really well designed api we have here
-  Elf_Scn* symbol_section;
-  if ((symbol_section = elf_getscn(elf, shdr->sh_link)) == nullptr)
-    throw StringError("failed to get sh_link section");
+    if (!relocations.get_entry(relidx, offset, symbol, type, _addend))
+      throw StringError("Failed to get reloc for index {} in section {}",
+                        relidx, section->get_name());
 
-  GElf_Shdr symbol_section_header;
-  if (gelf_getshdr(symbol_section, &symbol_section_header) == nullptr)
-    throw StringError("failed to get sh_link section header");
+    std::string symbol_name;
+    ELFIO::Elf64_Addr symbol_value;
+    ELFIO::Elf_Xword _symbol_size;
+    uint8_t _symbol_bind;
+    uint8_t symbol_type;
+    ELFIO::Elf_Half _symbol_section;
+    uint8_t _symbol_other;
 
-  Elf_Data* symbol_section_data = elf_getdata(symbol_section, nullptr);
+    if (!symbols.get_symbol(symbol, symbol_name, symbol_value, _symbol_size,
+                            _symbol_bind, symbol_type, _symbol_section,
+                            _symbol_other))
+      continue;
 
-  for (size_t relidx = 0; relidx < number_of_relocs; ++relidx) {
-    GElf_Rel rel;
-    if (gelf_getrel(section_data, relidx, &rel) == nullptr) {
-      throw StringError("couldn't get relocation for section {}: {}",
-                        elf_strptr(elf, string_header_index, shdr->sh_name),
-                        relidx);
-    }
+    if (type == 0 /* NONE rel type */ || symbol_type == ELFIO::STN_UNDEF)
+      continue;
 
-    if (GELF_R_TYPE(rel.r_info) != 0 /* NONE rel type */ &&
-        GELF_R_SYM(rel.r_info) != STN_UNDEF /* no symbol */) {
-      GElf_Sym symbol;
-      if (gelf_getsymshndx(symbol_section_data, nullptr, GELF_R_SYM(rel.r_info),
-                           &symbol, nullptr) == nullptr)
-        throw StringError("failed to get symbol index for reloc: {}", relidx);
+    std::uintptr_t online_reladdress = get_online_address_from_offline(offset);
 
-      auto _symbol_name =
-          elf_strptr(elf, symbol_section_header.sh_link, symbol.st_name);
-      if (_symbol_name == nullptr)
-        throw StringError("failed to get symbol name");
-
-      // Clone this so we can store it
-      std::string symbol_name{_symbol_name};
-      std::uintptr_t online_reladdress =
-          get_online_address_from_offline(rel.r_offset);
-
-      relocations[online_reladdress] = symbol_name;
-    }
+    // Explicitely avoid setting the relocations var defined above...
+    this->relocations[online_reladdress] = symbol_name;
   }
 }
 
@@ -154,8 +122,8 @@ ElfModuleVtableDumper::cie_info_t ElfModuleVtableDumper::handle_cie(
           break;
         }
         case 'L': {
-          // FDE Augmentation Data isn't currently handled, so we can just skip
-          // the encoding byte.
+          // FDE Augmentation Data isn't currently handled, so we can just
+          // skip the encoding byte.
           /* uint8_t lsda_pointer_encoding =  */ cie_data.read<uint8_t>();
           break;
         }
@@ -198,8 +166,8 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     // pointer.
     const auto next_record_address = fde_data.data_ptr + length;
 
-    // If Length contains the value 0xffffffff, then the length is contained in
-    // the Extended Length field.
+    // If Length contains the value 0xffffffff, then the length is contained
+    // in the Extended Length field.
     if (length == UINT32_MAX)
       throw StringError("TODO");
 
@@ -213,8 +181,8 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     if (cie_id_or_cie_offset == 0) {
       // Skip the CIE, we parse it when handling the FDE
     } else {
-      // A 4 byte unsigned value that when subtracted from the offset of the CIE
-      // Pointer in the current FDE yields the offset of the start of the
+      // A 4 byte unsigned value that when subtracted from the offset of the
+      // CIE Pointer in the current FDE yields the offset of the start of the
       // associated CIE.
       const auto cie_pointer =
           fde_data.data_ptr - cie_id_or_cie_offset -
@@ -236,12 +204,14 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     // record, something is wrong
     if (fde_data.data_ptr >= next_record_address) {
       throw StringError(
-          "fde data pointer ({:08X}) is more than next_record_address ({:08X})",
+          "fde data pointer ({:08X}) is more than next_record_address "
+          "({:08X})",
           fde_data.data_ptr, next_record_address);
     };
     fde_data.data_ptr = next_record_address;
 
-    // Both CIEs and FDEs shall be aligned to an addressing unit sized boundary.
+    // Both CIEs and FDEs shall be aligned to an addressing unit sized
+    // boundary.
     while ((fde_data.data_ptr % sizeof(void*)) != 0)
       fde_data.data_ptr += 1;
   }
@@ -250,30 +220,22 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
 }
 
 void ElfModuleVtableDumper::generate_data_from_sections() {
-  // if the section is null, we read the first section
-  Elf_Scn* cur_scn = nullptr;
   DataRangeChecker section_ranges_{online_baseaddr};
 
-  while ((cur_scn = elf_nextscn(elf, cur_scn)) != nullptr) {
-    GElf_Shdr hdr{};
+  for (auto section : elf.sections) {
+    if (section->get_address() != 0)
+      section_ranges_.add_range(
+          get_online_address_from_offline(section->get_address()),
+          section->get_size());
 
-    if (gelf_getshdr(cur_scn, &hdr) == nullptr)
-      throw StringError("Error getting section {}", elf_ndxscn(cur_scn));
-
-    std::string_view section_name =
-        elf_strptr(elf, string_header_index, hdr.sh_name);
-
-    if (hdr.sh_addr != 0)
-      section_ranges_.add_range(get_online_address_from_offline(hdr.sh_addr),
-                                hdr.sh_size);
-
-    if (hdr.sh_type == SHT_REL) {
-      get_relocations(cur_scn, &hdr);
+    if (section->get_type() == ELFIO::SHT_REL) {
+      get_relocations(section);
     }
 
-    if (section_name == ".eh_frame") {
-      auto eh_frame_address = get_online_address_from_offline(hdr.sh_addr);
-      std::uintptr_t eh_frame_end_addr = eh_frame_address + hdr.sh_size;
+    if (section->get_name() == ".eh_frame") {
+      auto eh_frame_address =
+          get_online_address_from_offline(section->get_address());
+      std::uintptr_t eh_frame_end_addr = eh_frame_address + section->get_size();
 
       function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
     }
@@ -401,34 +363,22 @@ ElfModuleVtableDumper::vtables_t ElfModuleVtableDumper::get_vtables() {
 ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
                                              size_t baddr,
                                              size_t size) {
-  try {
-    mapped_file = std::make_unique<MemoryMappedFile>(path);
-  } catch (std::exception& e) {
-    throw StringError("WARNING: failed to load module {} ({})", path, e.what());
-  }
-
-  elf = elf_memory(static_cast<char*>(mapped_file->address()),
-                   mapped_file->length());
-  if (elf == nullptr) {
-    throw StringError("note: failed to load module: {}", path);
-  };
-
-  if (elf_getshdrstrndx(elf, &string_header_index) < 0) {
-    throw StringError("failed to get sh string section");
-  };
+  elf.load(path);
 
   // Find online & offline load addresses
+  offline_baseaddr = UINTPTR_MAX;
+  for (ELFIO::segment* segment : elf.segments) {
+    if (segment->get_type() == ELFIO::PT_LOAD) {
+      offline_baseaddr =
+          std::min(offline_baseaddr,
+                   static_cast<uintptr_t>(segment->get_virtual_address()));
+    }
+  }
+
   online_baseaddr = baddr;
   online_size = size;
-  try {
-    offline_baseaddr = calculate_offline_baseaddr();
-  } catch (std::exception& e) {
-    elf_end(elf);
-    throw StringError("WARNING: {}", e.what());
-  }
   if (online_baseaddr == 0) {
     // bail out, this is bad
-    elf_end(elf);
     throw StringError("WARNING: online_baseaddress is nullptr");
   };
 
@@ -445,7 +395,6 @@ std::uintptr_t RttiManager::get_function(std::string module,
 }
 
 RttiManager::RttiManager() {
-  elf_version(EV_CURRENT);
   auto start_time = std::chrono::high_resolution_clock::now();
 
   gum_process_enumerate_modules(
@@ -472,6 +421,7 @@ RttiManager::RttiManager() {
               "while handling module {}:\n"
               "\t{}\n",
               details->name, e.what());
+          throw;
         };
 
         return 1;

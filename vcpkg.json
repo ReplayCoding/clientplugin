@@ -4,7 +4,7 @@
     "fmt",
     "x264",
     "abseil",
-    "elfutils",
+    "elfio",
     "range-v3",
     {
       "name": "imgui",
