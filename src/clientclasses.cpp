@@ -21,7 +21,7 @@ std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
       auto subtable = prop->GetDataTable();
       auto parsed_subtable = parse_tbl(subtable);
 
-      for (const auto subprop : parsed_subtable) {
+      for (const auto& subprop : parsed_subtable) {
         const auto subprop_name =
             fmt::format("{}::{}", subtable->GetName(), subprop.name);
         const auto subprop_fixed = ClientProp(

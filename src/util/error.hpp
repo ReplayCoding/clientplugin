@@ -2,18 +2,17 @@
 #include <fmt/core.h>
 #include <exception>
 
-// An abuse of throwing to print out an error message
 class StringError : public std::exception {
  public:
-  StringError(const std::string message) : message(message.c_str()){};
+  StringError(const std::string& message) : message(message){};
 
   template <typename... T>
-  StringError(const std::string format, T... Args) {
-    message = fmt::format(format, Args...).c_str();
+  StringError(const std::string& format, T... Args) {
+    message = fmt::format(fmt::runtime(format), Args...);
   }
 
-  const char* what() const noexcept override { return message; };
+  const char* what() const noexcept override { return message.c_str(); };
 
  private:
-  const char* message;
+  std::string message;
 };
