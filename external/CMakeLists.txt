@@ -13,7 +13,15 @@ add_library(frida-gum STATIC IMPORTED GLOBAL)
 set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${_gum_SOURCE_DIR}/libfrida-gum.a)
 target_include_directories(frida-gum INTERFACE ${_gum_SOURCE_DIR})
 
-option(TRACY_NO_CRASH_HANDLER "" OFF)
+
+# WARNING: These are cached so you need to delete the build dir to change
+# these, or you can change them manually
+option(TRACY_NO_CRASH_HANDLER "" ON)
+option(TRACY_NO_CALLSTACK "" ON)
+option(TRACY_NO_CALLSTACK_INLINES "" ON)
+option(TRACY_NO_SAMPLING "" ON)
+option(TRACY_NO_SYSTEM_TRACING "" ON)
+
 add_subdirectory(tracy)
 
 add_subdirectory("source-sdk")

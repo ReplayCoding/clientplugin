@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 # mimic source engine here
-cmake_policy(SET CMP0072 OLD)
+set(OpenGL_GL_PREFERENCE "LEGACY")
 
 # uggghghhhh why doesn't vcpkg have a x86-linux triplet?
 set(VCPKG_OVERLAY_TRIPLETS ${CMAKE_CURRENT_SOURCE_DIR})

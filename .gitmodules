@@ -2,9 +2,10 @@
 	path = external/source-sdk
 	url = https://github.com/ReplayCoding/hl2sdk-meson
 	branch = sdk2013
-[submodule "external/vcpkg"]
+[submodule "vcpkg"]
 	path = external/vcpkg
 	url = https://github.com/microsoft/vcpkg.git
-[submodule "external/tracy"]
+[submodule "tracy"]
 	path = external/tracy
-	url = https://github.com/wolfpld/tracy
+  branch = "noinstall"
+	url = https://github.com/ReplayCoding/tracy
