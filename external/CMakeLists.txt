@@ -13,4 +13,7 @@ add_library(frida-gum STATIC IMPORTED GLOBAL)
 set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${_gum_SOURCE_DIR}/libfrida-gum.a)
 target_include_directories(frida-gum INTERFACE ${_gum_SOURCE_DIR})
 
+option(TRACY_NO_CRASH_HANDLER "" OFF)
+add_subdirectory(tracy)
+
 add_subdirectory("source-sdk")

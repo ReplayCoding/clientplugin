@@ -6,7 +6,6 @@ add_library(
   clientclasses.cpp
   x264encoder.cpp
   util/mmap.cpp
-  util/data_range_checker.cpp
   offsets/offsets.cpp
   offsets/rtti.cpp
   modules/modules.cpp
@@ -14,6 +13,7 @@ add_library(
   modules/gfxoverlay.cpp
   modules/mediguns.cpp
   modules/videorecord.cpp
+  modules/profiler.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )
@@ -38,9 +38,10 @@ find_package(absl CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
 find_package(elfio CONFIG REQUIRED)
 pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
+
 find_package(SDL2 REQUIRED)
 
-# using fmt as a library is broken. make sure to catch errors like this BEFORE we run
+# using fmt as a library is broken (possibly due to using old string ABI?). make sure to catch errors like this BEFORE we run
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
   clientplugin PRIVATE
@@ -58,6 +59,7 @@ target_link_libraries(
   absl::numeric
   range-v3::range-v3
   elfio::elfio
+  Tracy::TracyClient
 
   frida-gum
 )

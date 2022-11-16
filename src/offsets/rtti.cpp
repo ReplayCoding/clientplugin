@@ -155,7 +155,7 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     const std::uintptr_t start_address,
     const std::uintptr_t end_address) {
   // Ugly name, but we need to do this to avoid conflicts
-  auto function_ranges_to_return = DataRangeChecker(online_baseaddr);
+  DataRangeChecker function_ranges_to_return{online_baseaddr};
   DataView fde_data{start_address};
 
   while (fde_data.data_ptr < end_address) {
@@ -180,7 +180,7 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
     // If it's nonzero, it's a value that when subtracted from the offset
     // of the CIE Pointer in the current FDE yields the offset of the
     // start of the associated CIE.
-    uint32_t cie_id_or_cie_offset = fde_data.read<uint32_t>();
+    const auto cie_id_or_cie_offset = fde_data.read<uint32_t>();
 
     // // If this is zero, it's a CIE, otherwise it's an FDE
     if (cie_id_or_cie_offset == 0) {
@@ -201,7 +201,7 @@ DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
         throw StringError("PC Begin required, but not provided");
       }
 
-      std::uintptr_t fde_pc_range = fde_data.read<std::uintptr_t>();
+      auto fde_pc_range = fde_data.read<std::uintptr_t>();
       function_ranges_to_return.add_range(fde_pc_begin.value(), fde_pc_range);
     }
 
@@ -331,6 +331,10 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
     // Avoid constructor vftables while keeping normal consecutive subtables
     if ((typeinfo_addr != prev_typeinfo) &&
         seen_typeinfo.contains(typeinfo_addr)) {
+      // std::string typeinfo_name =
+      //     *reinterpret_cast<char**>(typeinfo_addr + sizeof(void*));
+      // fmt::print("INVALID TYPEINFO: {} @ candidate {:08X}\n", typeinfo_name,
+      //            candidate);
       invalid_typeinfo.insert(typeinfo_addr);
     }
 
