@@ -9,7 +9,7 @@
 #include "util/error.hpp"
 #include "util/leb128.hpp"
 
-// WARNING: I don't really know where to put this, but I know for a fact that it
+// FIXME: I don't really know where to put this, but I know for a fact that it
 // shouldn't be here
 enum class eh_dwarf_format {
   DW_EH_PE_absptr = 0x00,
@@ -32,7 +32,7 @@ enum class eh_dwarf_application {
   DW_EH_PE_indirect = 0x80,
 };
 
-uint8_t DW_EH_PE_omit = 0xFF;
+constexpr uint8_t DW_EH_PE_omit = 0xFF;
 
 class DataView {
  public:
