@@ -18,6 +18,8 @@ add_library(
   hook/gum/x86patcher.cpp
 )
 
+target_compile_features(clientplugin PUBLIC c_std_99 cxx_std_20)
+
 target_compile_options(
   clientplugin PRIVATE
   -Wall -Wextra -Wpedantic -Werror
@@ -41,7 +43,6 @@ pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
 
 find_package(SDL2 REQUIRED)
 
-# using fmt as a library is broken (possibly due to using old string ABI?). make sure to catch errors like this BEFORE we run
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
   clientplugin PRIVATE
@@ -51,7 +52,7 @@ target_link_libraries(
   sdk::tier3
   sdk::bitmap
 
-  fmt::fmt-header-only
+  fmt::fmt
   SDL2::SDL2
   PkgConfig::x264
   OpenGL::GL

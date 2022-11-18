@@ -54,6 +54,18 @@ class VtableOffset : public ManualOffset {
   const uint16_t vftable;
 };
 
+class SharedLibSymbol : public ManualOffset {
+ public:
+  SharedLibSymbol(std::string module, std::string symbol)
+      : module(module), symbol(symbol){};
+
+ private:
+  std::uintptr_t get_address() const override;
+
+  const std::string module;
+  const std::string symbol;
+};
+
 namespace offsets {
   const extern SharedLibOffset SCR_UpdateScreen;
   const extern SharedLibOffset SND_RecordBuffer;
@@ -67,4 +79,7 @@ namespace offsets {
   const extern SharedLibOffset SND_G_VOL;
 
   const extern SharedLibOffset FindAndHealTargets;
+
+  const extern SharedLibSymbol CVProfNode_EnterScope;
+  const extern SharedLibSymbol CVProfNode_ExitScope;
 }  // namespace offsets

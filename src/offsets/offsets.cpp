@@ -17,6 +17,10 @@ std::uintptr_t VtableOffset::get_address() const {
   return g_RTTI->get_function(module, name, vftable, function);
 }
 
+std::uintptr_t SharedLibSymbol::get_address() const {
+  return gum_module_find_export_by_name(module.c_str(), symbol.c_str());
+}
+
 namespace offsets {
   const SharedLibOffset SCR_UpdateScreen{"engine.so", 0x39eab0};
   const SharedLibOffset SND_RecordBuffer{"engine.so", 0x281410};
@@ -31,4 +35,9 @@ namespace offsets {
   const SharedLibOffset SND_G_VOL{"engine.so", 0x008588f0 - 0x10000};
 
   const SharedLibOffset FindAndHealTargets{"client.so", 0x00ddf150 - 0x10000};
+
+  const SharedLibSymbol CVProfNode_EnterScope{"libtier0.so",
+                                              "_ZN10CVProfNode10EnterScopeEv"};
+  const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
+                                             "_ZN10CVProfNode9ExitScopeEv"};
 }  // namespace offsets

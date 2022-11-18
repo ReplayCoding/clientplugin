@@ -11,6 +11,7 @@
 #include "hook/attachmenthook.hpp"
 #include "modules/modules.hpp"
 #include "modules/profiler.hpp"
+#include "offsets/offsets.hpp"
 
 #define UNAVAILABLE "unavailable"
 #define UNAVAILABLE_LEN strlen(UNAVAILABLE)
@@ -19,8 +20,7 @@ thread_local std::stack<TracyCZoneCtx> ctx_stack{};
 
 ProfilerMod::ProfilerMod() {
   enter_node_hook = std::make_unique<AttachmentHookEnter>(
-      gum_module_find_export_by_name("libtier0.so",
-                                     "_ZN10CVProfNode10EnterScopeEv"),
+      offsets::CVProfNode_EnterScope,
       [this](InvocationContext context) {
         auto self = context.get_arg<CVProfNode*>(0);
 
@@ -37,8 +37,7 @@ ProfilerMod::ProfilerMod() {
       });
 
   exit_node_hook = std::make_unique<AttachmentHookEnter>(
-      gum_module_find_export_by_name("libtier0.so",
-                                     "_ZN10CVProfNode9ExitScopeEv"),
+      offsets::CVProfNode_ExitScope,
       [this](auto context) {
         m.lock();
 
