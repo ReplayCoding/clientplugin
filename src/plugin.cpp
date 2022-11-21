@@ -10,17 +10,24 @@
 #include "offsets/rtti.hpp"
 #include "plugin.hpp"
 
+#include <fmt/core.h>
+#include "offsets/offsets.hpp"
+
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
   // FIXME: This is terrible
-  printf("Waiting to attach BIG CHUNGUS!\n");
-  sleep(3);
+  // printf("Waiting to attach BIG CHUNGUS!\n");
+  // sleep(3);
 
   gum_init_embedded();
   Interfaces::Load(interfaceFactory);
 
   g_Interceptor = std::make_unique<Gum::Interceptor>();
   g_RTTI = std::make_unique<RttiManager>();
+
+  fmt::print("POOTIS IS AT! {:08X}\n",
+             static_cast<std::uintptr_t>(
+                 offsets::CEngineSoundServices_SetSoundFrametime));
 
   client_class_manager = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();

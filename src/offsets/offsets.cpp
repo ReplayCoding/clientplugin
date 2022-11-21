@@ -1,9 +1,30 @@
 #include <frida-gum.h>
 #include <cstdint>
+#include <elfio/elfio.hpp>
 
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 #include "util/error.hpp"
+
+LoadedModule::LoadedModule(const std::string path,
+                           const std::uintptr_t base_address,
+                           const size_t size)
+    : base_address(base_address), size(size) {
+  elf.load(path);
+
+  for (ELFIO::segment* segment : elf.segments) {
+    if (segment->get_type() == ELFIO::PT_LOAD) {
+      offline_baseaddr =
+          std::min(offline_baseaddr,
+                   static_cast<uintptr_t>(segment->get_virtual_address()));
+    }
+  }
+
+  if (base_address == 0) {
+    // bail out, this is bad
+    throw StringError("WARNING: loaded_mod.base_address is nullptr");
+  };
+}
 
 std::uintptr_t SharedLibOffset::get_address() const {
   auto base_address = gum_module_find_base_address(module.c_str());

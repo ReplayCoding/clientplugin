@@ -6,13 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#pragma once
+
 #include <cstdint>
 
 /// Utility function to decode a ULEB128 value.
-inline uint64_t decodeULEB128(const uint8_t* p,
-                              unsigned* n = nullptr,
-                              const uint8_t* end = nullptr,
-                              const char** error = nullptr) {
+static inline uint64_t decodeULEB128(const uint8_t* p,
+                                     unsigned* n = nullptr,
+                                     const uint8_t* end = nullptr,
+                                     const char** error = nullptr) {
   const uint8_t* orig_p = p;
   uint64_t Value = 0;
   unsigned Shift = 0;
@@ -43,10 +45,10 @@ inline uint64_t decodeULEB128(const uint8_t* p,
 }
 
 /// Utility function to decode a SLEB128 value.
-inline int64_t decodeSLEB128(const uint8_t* p,
-                             unsigned* n = nullptr,
-                             const uint8_t* end = nullptr,
-                             const char** error = nullptr) {
+static inline int64_t decodeSLEB128(const uint8_t* p,
+                                    unsigned* n = nullptr,
+                                    const uint8_t* end = nullptr,
+                                    const char** error = nullptr) {
   const uint8_t* orig_p = p;
   int64_t Value = 0;
   unsigned Shift = 0;
@@ -84,26 +86,26 @@ inline int64_t decodeSLEB128(const uint8_t* p,
 }
 
 /// Utility function to get the size of the ULEB128-encoded value.
-unsigned getULEB128Size(uint64_t Value) {
-  unsigned Size = 0;
-  do {
-    Value >>= 7;
-    Size += sizeof(int8_t);
-  } while (Value);
-  return Size;
-}
+// unsigned getULEB128Size(uint64_t Value) {
+//   unsigned Size = 0;
+//   do {
+//     Value >>= 7;
+//     Size += sizeof(int8_t);
+//   } while (Value);
+//   return Size;
+// }
 
 /// Utility function to get the size of the SLEB128-encoded value.
-unsigned getSLEB128Size(int64_t Value) {
-  unsigned Size = 0;
-  int Sign = Value >> (8 * sizeof(Value) - 1);
-  bool IsMore;
-
-  do {
-    unsigned Byte = Value & 0x7f;
-    Value >>= 7;
-    IsMore = Value != Sign || ((Byte ^ Sign) & 0x40) != 0;
-    Size += sizeof(int8_t);
-  } while (IsMore);
-  return Size;
-}
+// unsigned getSLEB128Size(int64_t Value) {
+//   unsigned Size = 0;
+//   int Sign = Value >> (8 * sizeof(Value) - 1);
+//   bool IsMore;
+//
+//   do {
+//     unsigned Byte = Value & 0x7f;
+//     Value >>= 7;
+//     IsMore = Value != Sign || ((Byte ^ Sign) & 0x40) != 0;
+//     Size += sizeof(int8_t);
+//   } while (IsMore);
+//   return Size;
+// }

@@ -7,6 +7,7 @@ add_library(
   x264encoder.cpp
   util/mmap.cpp
   offsets/offsets.cpp
+  offsets/eh_frame.cpp
   offsets/rtti.cpp
   modules/modules.cpp
   modules/unhidecvars.cpp
@@ -56,6 +57,8 @@ target_link_libraries(
   OpenGL::GL
   imgui::imgui
   absl::numeric
+  absl::flat_hash_set
+  absl::flat_hash_map
   range-v3::range-v3
   elfio::elfio
   Tracy::TracyClient

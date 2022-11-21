@@ -1,6 +1,31 @@
 #pragma once
 #include <cstdint>
+#include <elfio/elfio.hpp>
 #include <string>
+
+struct LoadedModule {
+  LoadedModule(const std::string path,
+               const std::uintptr_t base_address,
+               const size_t size);
+
+  inline std::uintptr_t get_online_address_from_offline(
+      std::uintptr_t offline_addr) {
+    return base_address + (offline_addr - offline_baseaddr);
+  }
+
+  inline std::uintptr_t get_offline_address_from_online(
+      std::uintptr_t online_addr) {
+    return offline_baseaddr + (online_addr - base_address);
+  }
+
+  ELFIO::elfio elf{};
+
+  const std::uintptr_t base_address{};
+  const size_t size{};
+
+ private:
+  std::uintptr_t offline_baseaddr{UINTPTR_MAX};
+};
 
 class ManualOffset {
  public:

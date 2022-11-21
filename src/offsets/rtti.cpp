@@ -15,11 +15,12 @@
 #include <range/v3/to_container.hpp>
 #include <range/v3/view/chunk_by.hpp>
 #include <string_view>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "rtti.hpp"
+#include "offsets/eh_frame.hpp"
+#include "offsets/offsets.hpp"
+#include "offsets/rtti.hpp"
 #include "util/data_range_checker.hpp"
 #include "util/data_view.hpp"
 #include "util/error.hpp"
@@ -27,20 +28,11 @@
 
 std::unique_ptr<RttiManager> g_RTTI{};
 
-std::uintptr_t ElfModuleVtableDumper::get_online_address_from_offline(
-    std::uintptr_t offline_addr) {
-  return online_baseaddr + (offline_addr - offline_baseaddr);
-}
-
-std::uintptr_t ElfModuleVtableDumper::get_offline_address_from_online(
-    std::uintptr_t online_addr) {
-  return offline_baseaddr + (online_addr - online_baseaddr);
-}
-
 void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
-  const ELFIO::relocation_section_accessor relocations{elf, section};
+  const ELFIO::relocation_section_accessor relocations{loaded_mod->elf,
+                                                       section};
   const ELFIO::symbol_section_accessor symbols{
-      elf, elf.sections[section->get_link()]};
+      loaded_mod->elf, loaded_mod->elf.sections[section->get_link()]};
 
   // TODO: Range
   for (size_t relidx = 0; relidx < relocations.get_entries_num(); ++relidx) {
@@ -69,180 +61,25 @@ void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
     if (type == 0 /* NONE rel type */ || symbol_type == ELFIO::STN_UNDEF)
       continue;
 
-    std::uintptr_t online_reladdress = get_online_address_from_offline(offset);
+    std::uintptr_t online_reladdress =
+        loaded_mod->get_online_address_from_offline(offset);
 
     // Explicitely avoid setting the relocations var defined above...
     this->relocations[online_reladdress] = symbol_name;
   }
 }
 
-ElfModuleVtableDumper::cie_info_t ElfModuleVtableDumper::handle_cie(
-    const std::uintptr_t cie_address) {
-  DataView cie_data{cie_address};
-
-  uint32_t cie_length = cie_data.read<uint32_t>();
-
-  // If Length contains the value 0xffffffff, then the length is
-  // contained in the Extended Length field.
-  if (cie_length == UINT32_MAX)
-    throw StringError("TODO");
-
-  const uint32_t cie_id = cie_data.read<uint32_t>();
-
-  // Make sure this is a CIE
-  if (cie_id != 0)
-    throw StringError("CIE ID is {}, not 0 (@ {:08X}, start {:08X})", cie_id,
-                      cie_data.data_ptr - sizeof(uint32_t), cie_address);
-
-  const uint8_t cie_version = cie_data.read<uint8_t>();
-
-  if (cie_version != 1)
-    throw StringError("CIE version is {}, not 1 (@ {:08X})", cie_version,
-                      cie_data.data_ptr);
-
-  const std::string_view cie_augmentation_string = cie_data.read_string();
-
-  /* auto cie_code_alignment_factor =  */ cie_data.read_uleb128();
-  /* auto cie_data_alignment_factor =  */ cie_data.read_sleb128();
-
-  // Really nice of them to not document this field
-  /* uint8_t return_address_register =  */ cie_data.read<uint8_t>();
-
-  // A 'z' may be present as the first character of the string. If present,
-  // the Augmentation Data field shall be present.
-  uint8_t fde_pointer_encoding{};
-  if (cie_augmentation_string[0] == 'z') {
-    // This field is only present if the Augmentation String contains the
-    // character 'z'.
-    /* uint64_t cie_augmentation_length =  */ cie_data.read_uleb128();
-
-    for (const auto augmentation : cie_augmentation_string) {
-      switch (augmentation) {
-        case 'z': {
-          // Already handled above
-          break;
-        }
-        case 'R': {
-          fde_pointer_encoding = cie_data.read<uint8_t>();
-          break;
-        }
-        case 'L': {
-          // FDE Augmentation Data isn't currently handled, so we can just
-          // skip the encoding byte.
-          /* uint8_t lsda_pointer_encoding =  */ cie_data.read<uint8_t>();
-          break;
-        }
-        case 'P': {
-          uint8_t pointer_encoding = cie_data.read<uint8_t>();
-          // There are some unhandled applications, so just skip them as we
-          // don't use the value
-          if (!cie_data.read_dwarf_encoded_no_application(pointer_encoding))
-            throw StringError("Expected personality routine.");
-          break;
-        }
-        default: {
-          throw StringError("Unknown augmentation '{}'", augmentation);
-          break;
-        }
-      }
-    }
-  }
-
-  return {.fde_pointer_encoding = fde_pointer_encoding};
-}
-
-DataRangeChecker ElfModuleVtableDumper::handle_eh_frame(
-    const std::uintptr_t start_address,
-    const std::uintptr_t end_address) {
-  // Ugly name, but we need to do this to avoid conflicts
-  DataRangeChecker function_ranges_to_return{online_baseaddr};
-  DataView fde_data{start_address};
-
-  while (fde_data.data_ptr < end_address) {
-    // A 4 byte unsigned value indicating the length in bytes of the CIE
-    // structure, not including the Length field itself
-    const uint32_t length = fde_data.read<uint32_t>();
-
-    // This can happen due to section padding
-    if (fde_data.data_ptr >= end_address || length == 0)
-      break;
-
-    // Do this after incrementing current_address, so we exclude the length
-    // pointer.
-    const auto next_record_address = fde_data.data_ptr + length;
-
-    // If Length contains the value 0xffffffff, then the length is contained
-    // in the Extended Length field.
-    if (length == UINT32_MAX)
-      throw StringError("TODO");
-
-    // Used to differentiate between CIE and FDE
-    // If it's nonzero, it's a value that when subtracted from the offset
-    // of the CIE Pointer in the current FDE yields the offset of the
-    // start of the associated CIE.
-    const auto cie_id_or_cie_offset = fde_data.read<uint32_t>();
-
-    // // If this is zero, it's a CIE, otherwise it's an FDE
-    if (cie_id_or_cie_offset == 0) {
-      // Skip the CIE, we parse it when handling the FDE
-    } else {
-      // A 4 byte unsigned value that when subtracted from the offset of the
-      // CIE Pointer in the current FDE yields the offset of the start of the
-      // associated CIE.
-      const auto cie_pointer =
-          fde_data.data_ptr - cie_id_or_cie_offset -
-          sizeof(uint32_t);  // We need to subtract the sizeof because it's
-                             // added when grabbing the CIE offset
-      const auto cie_data = handle_cie(cie_pointer);
-
-      std::optional<std::uintptr_t> fde_pc_begin =
-          fde_data.read_dwarf_encoded(cie_data.fde_pointer_encoding);
-      if (!fde_pc_begin) {
-        throw StringError("PC Begin required, but not provided");
-      }
-
-      auto fde_pc_range = fde_data.read<std::uintptr_t>();
-      function_ranges_to_return.add_range(fde_pc_begin.value(), fde_pc_range);
-    }
-
-    // We don't parse the entire structure, but if we overflow into the next
-    // record, something is wrong
-    if (fde_data.data_ptr >= next_record_address) {
-      throw StringError(
-          "fde data pointer ({:08X}) is more than next_record_address "
-          "({:08X})",
-          fde_data.data_ptr, next_record_address);
-    };
-    fde_data.data_ptr = next_record_address;
-
-    // Both CIEs and FDEs shall be aligned to an addressing unit sized
-    // boundary.
-    while ((fde_data.data_ptr % sizeof(void*)) != 0)
-      fde_data.data_ptr += 1;
-  }
-
-  return function_ranges_to_return;
-}
-
 void ElfModuleVtableDumper::generate_data_from_sections() {
-  DataRangeChecker section_ranges_{online_baseaddr};
+  DataRangeChecker section_ranges_{loaded_mod->base_address};
 
-  for (auto section : elf.sections) {
+  for (auto section : loaded_mod->elf.sections) {
     if (section->get_address() != 0)
       section_ranges_.add_range(
-          get_online_address_from_offline(section->get_address()),
+          loaded_mod->get_online_address_from_offline(section->get_address()),
           section->get_size());
 
     if (section->get_type() == ELFIO::SHT_REL) {
       get_relocations(section);
-    }
-
-    if (section->get_name() == ".eh_frame") {
-      auto eh_frame_address =
-          get_online_address_from_offline(section->get_address());
-      std::uintptr_t eh_frame_end_addr = eh_frame_address + section->get_size();
-
-      function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
     }
   }
 
@@ -250,21 +87,20 @@ void ElfModuleVtableDumper::generate_data_from_sections() {
 }
 
 size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
-  const auto start_addr = addr;
   const auto vtable_type = relocations[addr];
-  addr += 2 * sizeof(void*); /* vtable ptr + name ptr */
+  uint32_t size = 2 * sizeof(void*); /* vtable ptr + name ptr */
 
   if (vtable_type.ends_with("__si_class_type_infoE")) {
-    addr += sizeof(void*);
+    size += sizeof(void*);
   } else if (vtable_type.ends_with("__vmi_class_type_infoE")) {
-    addr += sizeof(unsigned int);  // __flags
+    size += sizeof(unsigned int);  // __flags
 
-    auto base_count = *reinterpret_cast<unsigned int*>(addr);
-    addr += sizeof(unsigned int);
+    auto base_count = *reinterpret_cast<unsigned int*>(addr + size);
+    size += sizeof(unsigned int);
 
     for (unsigned int base{0}; base < base_count; base++) {
-      addr += sizeof(void*);
-      addr += sizeof(long);
+      size += sizeof(void*);
+      size += sizeof(long);
     }
   } else if (vtable_type.ends_with("__class_type_infoE")) {
     // already handled
@@ -272,7 +108,7 @@ size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
     throw StringError("Unkown RTTI type {}", vtable_type);
   }
 
-  return addr - start_addr;
+  return size;
 }
 
 std::uintptr_t get_typeinfo_addr(std::uintptr_t v) {
@@ -287,10 +123,11 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   }
 
   std::vector<std::uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
-  DataRangeChecker typeinfo_ranges{online_baseaddr};
+  DataRangeChecker typeinfo_ranges{loaded_mod->base_address};
 
-  for (std::uintptr_t addr{online_baseaddr};
-       addr < (online_baseaddr + online_size); addr += sizeof(void*)) {
+  for (std::uintptr_t addr{loaded_mod->base_address};
+       addr < (loaded_mod->base_address + loaded_mod->size);
+       addr += sizeof(void*)) {
     // Is this address even mapped? If not, we would get a segfault
     if (!section_ranges.is_position_in_range(addr))
       continue;
@@ -351,10 +188,10 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   return vftable_candidates;
 }
 
-ElfModuleVtableDumper::vtables_t ElfModuleVtableDumper::get_vtables() {
+ElfModuleVtableDumper::Vtables ElfModuleVtableDumper::get_vtables() {
   auto vf_tables = locate_vftables();
 
-  ElfModuleVtableDumper::vtables_t vtables{};
+  ElfModuleVtableDumper::Vtables vtables{};
   for (const auto& vtable_rng :
        vf_tables |
            ranges::views::chunk_by([](std::uintptr_t a, std::uintptr_t b) {
@@ -369,27 +206,10 @@ ElfModuleVtableDumper::vtables_t ElfModuleVtableDumper::get_vtables() {
   return vtables;
 }
 
-ElfModuleVtableDumper::ElfModuleVtableDumper(const std::string path,
-                                             size_t baddr,
-                                             size_t size) {
-  elf.load(path);
-
-  // Find online & offline load addresses
-  offline_baseaddr = UINTPTR_MAX;
-  for (ELFIO::segment* segment : elf.segments) {
-    if (segment->get_type() == ELFIO::PT_LOAD) {
-      offline_baseaddr =
-          std::min(offline_baseaddr,
-                   static_cast<uintptr_t>(segment->get_virtual_address()));
-    }
-  }
-
-  online_baseaddr = baddr;
-  online_size = size;
-  if (online_baseaddr == 0) {
-    // bail out, this is bad
-    throw StringError("WARNING: online_baseaddress is nullptr");
-  };
+ElfModuleVtableDumper::ElfModuleVtableDumper(LoadedModule* module,
+                                             ElfModuleEhFrameParser* eh_frame) {
+  loaded_mod = module;
+  function_ranges = eh_frame->as_data_range();
 
   generate_data_from_sections();
 }
@@ -408,6 +228,7 @@ RttiManager::RttiManager() {
 
   gum_process_enumerate_modules(
       // This uses a gboolean, so we need to return `1` instead of `true`.
+      // NOTE: ALWAYS RETURN 1
       [](const GumModuleDetails* details, void* user_data) {
         auto self = static_cast<RttiManager*>(user_data);
         constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
@@ -418,9 +239,14 @@ RttiManager::RttiManager() {
         }
 
         try {
-          ElfModuleVtableDumper dumped_rtti{
-              details->path, static_cast<size_t>(details->range->base_address),
-              details->range->size};
+          LoadedModule loaded_mod{
+              details->path,
+              static_cast<std::uintptr_t>(details->range->base_address),
+              details->range->size,
+          };
+
+          ElfModuleEhFrameParser eh_frame{&loaded_mod};
+          ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
 
           auto vtables = dumped_rtti.get_vtables();
           self->submit_vtables(details->name, vtables);

@@ -3,7 +3,6 @@
 #include <dt_common.h>
 #include <dt_recv.h>
 #include <cstddef>
-#include <map>
 #include <vector>
 
 #include "sdk/concommandwrapper.hpp"

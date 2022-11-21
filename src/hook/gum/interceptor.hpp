@@ -2,7 +2,7 @@
 #include <frida-gum.h>
 #include <cstdint>
 #include <memory>
-#include <set>
+#include <absl/container/flat_hash_set.h>
 
 #include "objectwrapper.hpp"
 
@@ -60,8 +60,8 @@ namespace Gum {
     };
 
    private:
-    std::set<ProbeListener*> probe_listeners{};
-    std::set<CallListener*> call_listeners{};
+    absl::flat_hash_set<ProbeListener*> probe_listeners{};
+    absl::flat_hash_set<CallListener*> call_listeners{};
   };
 
 }  // namespace Gum
