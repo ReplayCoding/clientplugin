@@ -39,9 +39,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
 find_package(elfio CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
-
-find_package(SDL2 REQUIRED)
 
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
@@ -53,7 +52,6 @@ target_link_libraries(
   sdk::bitmap
 
   fmt::fmt
-  SDL2::SDL2
   PkgConfig::x264
   OpenGL::GL
   imgui::imgui
@@ -61,6 +59,7 @@ target_link_libraries(
   range-v3::range-v3
   elfio::elfio
   Tracy::TracyClient
+  SDL2::SDL2
 
   frida-gum
 )
