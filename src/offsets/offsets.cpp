@@ -1,6 +1,7 @@
 #include <frida-gum.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
@@ -10,6 +11,7 @@ LoadedModule::LoadedModule(const std::string path,
                            const std::uintptr_t base_address,
                            const size_t size)
     : base_address(base_address), size(size) {
+  ZoneScoped;
   elf.load(path);
 
   for (ELFIO::segment* segment : elf.segments) {

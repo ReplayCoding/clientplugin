@@ -1,11 +1,10 @@
 #include <memory>
 
 #include "hook/attachmenthook.hpp"
-#include "modules/modules.hpp"
 
-class ProfilerMod : public IModule {
+class Profiler {
  public:
-  ProfilerMod();
+  Profiler();
 
  private:
   std::unique_ptr<AttachmentHookEnter> enter_node_hook;

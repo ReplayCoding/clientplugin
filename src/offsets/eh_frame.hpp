@@ -14,7 +14,7 @@ struct FunctionRange {
 class ElfModuleEhFrameParser {
  public:
   ElfModuleEhFrameParser(LoadedModule* module);
-  DataRangeChecker as_data_range() {
+  DataRangeChecker as_data_range_checker() {
     DataRangeChecker ranges{base_address};
     for (auto& function_range : function_ranges) {
       ranges.add_range(function_range.begin, function_range.size);

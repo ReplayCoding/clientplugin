@@ -9,19 +9,17 @@
 #include <stack>
 
 #include "hook/attachmenthook.hpp"
-#include "modules/modules.hpp"
-#include "modules/profiler.hpp"
 #include "offsets/offsets.hpp"
+#include "profiler.hpp"
 
 #define UNAVAILABLE "unavailable"
 #define UNAVAILABLE_LEN strlen(UNAVAILABLE)
 
 thread_local std::stack<TracyCZoneCtx> ctx_stack{};
 
-ProfilerMod::ProfilerMod() {
+Profiler::Profiler() {
   enter_node_hook = std::make_unique<AttachmentHookEnter>(
-      offsets::CVProfNode_EnterScope,
-      [this](InvocationContext context) {
+      offsets::CVProfNode_EnterScope, [this](InvocationContext context) {
         auto self = context.get_arg<CVProfNode*>(0);
 
         uint64 location = ___tracy_alloc_srcloc_name(
@@ -37,8 +35,7 @@ ProfilerMod::ProfilerMod() {
       });
 
   exit_node_hook = std::make_unique<AttachmentHookEnter>(
-      offsets::CVProfNode_ExitScope,
-      [this](auto context) {
+      offsets::CVProfNode_ExitScope, [this](auto context) {
         m.lock();
 
         ___tracy_emit_zone_end(ctx_stack.top());
@@ -47,5 +44,3 @@ ProfilerMod::ProfilerMod() {
         m.unlock();
       });
 }
-
-REGISTER_MODULE(ProfilerMod)

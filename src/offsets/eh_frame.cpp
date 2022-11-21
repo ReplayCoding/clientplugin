@@ -1,4 +1,5 @@
 #include <elfio/elfio.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "offsets/eh_frame.hpp"
 #include "offsets/offsets.hpp"
@@ -155,6 +156,7 @@ std::vector<FunctionRange> ElfModuleEhFrameParser::handle_eh_frame(
 }
 
 ElfModuleEhFrameParser::ElfModuleEhFrameParser(LoadedModule* module) {
+  ZoneScoped;
   base_address = module->base_address;
 
   // TODO: Range

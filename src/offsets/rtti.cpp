@@ -15,6 +15,7 @@
 #include <range/v3/to_container.hpp>
 #include <range/v3/view/chunk_by.hpp>
 #include <string_view>
+#include <tracy/Tracy.hpp>
 #include <utility>
 #include <vector>
 
@@ -189,6 +190,7 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
 }
 
 ElfModuleVtableDumper::Vtables ElfModuleVtableDumper::get_vtables() {
+  ZoneScoped;
   auto vf_tables = locate_vftables();
 
   ElfModuleVtableDumper::Vtables vtables{};
@@ -208,8 +210,9 @@ ElfModuleVtableDumper::Vtables ElfModuleVtableDumper::get_vtables() {
 
 ElfModuleVtableDumper::ElfModuleVtableDumper(LoadedModule* module,
                                              ElfModuleEhFrameParser* eh_frame) {
+  ZoneScoped;
   loaded_mod = module;
-  function_ranges = eh_frame->as_data_range();
+  function_ranges = eh_frame->as_data_range_checker();
 
   generate_data_from_sections();
 }
@@ -230,33 +233,43 @@ RttiManager::RttiManager() {
       // This uses a gboolean, so we need to return `1` instead of `true`.
       // NOTE: ALWAYS RETURN 1
       [](const GumModuleDetails* details, void* user_data) {
+        ZoneScoped;
+
         auto self = static_cast<RttiManager*>(user_data);
-        constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
-                                                       "libclientplugin.so"};
-        if (ranges::any_of(excluded_paths,
-                           [&](auto b) { return b == details->name; })) {
-          return 1;
+
+        {
+          ZoneScopedN("exclusion check");
+          constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
+                                                         "libclientplugin.so"};
+
+          if (ranges::any_of(excluded_paths,
+                             [&](auto b) { return b == details->name; })) {
+            return 1;
+          }
         }
 
-        try {
-          LoadedModule loaded_mod{
-              details->path,
-              static_cast<std::uintptr_t>(details->range->base_address),
-              details->range->size,
+        {
+          ZoneScopedN("handle module");
+          try {
+            LoadedModule loaded_mod{
+                details->path,
+                static_cast<std::uintptr_t>(details->range->base_address),
+                details->range->size,
+            };
+
+            ElfModuleEhFrameParser eh_frame{&loaded_mod};
+            ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
+
+            auto vtables = dumped_rtti.get_vtables();
+            self->submit_vtables(details->name, vtables);
+          } catch (std::exception& e) {
+            fmt::print(
+                "while handling module {}:\n"
+                "\t{}\n",
+                details->name, e.what());
+            throw;
           };
-
-          ElfModuleEhFrameParser eh_frame{&loaded_mod};
-          ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
-
-          auto vtables = dumped_rtti.get_vtables();
-          self->submit_vtables(details->name, vtables);
-        } catch (std::exception& e) {
-          fmt::print(
-              "while handling module {}:\n"
-              "\t{}\n",
-              details->name, e.what());
-          throw;
-        };
+        }
 
         return 1;
       },

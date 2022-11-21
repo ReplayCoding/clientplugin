@@ -20,9 +20,11 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   // sleep(3);
 
   gum_init_embedded();
+  g_Interceptor = std::make_unique<Gum::Interceptor>();
+  profiler = std::make_unique<Profiler>();
+
   Interfaces::Load(interfaceFactory);
 
-  g_Interceptor = std::make_unique<Gum::Interceptor>();
   g_RTTI = std::make_unique<RttiManager>();
 
   fmt::print("POOTIS IS AT! {:08X}\n",
@@ -48,9 +50,11 @@ void ServerPlugin::Unload(void) {
   client_class_manager.reset();
 
   g_RTTI.reset();
-  g_Interceptor.reset();
 
   Interfaces::Unload();
+
+  profiler.reset();
+  g_Interceptor.reset();
   gum_deinit_embedded();
 }
 
