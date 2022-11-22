@@ -1,11 +1,11 @@
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <cstddef>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <memory>
 #include <vector>
-#include <absl/container/flat_hash_map.h>
 
 #include "offsets.hpp"
 #include "offsets/eh_frame.hpp"

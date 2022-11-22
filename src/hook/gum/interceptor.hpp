@@ -1,8 +1,9 @@
 #pragma once
+
 #include <frida-gum.h>
 #include <cstdint>
 #include <memory>
-#include <absl/container/flat_hash_set.h>
+#include <vector>
 
 #include "objectwrapper.hpp"
 
@@ -60,8 +61,8 @@ namespace Gum {
     };
 
    private:
-    absl::flat_hash_set<ProbeListener*> probe_listeners{};
-    absl::flat_hash_set<CallListener*> call_listeners{};
+    std::vector<ProbeListener*> probe_listeners{};
+    std::vector<CallListener*> call_listeners{};
   };
 
 }  // namespace Gum

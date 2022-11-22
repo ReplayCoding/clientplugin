@@ -27,13 +27,13 @@ std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
         const auto subprop_fixed = ClientProp(
             subprop_name, prop->GetOffset() + subprop.offset, subprop.type);
 
-        props.emplace_back(subprop_fixed);
+        props.push_back(subprop_fixed);
       };
     } else {
       const auto wrapped_prop = clientclasses::ClientProp(
           prop->GetName(), prop->GetOffset(), prop->GetType());
 
-      props.emplace_back(wrapped_prop);
+      props.push_back(wrapped_prop);
     }
   }
   return props;
@@ -48,7 +48,7 @@ ClientClassManager::ClientClassManager()
     auto recv_tbl = client_class->m_pRecvTable;
     auto clientclass_parsed = clientclasses::ClientClass(recv_tbl);
 
-    clientclasses.emplace_back(clientclass_parsed);
+    clientclasses.push_back(clientclass_parsed);
   }
 }
 

@@ -48,23 +48,30 @@ namespace Gum {
       : GumObjectWrapper(gum_interceptor_obtain(), false) {}
 
   Interceptor::~Interceptor() {
+    begin_transaction();
     for (auto& listener : call_listeners) {
       detach(listener);
     }
     for (auto& listener : probe_listeners) {
       detach(listener);
     }
+    end_transaction();
   }
 
   GumAttachReturn Interceptor::attach(const std::uintptr_t address,
                                       CallListener* listener,
                                       void* user_data) {
+    begin_transaction();
+
     auto retval =
         gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
                                listener->get_listener(), user_data);
     if (retval != GUM_ATTACH_OK)
       throw StringError("Failed to attach to address {:08X}", address);
-    call_listeners.insert(listener);
+    call_listeners.push_back(listener);
+
+    end_transaction();
+
     return retval;
   }
   void Interceptor::detach(CallListener* listener) {
@@ -74,12 +81,17 @@ namespace Gum {
   GumAttachReturn Interceptor::attach(const std::uintptr_t address,
                                       ProbeListener* listener,
                                       void* user_data) {
+    begin_transaction();
+
     auto retval =
         gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
                                listener->get_listener(), user_data);
     if (retval != GUM_ATTACH_OK)
       throw StringError("Failed to attach to address {:08X}", address);
-    probe_listeners.insert(listener);
+    probe_listeners.push_back(listener);
+
+    end_transaction();
+
     return retval;
   }
 

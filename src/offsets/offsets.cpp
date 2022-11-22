@@ -41,7 +41,11 @@ std::uintptr_t VtableOffset::get_address() const {
 }
 
 std::uintptr_t SharedLibSymbol::get_address() const {
-  return gum_module_find_export_by_name(module.c_str(), symbol.c_str());
+  auto addr = gum_module_find_export_by_name(module.c_str(), symbol.c_str());
+  if (addr == 0)
+    throw StringError("Failed to get address of symbol {} from module {}\n",
+                      module, symbol);
+  return addr;
 }
 
 namespace offsets {
@@ -63,4 +67,5 @@ namespace offsets {
                                               "_ZN10CVProfNode10EnterScopeEv"};
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
                                              "_ZN10CVProfNode9ExitScopeEv"};
+  const VtableOffset CEngine_Frame{"engine.so", "7CEngine", 6};
 }  // namespace offsets

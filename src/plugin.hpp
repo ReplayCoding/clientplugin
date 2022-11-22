@@ -8,7 +8,6 @@
 #include "clientclasses.hpp"
 #include "modules/modules.hpp"
 #include "offsets/rtti.hpp"
-#include "profiler.hpp"
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  public:
@@ -108,5 +107,4 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  private:
   std::unique_ptr<ModuleManager> module_manager{};
   std::unique_ptr<ClientClassManager> client_class_manager{};
-  std::unique_ptr<Profiler> profiler{};
 };

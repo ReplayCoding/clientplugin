@@ -21,7 +21,6 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
 
   gum_init_embedded();
   g_Interceptor = std::make_unique<Gum::Interceptor>();
-  profiler = std::make_unique<Profiler>();
 
   Interfaces::Load(interfaceFactory);
 
@@ -53,7 +52,6 @@ void ServerPlugin::Unload(void) {
 
   Interfaces::Unload();
 
-  profiler.reset();
   g_Interceptor.reset();
   gum_deinit_embedded();
 }

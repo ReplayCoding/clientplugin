@@ -132,7 +132,7 @@ std::vector<FunctionRange> ElfModuleEhFrameParser::handle_eh_frame(
       }
 
       auto fde_pc_range = fde_data.read<std::uintptr_t>();
-      function_ranges.emplace_back(
+      function_ranges.push_back(
           FunctionRange{fde_pc_begin.value(), fde_pc_range});
     }
 

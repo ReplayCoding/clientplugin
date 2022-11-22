@@ -9,3 +9,6 @@
 	path = external/tracy
   branch = "noinstall"
 	url = https://github.com/ReplayCoding/tracy
+[submodule "external/abseil-cpp"]
+	path = external/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git

@@ -3,7 +3,6 @@
   "dependencies": [
     "fmt",
     "x264",
-    "abseil",
     "elfio",
     "range-v3",
     {

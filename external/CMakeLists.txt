@@ -21,7 +21,8 @@ option(TRACY_NO_CALLSTACK "" ON)
 option(TRACY_NO_CALLSTACK_INLINES "" ON)
 option(TRACY_NO_SAMPLING "" ON)
 option(TRACY_NO_SYSTEM_TRACING "" ON)
-
+option(TRACY_ON_DEMAND "" ON)
 add_subdirectory(tracy)
 
+add_subdirectory(abseil-cpp)
 add_subdirectory("source-sdk")
