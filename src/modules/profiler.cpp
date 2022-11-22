@@ -2,9 +2,9 @@
 #include <vprof.h>
 #undef private
 
+#include <absl/container/inlined_vector.h>
 #include <fmt/core.h>
 #include <tracy/TracyC.h>
-#include <deque>
 #include <memory>
 #include <stack>
 
@@ -17,7 +17,10 @@
 #define UNAVAILABLE "unavailable"
 #define UNAVAILABLE_LEN strlen(UNAVAILABLE)
 
-thread_local std::stack<TracyCZoneCtx> ctx_stack{};
+template <typename T, size_t size>
+using InlineStack = std::stack<T, absl::InlinedVector<T, size>>;
+
+thread_local InlineStack<TracyCZoneCtx, 32> ctx_stack{};
 
 ProfilerMod::ProfilerMod() {
   enter_node_hook = std::make_unique<AttachmentHookEnter>(

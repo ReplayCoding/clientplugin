@@ -58,6 +58,7 @@ target_link_libraries(
   absl::numeric
   absl::flat_hash_set
   absl::flat_hash_map
+  absl::inlined_vector
   range-v3::range-v3
   elfio::elfio
   Tracy::TracyClient
