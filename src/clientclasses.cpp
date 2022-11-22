@@ -43,8 +43,8 @@ ClientClassManager::ClientClassManager()
     : pe_dump_props_to_file_callback([&](auto c) { dump_props_to_file(c); }),
       pe_dump_props_to_file("pe_dump_netvars_to_file",
                             &pe_dump_props_to_file_callback) {
-  for (auto client_class = Interfaces::ClientDll->GetAllClasses(); client_class;
-       client_class = client_class->m_pNext) {
+  for (auto client_class = Interfaces::ClientDll->GetAllClasses();
+       client_class != nullptr; client_class = client_class->m_pNext) {
     auto recv_tbl = client_class->m_pRecvTable;
     auto clientclass_parsed = clientclasses::ClientClass(recv_tbl);
 
