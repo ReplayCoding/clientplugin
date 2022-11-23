@@ -8,9 +8,8 @@
 #include "util/error.hpp"
 
 LoadedModule::LoadedModule(const std::string path,
-                           const std::uintptr_t base_address,
-                           const size_t size)
-    : base_address(base_address), size(size) {
+                           const std::uintptr_t base_address)
+    : base_address(base_address) {
   ZoneScoped;
   elf.load(path);
 

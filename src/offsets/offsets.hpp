@@ -5,8 +5,7 @@
 
 struct LoadedModule {
   LoadedModule(const std::string path,
-               const std::uintptr_t base_address,
-               const size_t size);
+               const std::uintptr_t base_address);
 
   inline std::uintptr_t get_online_address_from_offline(
       std::uintptr_t offline_addr) {
@@ -21,7 +20,6 @@ struct LoadedModule {
   ELFIO::elfio elf{};
 
   const std::uintptr_t base_address{};
-  const size_t size{};
 
  private:
   std::uintptr_t offline_baseaddr{UINTPTR_MAX};

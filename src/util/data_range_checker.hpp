@@ -9,13 +9,21 @@ using range_bs_t =
     std::bitset<1073741824>;  // Can represent 1 GiB of data (more than enough
                               // to hold even LLVM's memory space)
 
+struct DataRange {
+  DataRange(std::uintptr_t begin, std::uintptr_t length)
+      : begin(begin), length(length) {}
+
+  std::uintptr_t begin;
+  std::uintptr_t length;
+};
+
 class DataRangeChecker {
  public:
-  DataRangeChecker(std::uintptr_t base_ = 0)
-      : base(base_), range(std::make_unique<range_bs_t>()) {}
+  DataRangeChecker(std::uintptr_t base = 0)
+      : base(base), range(std::make_unique<range_bs_t>()) {}
 
-  inline void add_range(std::uintptr_t start, std::uintptr_t length) {
-    for (auto i = start; i < start + length; i++) {
+  inline void add_range(const DataRange& r) {
+    for (auto i = r.begin; i < r.begin + r.length; i++) {
       range->set(i - base);
     }
   }

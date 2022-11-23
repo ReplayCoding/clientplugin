@@ -1,11 +1,11 @@
 #include <fcntl.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
-#include <frida-gum.h>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <elfio/elfio.hpp>
 #include <iterator>
 #include <range/v3/action/remove_if.hpp>
@@ -18,6 +18,10 @@
 #include <tracy/Tracy.hpp>
 #include <utility>
 #include <vector>
+
+// It's just a header, it can't hurt you
+// (Must be AFTER elfio)
+#include <link.h>
 
 #include "offsets/eh_frame.hpp"
 #include "offsets/offsets.hpp"
@@ -59,7 +63,7 @@ void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
                             _symbol_other))
       continue;
 
-    if (type == 0 /* NONE rel type */ || symbol_type == ELFIO::STN_UNDEF)
+    if (type == 0 /* NONE rel type */ || symbol_type == /* ELFIO:: */ STN_UNDEF)
       continue;
 
     std::uintptr_t online_reladdress =
@@ -71,20 +75,18 @@ void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
 }
 
 void ElfModuleVtableDumper::generate_data_from_sections() {
-  DataRangeChecker section_ranges_{loaded_mod->base_address};
-
   for (auto section : loaded_mod->elf.sections) {
-    if (section->get_address() != 0)
-      section_ranges_.add_range(
+    if (section->get_type() == /* ELFIO:: */ SHT_REL) {
+      get_relocations(section);
+      continue;
+    }
+
+    if (section->get_address() != 0) {
+      section_ranges.emplace_back(
           loaded_mod->get_online_address_from_offline(section->get_address()),
           section->get_size());
-
-    if (section->get_type() == ELFIO::SHT_REL) {
-      get_relocations(section);
     }
   }
-
-  section_ranges = std::move(section_ranges_);
 }
 
 size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
@@ -126,20 +128,18 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   std::vector<std::uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
   DataRangeChecker typeinfo_ranges{loaded_mod->base_address};
 
-  for (std::uintptr_t addr{loaded_mod->base_address};
-       addr < (loaded_mod->base_address + loaded_mod->size);
-       addr += sizeof(void*)) {
-    // Is this address even mapped? If not, we would get a segfault
-    if (!section_ranges.is_position_in_range(addr))
-      continue;
+  for (DataRange& range : section_ranges) {
+    for (std::uintptr_t addr{range.begin}; addr < (range.begin + range.length);
+         addr += sizeof(void*)) {
+      uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
+      if (!function_ranges.is_position_in_range(addr) &&
+          instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
+        auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
 
-    uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
-    if (!function_ranges.is_position_in_range(addr) &&
-        instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
-      auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
-
-      vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
-      typeinfo_ranges.add_range(potential_typeinfo_addr, typeinfo_size);
+        vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
+        typeinfo_ranges.add_range(
+            DataRange(potential_typeinfo_addr, typeinfo_size));
+      }
     }
   }
 
@@ -212,7 +212,7 @@ ElfModuleVtableDumper::ElfModuleVtableDumper(LoadedModule* module,
                                              ElfModuleEhFrameParser* eh_frame) {
   ZoneScoped;
   loaded_mod = module;
-  function_ranges = eh_frame->as_data_range_checker();
+  function_ranges = std::move(eh_frame->as_data_range_checker());
 
   generate_data_from_sections();
 }
@@ -229,49 +229,52 @@ std::uintptr_t RttiManager::get_function(std::string module,
 RttiManager::RttiManager() {
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  gum_process_enumerate_modules(
-      // This uses a gboolean, so we need to return `1` instead of `true`.
-      // NOTE: ALWAYS RETURN 1
-      [](const GumModuleDetails* details, void* user_data) {
+  dl_iterate_phdr(
+      [](dl_phdr_info* info, size_t info_size, void* user_data) {
         ZoneScoped;
 
-        auto self = static_cast<RttiManager*>(user_data);
+        const std::string_view fname = basename(info->dlpi_name);
 
         {
           ZoneScopedN("exclusion check");
+
           constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
                                                          "libclientplugin.so"};
 
-          if (ranges::any_of(excluded_paths,
-                             [&](auto b) { return b == details->name; })) {
-            return 1;
+          if (info->dlpi_addr == 0 || info->dlpi_name == nullptr ||
+              info->dlpi_name[0] == '\0') {
+            return 0;
+          } else if (ranges::any_of(excluded_paths,
+                                    [&](auto b) { return fname == b; })) {
+            return 0;
           }
         }
 
         {
           ZoneScopedN("handle module");
+
+          auto self = static_cast<RttiManager*>(user_data);
           try {
             LoadedModule loaded_mod{
-                details->path,
-                static_cast<std::uintptr_t>(details->range->base_address),
-                details->range->size,
+                info->dlpi_name,
+                static_cast<std::uintptr_t>(info->dlpi_addr),
             };
 
             ElfModuleEhFrameParser eh_frame{&loaded_mod};
             ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
 
             auto vtables = dumped_rtti.get_vtables();
-            self->submit_vtables(details->name, vtables);
+            self->submit_vtables(std::string(fname), vtables);
           } catch (std::exception& e) {
             fmt::print(
                 "while handling module {}:\n"
                 "\t{}\n",
-                details->name, e.what());
+                fname, e.what());
             throw;
           };
         }
 
-        return 1;
+        return 0;
       },
       this);
 

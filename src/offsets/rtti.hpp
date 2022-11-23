@@ -29,7 +29,7 @@ class ElfModuleVtableDumper {
 
   absl::flat_hash_map<std::uintptr_t, std::string> relocations{};
   DataRangeChecker function_ranges;
-  DataRangeChecker section_ranges;
+  std::vector<DataRange> section_ranges{};
 };
 
 class RttiManager {

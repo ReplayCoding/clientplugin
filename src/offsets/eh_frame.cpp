@@ -82,10 +82,10 @@ ElfModuleEhFrameParser::CieInfo ElfModuleEhFrameParser::handle_cie(
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
 
-std::vector<FunctionRange> ElfModuleEhFrameParser::handle_eh_frame(
+std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
     const std::uintptr_t start_address,
     const std::uintptr_t end_address) {
-  std::vector<FunctionRange> function_ranges{};
+  std::vector<DataRange> function_ranges{};
   DataView fde_data{start_address};
 
   while (fde_data.data_ptr < end_address) {
@@ -133,7 +133,7 @@ std::vector<FunctionRange> ElfModuleEhFrameParser::handle_eh_frame(
 
       auto fde_pc_range = fde_data.read<std::uintptr_t>();
       function_ranges.push_back(
-          FunctionRange{fde_pc_begin.value(), fde_pc_range});
+          DataRange{fde_pc_begin.value(), fde_pc_range});
     }
 
     // We don't parse the entire structure, but if we overflow into the next
