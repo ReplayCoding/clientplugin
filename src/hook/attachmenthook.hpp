@@ -62,8 +62,7 @@ class _ProbeAttachmentHook : private Gum::ProbeListener {
 
 class AttachmentHookEnter : public _ProbeAttachmentHook {
  public:
-  AttachmentHookEnter(const Offset& address,
-                      attachment_hook_func_t func)
+  AttachmentHookEnter(const Offset& address, attachment_hook_func_t func)
       : _ProbeAttachmentHook(address), func(func) {}
 
  private:
@@ -76,8 +75,7 @@ class AttachmentHookEnter : public _ProbeAttachmentHook {
 
 class AttachmentHookLeave : public _CallAttachmentHook {
  public:
-  AttachmentHookLeave(const Offset& address,
-                      attachment_hook_func_t func)
+  AttachmentHookLeave(const Offset& address, attachment_hook_func_t func)
       : _CallAttachmentHook(address), func(func) {}
 
  private:

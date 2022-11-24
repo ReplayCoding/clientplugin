@@ -4,8 +4,7 @@
 #include <string>
 
 struct LoadedModule {
-  LoadedModule(const std::string path,
-               const std::uintptr_t base_address);
+  LoadedModule(const std::string path, const std::uintptr_t base_address);
 
   inline std::uintptr_t get_online_address_from_offline(
       std::uintptr_t offline_addr) {

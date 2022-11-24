@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <frida-gum.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
@@ -40,7 +41,12 @@ std::uintptr_t VtableOffset::get_address() const {
 }
 
 std::uintptr_t SharedLibSymbol::get_address() const {
-  auto addr = gum_module_find_export_by_name(module.c_str(), symbol.c_str());
+  auto handle = dlopen(module.c_str(), RTLD_LAZY | RTLD_NOLOAD);
+  if (handle == nullptr) {
+    throw StringError("Failed to get handle for module {}", module);
+  }
+
+  auto addr = reinterpret_cast<std::uintptr_t>(dlsym(handle, symbol.c_str()));
   if (addr == 0)
     throw StringError("Failed to get address of symbol {} from module {}\n",
                       module, symbol);
