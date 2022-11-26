@@ -102,6 +102,8 @@ namespace offsets {
 
   const extern SharedLibOffset FindAndHealTargets;
 
+  const extern SharedLibSymbol g_Telemetry;
+  const extern SharedLibSymbol TelemetryTick;
   const extern SharedLibSymbol CVProfNode_EnterScope;
   const extern SharedLibSymbol CVProfNode_ExitScope;
   const extern VtableOffset CEngine_Frame;

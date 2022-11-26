@@ -68,6 +68,8 @@ namespace offsets {
 
   const SharedLibOffset FindAndHealTargets{"client.so", 0x00ddf150 - 0x10000};
 
+  const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
+  const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
   const SharedLibSymbol CVProfNode_EnterScope{"libtier0.so",
                                               "_ZN10CVProfNode10EnterScopeEv"};
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",

@@ -35,6 +35,10 @@ class InvocationContext {
                                                 reinterpret_cast<void*>(value));
   }
 
+  inline uint32_t thread_id() {
+    return gum_invocation_context_get_thread_id(context);
+  }
+
  private:
   GumInvocationContext* context;
 };
