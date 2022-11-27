@@ -6,8 +6,13 @@
 #include <absl/container/inlined_vector.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <fmt/ostream.h>
+#include <threadtools.h>
 #include <tracy/TracyC.h>
+#include <atomic>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <range/v3/view/enumerate.hpp>
@@ -15,6 +20,7 @@
 #include <stack>
 #include <string_view>
 #include <thread>
+#include <tracy/Tracy.hpp>
 
 #include "hook/attachmenthook.hpp"
 #include "hook/gum/interceptor.hpp"
@@ -89,6 +95,7 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
   TelemetryReplacement() {
     this->tmCoreEnter = tmCoreEnter_replace;
     this->tmCoreLeave = tmCoreLeave_replace;
+    this->tmCoreMessage = tmCoreMessage_replace;
   }
 
  private:
@@ -102,6 +109,22 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
     }
 
     return false;
+  }
+
+  static void tmCoreMessage_replace(HTELEMETRY cx,
+                                    TmU32 const kThreadId,
+                                    TmU32 const kFlags,
+                                    TmFormatCode* pFmtCode,
+                                    char const* kpFmt,
+                                    ...) {
+    char buf[256] = {};  // C API moment... SECURITY!
+
+    va_list args;
+    va_start(args, kpFmt);
+    vsprintf(buf, kpFmt, args);
+    va_end(args);
+
+    ___tracy_emit_message(buf, sizeof(buf), 0);
   }
 
   static void tmCoreEnter_replace(HTELEMETRY cx,
@@ -175,7 +198,10 @@ class ProfilerMod : public IModule {
   std::unique_ptr<AttachmentHookEnter> exit_node_hook;
 
   std::unique_ptr<AttachmentHookEnter> frame_hook;
+  std::unique_ptr<AttachmentHookEnter> thread_name_hook;
 };
+
+std::atomic_flag have_thread_names_inited{};
 
 ProfilerMod::ProfilerMod() {
   last_observed_telemetry_level = UINT32_MAX;
@@ -199,6 +225,38 @@ ProfilerMod::ProfilerMod() {
   frame_hook = std::make_unique<AttachmentHookEnter>(
       offsets::CEngine_Frame,
       [](InvocationContext context) { ___tracy_emit_frame_mark(nullptr); });
+
+  thread_name_hook = std::make_unique<AttachmentHookEnter>(
+      offsets::ThreadSetDebugName, [](InvocationContext context) {
+        // TODO: Grab old thread names and send them to tracy????...
+        if (!have_thread_names_inited.test_and_set()) {
+          for (auto& dir :
+               std::filesystem::directory_iterator{"/proc/self/task"}) {
+            auto path = dir.path();
+            auto task = atol(path.stem().string().c_str());
+
+            // reuse path
+            path /= "comm";
+            std::ifstream comm(path);
+            std::string thread_name{};
+            comm >> thread_name;
+            fmt::print("TASK {} is named {}\n", task, thread_name);
+          }
+        }
+
+        auto name = context.get_arg<char*>(1);
+        auto id = context.get_arg<ThreadId_t>(0);
+        if (id != static_cast<ThreadId_t>(-1)) {
+          fmt::print(
+              "Thread {} (name: {}) is being set from separate thread, will "
+              "not save.\n",
+              id, name);
+          return;
+        };
+
+        // Basically useless :(
+        tracy::SetThreadName(name);
+      });
 }
 
 ProfilerMod::~ProfilerMod() {

@@ -70,6 +70,7 @@ namespace offsets {
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
+  const SharedLibSymbol ThreadSetDebugName{"libtier0.so", "ThreadSetDebugName"};
   const SharedLibSymbol CVProfNode_EnterScope{"libtier0.so",
                                               "_ZN10CVProfNode10EnterScopeEv"};
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
