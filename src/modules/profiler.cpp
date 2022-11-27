@@ -2,8 +2,10 @@
 #include <vprof.h>
 #undef private
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <tracy/TracyC.h>
 #include <cstring>
 #include <memory>
@@ -12,11 +14,16 @@
 #include <shared_mutex>
 #include <stack>
 #include <string_view>
+#include <thread>
 
 #include "hook/attachmenthook.hpp"
 #include "hook/gum/interceptor.hpp"
 #include "modules/modules.hpp"
+#include "modules/telemetrystubs.hpp"
 #include "offsets/offsets.hpp"
+
+constexpr std::string_view UNAVAILABLE = "unavailable";
+constexpr bool IS_TELEMETRY = true;
 
 template <typename T, size_t size>
 using InlineStack = std::stack<T, absl::InlinedVector<T, size>>;
@@ -39,6 +46,10 @@ class ContextStack {
   }
 
   void pop() {
+    // Ugly hack
+    if (ctx_stack.empty())
+      return;
+
     ___tracy_emit_zone_end(ctx_stack.top());
     ctx_stack.pop();
   }
@@ -53,8 +64,8 @@ class ContextStack {
 };
 
 // Not using SDK ver. here, because it requires the Telemetry SDK
-struct Telemetry {
-  /* HTELEMETRY */ void* tmContext[32];
+struct TelemetryData {
+  HTELEMETRY tmContext[32];
   float flRDTSCToMilliSeconds;  // Conversion from tmFastTime() (rdtsc) to
                                 // milliseconds.
   uint32_t FrameCount;      // Count of frames to capture before turning off.
@@ -66,23 +77,78 @@ struct Telemetry {
   uint32_t Level;  // Current Telemetry level (Use TelemetrySetLevel to modify)
 };
 
-constexpr std::string_view UNAVAILABLE = "unavailable";
-constexpr bool IS_TELEMETRY = true;
+thread_local ContextStack vprof_ctx_stack{};
+thread_local ContextStack telemetry_ctx_stack{};
 
-static thread_local ContextStack ctx_stack{};
-static uint32_t last_observed_telemetry_level;
-static std::shared_mutex telemetry_mutex{};
+uint32_t last_observed_telemetry_level{};
+thread_local uint32_t last_observed_telemetry_level_per_thread{};
+std::shared_mutex telemetry_level_mutex{};
 
-class TelemetryReplacement {};
+class TelemetryReplacement : TM_API_STRUCT_STUB {
+ public:
+  TelemetryReplacement() {
+    this->tmCoreEnter = tmCoreEnter_replace;
+    this->tmCoreLeave = tmCoreLeave_replace;
+  }
+
+ private:
+  static inline bool check_level() {
+    std::shared_lock l{telemetry_level_mutex};
+    if (last_observed_telemetry_level_per_thread !=
+        last_observed_telemetry_level) {
+      last_observed_telemetry_level_per_thread = last_observed_telemetry_level;
+      telemetry_ctx_stack.clear();
+      return true;
+    }
+
+    return false;
+  }
+
+  static void tmCoreEnter_replace(HTELEMETRY cx,
+                                  TmU64* matchid,
+                                  TmU32 const kThreadId,
+                                  TmU64 const kThreshold,
+                                  TmU32 const kFlags,
+                                  char const* kpLocation,
+                                  TmU32 const kLine,
+                                  TmFormatCode* pFmtCode,
+                                  char const* kpFmt,
+                                  ...) {
+    if (check_level())
+      return;
+
+    std::string_view file_sv{kpLocation};
+    char buf[256] = {};  // C API moment... SECURITY!
+
+    va_list args;
+    va_start(args, kpFmt);
+    vsprintf(buf, kpFmt, args);
+    va_end(args);
+
+    telemetry_ctx_stack.push(kLine, file_sv, UNAVAILABLE, buf);
+  }
+
+  static void tmCoreLeave_replace(HTELEMETRY cx,
+                                  TmU64 const kMatchID,
+                                  TmU32 const kThreadId,
+                                  char const* kpLocation,
+                                  int const kLine) {
+    if (check_level())
+      return;
+
+    telemetry_ctx_stack.pop();
+  }
+};
+
+TelemetryReplacement telemetry_replacement{};
 
 void TelemetryTick_replacement() {
-  auto telemetry = static_cast<Telemetry*>(offsets::g_Telemetry);
+  auto telemetry = static_cast<TelemetryData*>(offsets::g_Telemetry);
 
-  std::shared_lock rlock(telemetry_mutex);
   if (telemetry->Level != last_observed_telemetry_level) {
-    rlock.unlock();
-    std::unique_lock wlock(telemetry_mutex);
-
+    std::unique_lock l{telemetry_level_mutex};
+    // If this is set normally, something is very wrong anyways, so just take
+    // the performance hit.
     if (last_observed_telemetry_level == UINT32_MAX) {
       // Clear them out just in case these somehow got inited before
       // we take control
@@ -90,6 +156,8 @@ void TelemetryTick_replacement() {
     } else {
       telemetry->tmContext[last_observed_telemetry_level] = nullptr;
     }
+
+    telemetry->tmContext[telemetry->Level] = &telemetry_replacement;
 
     fmt::print("telems level: {}, old level: {}\n", telemetry->Level,
                last_observed_telemetry_level);
@@ -116,12 +184,12 @@ ProfilerMod::ProfilerMod() {
     enter_node_hook = std::make_unique<AttachmentHookEnter>(
         offsets::CVProfNode_EnterScope, [](InvocationContext context) {
           auto self = context.get_arg<CVProfNode*>(0);
-          ctx_stack.push(0, UNAVAILABLE, UNAVAILABLE, self->m_pszName);
+          vprof_ctx_stack.push(0, UNAVAILABLE, UNAVAILABLE, self->m_pszName);
         });
 
     exit_node_hook = std::make_unique<AttachmentHookEnter>(
         offsets::CVProfNode_ExitScope,
-        [](InvocationContext context) { ctx_stack.pop(); });
+        [](InvocationContext context) { vprof_ctx_stack.pop(); });
   } else {
     g_Interceptor->replace(
         offsets::TelemetryTick,

@@ -1,6 +1,6 @@
 [submodule "source-sdk"]
 	path = external/source-sdk
-	url = https://github.com/ReplayCoding/hl2sdk-meson
+	url = https://github.com/ReplayCoding/hl2sdk-cmake
 	branch = sdk2013
 [submodule "vcpkg"]
 	path = external/vcpkg
