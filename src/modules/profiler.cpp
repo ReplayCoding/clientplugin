@@ -228,22 +228,6 @@ ProfilerMod::ProfilerMod() {
 
   thread_name_hook = std::make_unique<AttachmentHookEnter>(
       offsets::ThreadSetDebugName, [](InvocationContext context) {
-        // TODO: Grab old thread names and send them to tracy????...
-        if (!have_thread_names_inited.test_and_set()) {
-          for (auto& dir :
-               std::filesystem::directory_iterator{"/proc/self/task"}) {
-            auto path = dir.path();
-            auto task = atol(path.stem().string().c_str());
-
-            // reuse path
-            path /= "comm";
-            std::ifstream comm(path);
-            std::string thread_name{};
-            comm >> thread_name;
-            fmt::print("TASK {} is named {}\n", task, thread_name);
-          }
-        }
-
         auto name = context.get_arg<char*>(1);
         auto id = context.get_arg<ThreadId_t>(0);
         if (id != static_cast<ThreadId_t>(-1)) {
