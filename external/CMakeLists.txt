@@ -24,5 +24,7 @@ option(TRACY_NO_SYSTEM_TRACING "" ON)
 option(TRACY_ON_DEMAND "" ON)
 add_subdirectory(tracy)
 
+option(ABSL_PROPAGATE_CXX_STD "" ON)
+option(ABSL_USE_SYSTEM_INCLUDES "" ON)
 add_subdirectory(abseil-cpp)
 add_subdirectory("source-sdk")
