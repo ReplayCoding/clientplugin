@@ -2,9 +2,17 @@
 #include <fmt/core.h>
 
 #include "hook/attachmenthook.hpp"
-#include "modules/mediguns.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"
+
+class MediGunsMod : public IModule {
+ public:
+  MediGunsMod();
+
+ private:
+  std::unique_ptr<AttachmentHookEnter> lazy_hook;
+  float my_charge_val{};
+};
 
 MediGunsMod::MediGunsMod() {
   lazy_hook = std::make_unique<AttachmentHookEnter>(

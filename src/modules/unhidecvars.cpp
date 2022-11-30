@@ -1,8 +1,17 @@
 #include <convar.h>
 
 #include "modules/modules.hpp"
-#include "modules/unhidecvars.hpp"
 #include "sdk/ccvar.hpp"
+
+class UnhideCVarsMod : public IModule {
+ public:
+  UnhideCVarsMod();
+
+ private:
+  static void unhide_cvars();
+
+  ConCommand pe_unhide_cvars;
+};
 
 UnhideCVarsMod::UnhideCVarsMod()
     : pe_unhide_cvars("pe_unhide_cvars", unhide_cvars) {}
