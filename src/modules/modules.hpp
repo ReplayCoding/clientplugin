@@ -5,8 +5,7 @@
 
 class IModule {
  public:
-  IModule(){};
-  virtual ~IModule(){};
+  virtual ~IModule() = default;
 };
 
 class ModuleDesc;

@@ -28,6 +28,13 @@
 #include "modules/telemetrystubs.hpp"
 #include "offsets/offsets.hpp"
 
+#define TELEMETRY_FORMAT(name, format)        \
+  char name[256] = {};                        \
+  va_list args;                               \
+  va_start(args, format);                     \
+  vsnprintf(name, sizeof(buf), format, args); \
+  va_end(args);
+
 constexpr std::string_view UNAVAILABLE = "unavailable";
 constexpr bool IS_TELEMETRY = true;
 
@@ -69,20 +76,6 @@ class ContextStack {
   InlineStack<TracyCZoneCtx, 32> ctx_stack{};
 };
 
-// Not using SDK ver. here, because it requires the Telemetry SDK
-struct TelemetryData {
-  HTELEMETRY tmContext[32];
-  float flRDTSCToMilliSeconds;  // Conversion from tmFastTime() (rdtsc) to
-                                // milliseconds.
-  uint32_t FrameCount;      // Count of frames to capture before turning off.
-  char ServerAddress[128];  // Server name to connect to.
-  int playbacktick;  // GetPlaybackTick() value from demo file (or 0 if not
-                     // playing a demo).
-  uint32_t DemoTickStart;  // Start telemetry on demo tick #
-  uint32_t DemoTickEnd;    // End telemetry on demo tick #
-  uint32_t Level;  // Current Telemetry level (Use TelemetrySetLevel to modify)
-};
-
 thread_local ContextStack vprof_ctx_stack{};
 thread_local ContextStack telemetry_ctx_stack{};
 
@@ -117,13 +110,7 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
                                     TmFormatCode* pFmtCode,
                                     char const* kpFmt,
                                     ...) {
-    char buf[256] = {};  // C API moment... SECURITY!
-
-    va_list args;
-    va_start(args, kpFmt);
-    vsprintf(buf, kpFmt, args);
-    va_end(args);
-
+    TELEMETRY_FORMAT(buf, kpFmt)
     ___tracy_emit_message(buf, sizeof(buf), 0);
   }
 
@@ -141,12 +128,7 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
       return;
 
     std::string_view file_sv{kpLocation};
-    char buf[256] = {};  // C API moment... SECURITY!
-
-    va_list args;
-    va_start(args, kpFmt);
-    vsprintf(buf, kpFmt, args);
-    va_end(args);
+    TELEMETRY_FORMAT(buf, kpFmt)
 
     telemetry_ctx_stack.push(kLine, file_sv, UNAVAILABLE, buf);
   }
@@ -164,6 +146,20 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
 };
 
 TelemetryReplacement telemetry_replacement{};
+
+// Not using SDK ver. here, because it requires the Telemetry SDK
+struct TelemetryData {
+  HTELEMETRY tmContext[32];
+  float flRDTSCToMilliSeconds;  // Conversion from tmFastTime() (rdtsc) to
+                                // milliseconds.
+  uint32_t FrameCount;      // Count of frames to capture before turning off.
+  char ServerAddress[128];  // Server name to connect to.
+  int playbacktick;  // GetPlaybackTick() value from demo file (or 0 if not
+                     // playing a demo).
+  uint32_t DemoTickStart;  // Start telemetry on demo tick #
+  uint32_t DemoTickEnd;    // End telemetry on demo tick #
+  uint32_t Level;  // Current Telemetry level (Use TelemetrySetLevel to modify)
+};
 
 void TelemetryTick_replacement() {
   auto telemetry = static_cast<TelemetryData*>(offsets::g_Telemetry);
@@ -238,7 +234,6 @@ ProfilerMod::ProfilerMod() {
           return;
         };
 
-        // Basically useless :(
         tracy::SetThreadName(name);
       });
 }
