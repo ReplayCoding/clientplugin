@@ -10,6 +10,7 @@
 #include <cstring>
 #include <elfio/elfio.hpp>
 #include <iterator>
+#include <mutex>
 #include <range/v3/action/remove_if.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/algorithm/for_each.hpp>
@@ -262,8 +263,9 @@ RttiManager::RttiManager() {
       &modules);
 
   marl::WaitGroup wg(modules.size());
+  TracyLockable(std::mutex, vtable_mutex);
   for (auto& module : modules) {
-    marl::schedule([=, this] {
+    marl::schedule([=, &vtable_mutex, this] {
       ZoneScopedN("handle module");
       defer(wg.done());
 
@@ -279,6 +281,9 @@ RttiManager::RttiManager() {
         ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
 
         auto vtables = dumped_rtti.get_vtables();
+
+        vtable_mutex.lock();
+        defer(vtable_mutex.unlock());
         module_vtables[fname] = vtables;
       } catch (std::exception& e) {
         fmt::print(
