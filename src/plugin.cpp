@@ -4,6 +4,8 @@
 #include <fmt/core.h>
 #include <igameevents.h>
 #include <interface.h>
+#include <marl/defer.h>
+#include <marl/scheduler.h>
 #include <unistd.h>
 #include <memory>
 
@@ -112,6 +114,7 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  private:
   std::unique_ptr<ModuleManager> module_manager{};
   std::unique_ptr<ClientClassManager> client_class_manager{};
+  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(4)};
 };
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
@@ -119,6 +122,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   // FIXME: This is terrible
   // printf("Waiting to attach BIG CHUNGUS!\n");
   // sleep(3);
+
+  scheduler.bind();
 
   gum_init_embedded();
   g_Interceptor = std::make_unique<Gum::Interceptor>();
@@ -155,6 +160,8 @@ void ServerPlugin::Unload(void) {
 
   g_Interceptor.reset();
   gum_deinit_embedded();
+
+  scheduler.unbind();
 }
 
 ServerPlugin plugin{};

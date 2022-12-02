@@ -27,4 +27,6 @@ add_subdirectory(tracy)
 option(ABSL_PROPAGATE_CXX_STD "" ON)
 option(ABSL_USE_SYSTEM_INCLUDES "" ON)
 add_subdirectory(abseil-cpp)
+
+add_subdirectory(marl)
 add_subdirectory("source-sdk")

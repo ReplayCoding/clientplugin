@@ -36,12 +36,6 @@ class RttiManager {
  public:
   RttiManager();
 
-  // This is stupid.
-  inline void submit_vtables(std::string mname,
-                             ElfModuleVtableDumper::Vtables vtables) {
-    module_vtables[mname] = vtables;
-  };
-
   std::uintptr_t get_function(std::string module,
                               std::string name,
                               uint16_t vftable,

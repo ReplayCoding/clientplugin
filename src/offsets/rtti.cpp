@@ -1,6 +1,8 @@
 #include <fcntl.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <marl/defer.h>
+#include <marl/waitgroup.h>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -221,62 +223,74 @@ std::uintptr_t RttiManager::get_function(std::string module,
                                          std::string name,
                                          uint16_t vftable,
                                          uint16_t function) {
-  auto vftable_ptr = module_vtables[module][name][vftable];
+  auto vftable_ptr = module_vtables.at(module).at(name).at(vftable);
   return *reinterpret_cast<std::uintptr_t*>(vftable_ptr +
                                             (sizeof(void*) * function));
 }
 
+struct module_info {
+  std::string name;
+  std::uintptr_t addr;
+};
+
 RttiManager::RttiManager() {
   auto start_time = std::chrono::high_resolution_clock::now();
+  std::vector<module_info> modules;
 
   dl_iterate_phdr(
       [](dl_phdr_info* info, size_t info_size, void* user_data) {
-        ZoneScoped;
+        ZoneScopedN("dl_iterate_phdr func");
 
+        auto* modules = reinterpret_cast<std::vector<module_info>*>(user_data);
         const std::string_view fname = basename(info->dlpi_name);
 
-        {
-          ZoneScopedN("exclusion check");
+        constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
+                                                       "libclientplugin.so"};
 
-          constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
-                                                         "libclientplugin.so"};
-
-          if (info->dlpi_addr == 0 || info->dlpi_name == nullptr ||
-              info->dlpi_name[0] == '\0') {
-            return 0;
-          } else if (ranges::any_of(excluded_paths,
-                                    [&](auto b) { return fname == b; })) {
-            return 0;
-          }
+        if (info->dlpi_addr == 0 || info->dlpi_name == nullptr ||
+            info->dlpi_name[0] == '\0') {
+          return 0;
+        } else if (ranges::any_of(excluded_paths,
+                                  [&](auto b) { return fname == b; })) {
+          return 0;
         }
 
-        {
-          ZoneScopedN("handle module");
-
-          auto self = static_cast<RttiManager*>(user_data);
-          try {
-            LoadedModule loaded_mod{
-                info->dlpi_name,
-                static_cast<std::uintptr_t>(info->dlpi_addr),
-            };
-
-            ElfModuleEhFrameParser eh_frame{&loaded_mod};
-            ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
-
-            auto vtables = dumped_rtti.get_vtables();
-            self->submit_vtables(std::string(fname), vtables);
-          } catch (std::exception& e) {
-            fmt::print(
-                "while handling module {}:\n"
-                "\t{}\n",
-                fname, e.what());
-            throw;
-          };
-        }
+        modules->emplace_back(std::string(info->dlpi_name), info->dlpi_addr);
 
         return 0;
       },
-      this);
+      &modules);
+
+  marl::WaitGroup wg(modules.size());
+  for (auto& module : modules) {
+    marl::schedule([=, this] {
+      ZoneScopedN("handle module");
+      defer(wg.done());
+
+      const std::string fname = basename(module.name.c_str());
+
+      try {
+        LoadedModule loaded_mod{
+            module.name,
+            static_cast<std::uintptr_t>(module.addr),
+        };
+
+        ElfModuleEhFrameParser eh_frame{&loaded_mod};
+        ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
+
+        auto vtables = dumped_rtti.get_vtables();
+        module_vtables[fname] = vtables;
+      } catch (std::exception& e) {
+        fmt::print(
+            "while handling module {}:\n"
+            "\t{}\n",
+            fname, e.what());
+        throw;
+      };
+    });
+  }
+
+  wg.wait();
 
   auto duration = std::chrono::high_resolution_clock::now() - start_time;
   fmt::print("Handling modules took {}\n",

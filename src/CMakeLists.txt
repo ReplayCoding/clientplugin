@@ -61,6 +61,7 @@ target_link_libraries(
   absl::inlined_vector
   range-v3::range-v3
   elfio::elfio
+  marl
   Tracy::TracyClient
   SDL2::SDL2
 
