@@ -93,7 +93,7 @@ class AttachmentHookLeave : public _CallAttachmentHook {
 
 class AttachmentHookBoth : public _CallAttachmentHook {
  public:
-  AttachmentHookBoth(Offset& address,
+  AttachmentHookBoth(const Offset& address,
                      attachment_hook_func_t enter_func,
                      attachment_hook_func_t leave_func)
       : _CallAttachmentHook(address),

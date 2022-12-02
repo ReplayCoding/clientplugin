@@ -4,12 +4,15 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
+#include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <imgui.h>
 #include <threadtools.h>
 #include <tracy/TracyC.h>
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -189,6 +192,11 @@ class ProfilerMod : public IModule {
   ProfilerMod();
   ~ProfilerMod();
 
+  bool should_draw_overlay() override {
+    return TracyIsConnected;
+  }
+  void draw_overlay() override;
+
  private:
   std::unique_ptr<AttachmentHookEnter> enter_node_hook;
   std::unique_ptr<AttachmentHookEnter> exit_node_hook;
@@ -198,6 +206,11 @@ class ProfilerMod : public IModule {
 };
 
 std::atomic_flag have_thread_names_inited{};
+
+void ProfilerMod::draw_overlay() {
+  ImGui::Text(
+      fmt::format("Tracy ({})", IS_TELEMETRY ? "Telemetry" : "VProf").c_str());
+}
 
 ProfilerMod::ProfilerMod() {
   last_observed_telemetry_level = UINT32_MAX;
@@ -220,7 +233,7 @@ ProfilerMod::ProfilerMod() {
 
   frame_hook = std::make_unique<AttachmentHookEnter>(
       offsets::CEngine_Frame,
-      [](InvocationContext context) { ___tracy_emit_frame_mark(nullptr); });
+      [this](InvocationContext context) { ___tracy_emit_frame_mark(nullptr); });
 
   thread_name_hook = std::make_unique<AttachmentHookEnter>(
       offsets::ThreadSetDebugName, [](InvocationContext context) {

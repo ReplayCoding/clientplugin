@@ -1,29 +1,15 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <imgui.h>
+#include <imgui_freetype.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
+#include <memory>
 
+#include "guifont.hpp"
 #include "hook/attachmenthook.hpp"
+#include "modules/gfxoverlay.hpp"
 #include "modules/modules.hpp"
-
-class GfxOverlayMod : public IModule {
- public:
-  GfxOverlayMod();
-  virtual ~GfxOverlayMod();
-
- private:
-  // Needed because we can't setup ourContext in the constructor, as we would
-  // need the window
-  bool have_we_inited_ui = false;
-  SDL_GLContext our_context;
-
-  int corner = 0;
-  std::unique_ptr<AttachmentHookEnter> sdl_gl_swapWindow_hook;
-
-  void init_imgui(SDL_Window* window);
-  void SDL_GL_SwapWindow_handler(InvocationContext context);
-};
 
 void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
@@ -31,6 +17,12 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   ImGui::StyleColorsDark();
   ImGui_ImplSDL2_InitForOpenGL(window, our_context);
   ImGui_ImplOpenGL3_Init();
+
+  auto& io = ImGui::GetIO();
+  ImFontConfig font_config;
+  font_config.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
+  io.Fonts->AddFontFromMemoryCompressedTTF(
+      gui_font_compressed_data, gui_font_compressed_size, 16, &font_config);
 }
 
 void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
@@ -77,11 +69,16 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
     window_flags |= ImGuiWindowFlags_NoMove;
   }
 
-  ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
-  if (ImGui::Begin("Example: Simple overlay", nullptr, window_flags)) {
-    ImGui::Text(
-        "Simple overlay\n"
-        "in the corner of the screen.\n");
+  for (auto& module : *modules) {
+    if (module->should_draw_overlay()) {
+      if (ImGui::Begin("", nullptr, window_flags)) {
+        ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
+
+        module->draw_overlay();
+
+        ImGui::End();
+      }
+    }
   }
 
   ImGui::End();
@@ -95,9 +92,13 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   SDL_GL_MakeCurrent(window, their_context);
 }
 
-GfxOverlayMod::GfxOverlayMod() {
+GfxOverlayMod::GfxOverlayMod(
+    std::vector<std::unique_ptr<IModule>>* modules_ref) {
   SDL_version sdlversion;
   SDL_GetVersion(&sdlversion);
+
+  modules = modules_ref;
+
   sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
       reinterpret_cast<std::uintptr_t>(SDL_GL_SwapWindow),
       [this](auto context) { SDL_GL_SwapWindow_handler(context); });
@@ -109,4 +110,4 @@ GfxOverlayMod::~GfxOverlayMod() {
   SDL_GL_DeleteContext(our_context);
 }
 
-REGISTER_MODULE(GfxOverlayMod)
+// Manually registered so we can provide some extra stuff

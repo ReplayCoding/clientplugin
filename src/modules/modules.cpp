@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "modules/gfxoverlay.hpp"
 #include "modules/modules.hpp"
 
 ModuleDesc* g_ModuleList = nullptr;
@@ -11,4 +12,11 @@ ModuleManager::ModuleManager() {
 
     modules.emplace_back(std::move(module));
   }
+
+  gfx_overlay = new GfxOverlayMod(&modules);
+}
+
+ModuleManager::~ModuleManager() {
+  delete gfx_overlay;
+  modules.clear();
 }
