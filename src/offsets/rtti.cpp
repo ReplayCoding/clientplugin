@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <coroutine>
 #include <cstdint>
 #include <cstring>
 #include <elfio/elfio.hpp>
@@ -32,6 +33,7 @@
 #include "util/data_range_checker.hpp"
 #include "util/data_view.hpp"
 #include "util/error.hpp"
+#include "util/generator.hpp"
 #include "util/mmap.hpp"
 
 std::unique_ptr<RttiManager> g_RTTI{};
@@ -192,11 +194,10 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   return vftable_candidates;
 }
 
-ElfModuleVtableDumper::Vtables ElfModuleVtableDumper::get_vtables() {
+Generator<ElfModuleVtableDumper::Vtable> ElfModuleVtableDumper::get_vtables() {
   ZoneScoped;
   auto vf_tables = locate_vftables();
 
-  ElfModuleVtableDumper::Vtables vtables{};
   for (const auto& vtable_rng :
        vf_tables |
            ranges::views::chunk_by([](std::uintptr_t a, std::uintptr_t b) {
@@ -205,10 +206,8 @@ ElfModuleVtableDumper::Vtables ElfModuleVtableDumper::get_vtables() {
     auto vtable = ranges::to<std::vector>(vtable_rng);
     std::string typeinfo_name =
         *reinterpret_cast<char**>(get_typeinfo_addr(vtable[0]) + sizeof(void*));
-    vtables[typeinfo_name] = vtable;
+    co_yield ElfModuleVtableDumper::Vtable{typeinfo_name, vtable};
   };
-
-  return vtables;
 }
 
 ElfModuleVtableDumper::ElfModuleVtableDumper(LoadedModule* module,
@@ -224,7 +223,7 @@ std::uintptr_t RttiManager::get_function(std::string module,
                                          std::string name,
                                          uint16_t vftable,
                                          uint16_t function) {
-  auto vftable_ptr = module_vtables.at(module).at(name).at(vftable);
+  auto vftable_ptr = module_vtables.at(std::pair{module, name}).at(vftable);
   return *reinterpret_cast<std::uintptr_t*>(vftable_ptr +
                                             (sizeof(void*) * function));
 }
@@ -280,11 +279,13 @@ RttiManager::RttiManager() {
         ElfModuleEhFrameParser eh_frame{&loaded_mod};
         ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
 
-        auto vtables = dumped_rtti.get_vtables();
+        for (auto& vtable : dumped_rtti.get_vtables()) {
+          vtable_mutex.lock();
+          defer(vtable_mutex.unlock());
 
-        vtable_mutex.lock();
-        defer(vtable_mutex.unlock());
-        module_vtables[fname] = vtables;
+          module_vtables[std::pair{fname, vtable.first}] = vtable.second;
+        };
+
       } catch (std::exception& e) {
         fmt::print(
             "while handling module {}:\n"

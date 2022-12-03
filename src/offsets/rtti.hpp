@@ -10,14 +10,15 @@
 #include "offsets.hpp"
 #include "offsets/eh_frame.hpp"
 #include "util/data_range_checker.hpp"
+#include "util/generator.hpp"
 #include "util/mmap.hpp"
 
 class ElfModuleVtableDumper {
  public:
   ElfModuleVtableDumper(LoadedModule* module, ElfModuleEhFrameParser* eh_frame);
 
-  using Vtables = absl::flat_hash_map<std::string, std::vector<std::uintptr_t>>;
-  Vtables get_vtables();
+  using Vtable = std::pair<std::string, std::vector<std::uintptr_t>>;
+  Generator<Vtable> get_vtables();
 
  private:
   void generate_data_from_sections();
@@ -42,7 +43,9 @@ class RttiManager {
                               uint16_t function);
 
  private:
-  absl::flat_hash_map<std::string, ElfModuleVtableDumper::Vtables>
+  // module, name = vftable ptrs
+  absl::flat_hash_map<std::pair<std::string, std::string>,
+                      std::vector<std::uintptr_t>>
       module_vtables{};
 };
 
