@@ -38,11 +38,12 @@
 
 std::unique_ptr<RttiManager> g_RTTI{};
 
-void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
-  const ELFIO::relocation_section_accessor relocations{loaded_mod->elf,
-                                                       section};
+Generator<std::pair<std::uintptr_t, std::string>> get_relocations(
+    LoadedModule& loaded_mod,
+    ELFIO::section* section) {
+  const ELFIO::relocation_section_accessor relocations{loaded_mod.elf, section};
   const ELFIO::symbol_section_accessor symbols{
-      loaded_mod->elf, loaded_mod->elf.sections[section->get_link()]};
+      loaded_mod.elf, loaded_mod.elf.sections[section->get_link()]};
 
   // TODO: Range
   for (size_t relidx = 0; relidx < relocations.get_entries_num(); ++relidx) {
@@ -72,29 +73,23 @@ void ElfModuleVtableDumper::get_relocations(ELFIO::section* section) {
       continue;
 
     std::uintptr_t online_reladdress =
-        loaded_mod->get_online_address_from_offline(offset);
+        loaded_mod.get_online_address_from_offline(offset);
 
-    // Explicitely avoid setting the relocations var defined above...
-    this->relocations[online_reladdress] = symbol_name;
+    co_yield std::pair{online_reladdress, symbol_name};
   }
 }
 
-void ElfModuleVtableDumper::generate_data_from_sections() {
-  for (auto section : loaded_mod->elf.sections) {
-    if (section->get_type() == /* ELFIO:: */ SHT_REL) {
-      get_relocations(section);
-      continue;
-    }
-
+Generator<DataRange> section_ranges(LoadedModule& loaded_mod) {
+  for (auto section : loaded_mod.elf.sections) {
     if (section->get_address() != 0) {
-      section_ranges.emplace_back(
-          loaded_mod->get_online_address_from_offline(section->get_address()),
+      co_yield DataRange(
+          loaded_mod.get_online_address_from_offline(section->get_address()),
           section->get_size());
     }
   }
 }
 
-size_t ElfModuleVtableDumper::get_typeinfo_size(std::uintptr_t addr) {
+size_t get_typeinfo_size(RelocMap& relocations, std::uintptr_t addr) {
   const auto vtable_type = relocations[addr];
   uint32_t size = 2 * sizeof(void*); /* vtable ptr + name ptr */
 
@@ -123,7 +118,9 @@ std::uintptr_t get_typeinfo_addr(std::uintptr_t v) {
   return *reinterpret_cast<uintptr_t*>(v - sizeof(void*));
 }
 
-Generator<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
+Generator<std::uintptr_t> locate_vftables(LoadedModule& loaded_mod,
+                                          RelocMap& relocations,
+                                          DataRangeChecker& function_ranges) {
   std::unordered_set<std::uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
@@ -131,15 +128,16 @@ Generator<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   }
 
   std::vector<std::uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
-  DataRangeChecker typeinfo_ranges{loaded_mod->base_address};
+  DataRangeChecker typeinfo_ranges{loaded_mod.base_address};
 
-  for (DataRange& range : section_ranges) {
+  for (DataRange& range : section_ranges(loaded_mod)) {
     for (std::uintptr_t addr{range.begin}; addr < (range.begin + range.length);
          addr += sizeof(void*)) {
       uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
       if (!function_ranges.is_position_in_range(addr) &&
           instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
-        auto typeinfo_size = get_typeinfo_size(potential_typeinfo_addr);
+        auto typeinfo_size =
+            get_typeinfo_size(relocations, potential_typeinfo_addr);
 
         vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
         typeinfo_ranges.add_range(
@@ -194,10 +192,22 @@ Generator<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   }
 }
 
-Generator<ElfModuleVtableDumper::Vtable> ElfModuleVtableDumper::get_vtables() {
+Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
+                                          ElfModuleEhFrameParser& eh_frame) {
   ZoneScoped;
+
+  auto function_ranges = std::move(eh_frame.as_data_range_checker());
+
+  RelocMap relocations{};
+  for (auto section : loaded_mod.elf.sections) {
+    if (section->get_type() == /* ELFIO:: */ SHT_REL) {
+      for (auto& reloc : get_relocations(loaded_mod, section))
+        relocations[reloc.first] = reloc.second;
+    }
+  }
+
   std::vector<std::uintptr_t> vf_tables;
-  auto i = locate_vftables();
+  auto i = locate_vftables(loaded_mod, relocations, function_ranges);
   // FIXME!
   std::copy(i.begin(), i.end(), std::back_inserter(vf_tables));
 
@@ -209,17 +219,8 @@ Generator<ElfModuleVtableDumper::Vtable> ElfModuleVtableDumper::get_vtables() {
     auto vtable = ranges::to<std::vector>(vtable_rng);
     std::string typeinfo_name =
         *reinterpret_cast<char**>(get_typeinfo_addr(vtable[0]) + sizeof(void*));
-    co_yield ElfModuleVtableDumper::Vtable{typeinfo_name, vtable};
+    co_yield Vtable{typeinfo_name, vtable};
   };
-}
-
-ElfModuleVtableDumper::ElfModuleVtableDumper(LoadedModule* module,
-                                             ElfModuleEhFrameParser* eh_frame) {
-  ZoneScoped;
-  loaded_mod = module;
-  function_ranges = std::move(eh_frame->as_data_range_checker());
-
-  generate_data_from_sections();
 }
 
 std::uintptr_t RttiManager::get_function(std::string module,
@@ -280,9 +281,8 @@ RttiManager::RttiManager() {
         };
 
         ElfModuleEhFrameParser eh_frame{&loaded_mod};
-        ElfModuleVtableDumper dumped_rtti{&loaded_mod, &eh_frame};
 
-        for (auto& vtable : dumped_rtti.get_vtables()) {
+        for (auto& vtable : get_vtables_from_module(loaded_mod, eh_frame)) {
           vtable_mutex.lock();
           defer(vtable_mutex.unlock());
 

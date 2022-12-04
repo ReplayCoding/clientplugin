@@ -13,25 +13,21 @@
 #include "util/generator.hpp"
 #include "util/mmap.hpp"
 
-class ElfModuleVtableDumper {
- public:
-  ElfModuleVtableDumper(LoadedModule* module, ElfModuleEhFrameParser* eh_frame);
+Generator<DataRange> section_ranges(LoadedModule& loaded_mod);
 
-  using Vtable = std::pair<std::string, std::vector<std::uintptr_t>>;
-  Generator<Vtable> get_vtables();
+using RelocMap = absl::flat_hash_map<std::uintptr_t, std::string>;
+Generator<std::pair<std::uintptr_t, std::string>> get_relocations(
+    LoadedModule& loaded_mod,
+    ELFIO::section* section);
 
- private:
-  void generate_data_from_sections();
-  void get_relocations(ELFIO::section* section);
-  size_t get_typeinfo_size(std::uintptr_t size);
-  Generator<std::uintptr_t> locate_vftables();
+size_t get_typeinfo_size(RelocMap& relocations, std::uintptr_t size);
+Generator<std::uintptr_t> locate_vftables(LoadedModule& loaded_mod,
+                                          RelocMap& relocations,
+                                          DataRangeChecker& function_ranges);
 
-  LoadedModule* loaded_mod;
-
-  absl::flat_hash_map<std::uintptr_t, std::string> relocations{};
-  DataRangeChecker function_ranges;
-  std::vector<DataRange> section_ranges{};
-};
+using Vtable = std::pair<std::string, std::vector<std::uintptr_t>>;
+Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
+                                          ElfModuleEhFrameParser& eh_frame);
 
 class RttiManager {
  public:
