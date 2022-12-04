@@ -123,7 +123,7 @@ std::uintptr_t get_typeinfo_addr(std::uintptr_t v) {
   return *reinterpret_cast<uintptr_t*>(v - sizeof(void*));
 }
 
-std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
+Generator<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   std::unordered_set<std::uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
@@ -157,7 +157,7 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
   ranges::sort(vftable_candidates_rtti_ptr_with_cvtables);
 
   // Now actually make this a list of vftables
-  std::vector<std::uintptr_t> vftable_candidates =
+  auto vftable_candidates =
       std::move(vftable_candidates_rtti_ptr_with_cvtables);
   ranges::for_each(vftable_candidates,
                    [](std::uintptr_t& v) { v += sizeof(void*); });
@@ -185,18 +185,21 @@ std::vector<std::uintptr_t> ElfModuleVtableDumper::locate_vftables() {
     seen_typeinfo.insert(typeinfo_addr);
   }
 
-  vftable_candidates |=
-      ranges::actions::remove_if([&invalid_typeinfo](auto candidate) {
-        uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
-        return invalid_typeinfo.contains(typeinfo_addr);
-      });
+  for (auto& candidate : vftable_candidates) {
+    uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
+    if (invalid_typeinfo.contains(typeinfo_addr))
+      continue;
 
-  return vftable_candidates;
+    co_yield candidate;
+  }
 }
 
 Generator<ElfModuleVtableDumper::Vtable> ElfModuleVtableDumper::get_vtables() {
   ZoneScoped;
-  auto vf_tables = locate_vftables();
+  std::vector<std::uintptr_t> vf_tables;
+  auto i = locate_vftables();
+  // FIXME!
+  std::copy(i.begin(), i.end(), std::back_inserter(vf_tables));
 
   for (const auto& vtable_rng :
        vf_tables |

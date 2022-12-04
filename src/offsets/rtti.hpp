@@ -24,7 +24,7 @@ class ElfModuleVtableDumper {
   void generate_data_from_sections();
   void get_relocations(ELFIO::section* section);
   size_t get_typeinfo_size(std::uintptr_t size);
-  std::vector<std::uintptr_t> locate_vftables();
+  Generator<std::uintptr_t> locate_vftables();
 
   LoadedModule* loaded_mod;
 

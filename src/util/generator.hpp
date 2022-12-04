@@ -16,9 +16,15 @@ struct Generator {
 
     void unhandled_exception() { result = std::current_exception(); };
 
+    // template <std::convertible_to<T> From>
+    // std::suspend_always yield_value(const From& value) {
+    //   result = value;
+    //   return {};
+    // }
+
     template <std::convertible_to<T> From>
-    std::suspend_always yield_value(const From& value) {
-      result = value;
+    std::suspend_always yield_value(From&& value) {
+      result = std::addressof(value);
       return {};
     }
 
@@ -30,10 +36,13 @@ struct Generator {
     }
 
     bool has_value() { return !std::holds_alternative<std::monostate>(result); }
-    T& get_value() { return std::get<T>(result); }
+    T& get_value() {
+      return std::holds_alternative<T>(result) ? std::get<T>(result)
+                                               : *std::get<T*>(result);
+    }
 
    private:
-    std::variant<std::monostate, T, std::exception_ptr> result;
+    std::variant<std::monostate, T, T*, std::exception_ptr> result;
   };
 
   struct Iterator {
