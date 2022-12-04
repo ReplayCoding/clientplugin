@@ -90,11 +90,6 @@ struct Generator : public ranges::view_facade<Generator<T>> {
       coro.destroy();
   };
 
-  // auto& operator()() const {
-  //   coro.resume();
-  //   return coro.promise().get_value();
-  // };
-
   Cursor begin_cursor() const {
     if (coro.done())
       return end_cursor();

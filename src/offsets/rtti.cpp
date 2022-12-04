@@ -208,21 +208,28 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
     }
   }
 
-  std::vector<std::uintptr_t> vf_tables;
-  auto i = locate_vftables(loaded_mod, relocations, function_ranges);
-  // FIXME!
-  std::copy(i.begin(), i.end(), std::back_inserter(vf_tables));
+  auto vf_tables = locate_vftables(loaded_mod, relocations, function_ranges);
 
-  for (const auto& vtable_rng :
-       vf_tables |
-           ranges::views::chunk_by([](std::uintptr_t a, std::uintptr_t b) {
-             return get_typeinfo_addr(a) == get_typeinfo_addr(b);
-           })) {
-    auto vtable = ranges::to<std::vector>(vtable_rng);
-    std::string typeinfo_name =
-        *reinterpret_cast<char**>(get_typeinfo_addr(vtable[0]) + sizeof(void*));
-    co_yield Vtable{typeinfo_name, vtable};
-  };
+  std::vector<std::uintptr_t> current_chunk{};
+  std::uintptr_t prev_entry{};
+  for (const auto& entry : vf_tables) {
+    if (prev_entry != 0) {
+      if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
+        current_chunk.push_back(entry);
+      } else {
+        std::string typeinfo_name = *reinterpret_cast<char**>(
+            get_typeinfo_addr(current_chunk[0]) + sizeof(void*));
+        co_yield Vtable{typeinfo_name, current_chunk};
+
+        current_chunk.clear();
+        current_chunk.push_back(entry);
+      };
+    } else {
+      current_chunk.push_back(entry);
+    }
+
+    prev_entry = entry;
+  }
 }
 
 std::uintptr_t RttiManager::get_function(std::string module,

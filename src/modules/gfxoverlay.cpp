@@ -81,9 +81,6 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
     }
   }
 
-  ImGui::End();
-  /* End drawing */
-
   ImGui::Render();
   glViewport(0, 0, static_cast<int>(io.DisplaySize.x),
              static_cast<int>(io.DisplaySize.y));
