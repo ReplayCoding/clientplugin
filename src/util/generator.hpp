@@ -4,11 +4,14 @@
 #include <exception>
 #include <iterator>
 #include <optional>
+#include <range/v3/detail/range_access.hpp>
+#include <range/v3/view/facade.hpp>
 #include <utility>
 #include <variant>
 
 template <typename T>
-struct Generator {
+struct Generator : public ranges::view_facade<Generator<T>> {
+  friend ranges::range_access;
   struct promise_type {
     auto get_return_object() noexcept { return Generator{*this}; };
     std::suspend_always initial_suspend() const noexcept { return {}; };
@@ -45,19 +48,14 @@ struct Generator {
     std::variant<std::monostate, T, T*, std::exception_ptr> result;
   };
 
-  struct Iterator {
-    using iterator_category = std::input_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = T;
-    using reference = T&;
-    using pointer = T*;
-
-    Iterator() noexcept = default;
-    explicit Iterator(const std::coroutine_handle<promise_type>& coro) noexcept
+  struct Cursor {
+    Cursor() noexcept = default;
+    explicit Cursor(const std::coroutine_handle<promise_type>& coro) noexcept
         : coro{&coro} {}
 
-    friend bool operator==(const Iterator&, const Iterator&) noexcept = default;
-    Iterator& operator++() {
+    bool equal(const Cursor& other) const { return this->coro == other.coro; };
+
+    void next() {
       assert(coro != nullptr);
       assert(!coro->done());
 
@@ -66,11 +64,9 @@ struct Generator {
         auto handle = std::exchange(coro, nullptr);
         handle->promise().throw_if_exception();
       }
-
-      return *this;
     }
 
-    T& operator*() const noexcept {
+    T& read() const noexcept {
       assert(coro != nullptr);
       assert(!coro->done());
       return coro->promise().get_value();
@@ -99,17 +95,17 @@ struct Generator {
   //   return coro.promise().get_value();
   // };
 
-  Iterator begin() const {
+  Cursor begin_cursor() const {
     if (coro.done())
-      return end();
+      return end_cursor();
 
-    auto i = Iterator(coro);
+    auto i = Cursor(coro);
     if (!coro.promise().has_value())
-      ++i;
+      i.next();
 
     return i;
   };
-  Iterator end() const noexcept { return Iterator{}; };
+  Cursor end_cursor() const noexcept { return Cursor{}; };
 
  private:
   explicit Generator(promise_type& promise) noexcept
