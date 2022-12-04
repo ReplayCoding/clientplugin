@@ -132,7 +132,7 @@ std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
       }
 
       auto fde_pc_range = fde_data.read<std::uintptr_t>();
-      function_ranges.push_back(DataRange{fde_pc_begin.value(), fde_pc_range});
+      function_ranges.emplace_back(fde_pc_begin.value(), fde_pc_range);
     }
 
     // We don't parse the entire structure, but if we overflow into the next

@@ -1,45 +1,47 @@
 #pragma once
+#include <absl/container/btree_map.h>
 #include <convar.h>
 #include <dt_common.h>
 #include <dt_recv.h>
+#include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <vector>
 
 #include "sdk/concommandwrapper.hpp"
+#include "util/generator.hpp"
 
 // namespace to avoid some naming conflicts
 namespace clientclasses {
   struct ClientProp {
-    ClientProp(std::string name, std::ptrdiff_t offset, SendPropType type)
-        : name(name), offset(offset), type(type){};
+    ClientProp() = default;
+    ClientProp(std::ptrdiff_t offset, SendPropType type)
+        : offset(offset), type(type){};
 
-    const std::string name;
-    const std::ptrdiff_t offset;
-    const SendPropType type;
+    std::ptrdiff_t offset{};
+    SendPropType type{};
   };
 
-  class ClientClass {
-   public:
-    ClientClass(RecvTable* tbl) : name(tbl->GetName()), props(parse_tbl(tbl)) {}
-    inline const auto get_name() { return name; }
-    inline const auto get_props() { return props; }
-
-   private:
-    std::vector<clientclasses::ClientProp> parse_tbl(RecvTable* tbl);
-
-    const std::string name;
-    std::vector<clientclasses::ClientProp> props;
-  };
+  Generator<std::pair<std::string, clientclasses::ClientProp>> parse_tbl(
+      RecvTable* tbl);
 }  // namespace clientclasses
 
 class ClientClassManager {
  public:
   ClientClassManager();
+  std::ptrdiff_t get_prop_offset(std::string classname, std::string propname) {
+    return clientclasses.at(std::pair(classname, propname)).offset;
+  }
 
  private:
   void dump_props_to_file(const CCommand& cmd);
-  std::vector<clientclasses::ClientClass> clientclasses;
+  // class name, prop name = prop
+  absl::btree_map<std::pair<std::string, std::string>,
+                  clientclasses::ClientProp>
+      clientclasses;
 
   ConCommandCallbacks pe_dump_props_to_file_callback;
   ConCommand pe_dump_props_to_file;
 };
+
+extern std::unique_ptr<ClientClassManager> g_ClientClasses;

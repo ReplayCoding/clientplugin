@@ -1,6 +1,7 @@
 #include <convar.h>
 #include <fmt/core.h>
 
+#include "clientclasses.hpp"
 #include "hook/attachmenthook.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"
@@ -18,14 +19,15 @@ MediGunsMod::MediGunsMod() {
   lazy_hook = std::make_unique<AttachmentHookEnter>(
       offsets::FindAndHealTargets, [this](InvocationContext context) {
         uintptr_t self = context.get_arg<uintptr_t>(0);
-        auto current_charge = *(float*)(self + 0x00000C48);
+        auto charge_val_offset = g_ClientClasses->get_prop_offset(
+            "CWeaponMedigun", "DT_LocalTFWeaponMedigunData::m_flChargeLevel");
+        auto current_charge = *(float*)(self + charge_val_offset);
         if (current_charge < my_charge_val) {
-          *(float*)(self + 0x00000C48) = my_charge_val;
-          auto current_charge_2 = *(float*)(self + 0x00000C48);
+          *(float*)(self + charge_val_offset) = my_charge_val;
           fmt::print(
               "[CLIENTPLUGIN] m_flChargeLevel is less than prev value: {} (was "
-              "{}) (and we set it to {})\n",
-              current_charge, my_charge_val, current_charge_2);
+              "{})\n",
+              current_charge, my_charge_val);
         }
 
         my_charge_val = current_charge;

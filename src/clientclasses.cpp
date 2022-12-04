@@ -6,14 +6,20 @@
 #include <fmt/core.h>
 #include <fmt/ostream.h>
 #include <fstream>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/chunk_by.hpp>
+#include <range/v3/view/map.hpp>
+#include <range/v3/view/take.hpp>
+#include <range/v3/view/transform.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "clientclasses.hpp"
 #include "interfaces.hpp"
+#include "util/generator.hpp"
 
-std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
-    RecvTable* tbl) {
-  std::vector<clientclasses::ClientProp> props;
-
+Generator<std::pair<std::string, clientclasses::ClientProp>>
+clientclasses::parse_tbl(RecvTable* tbl) {
+  ZoneScoped;
   for (auto idx = 0; idx < tbl->GetNumProps(); idx++) {
     auto prop = tbl->GetProp(idx);
 
@@ -21,22 +27,19 @@ std::vector<clientclasses::ClientProp> clientclasses::ClientClass::parse_tbl(
       auto subtable = prop->GetDataTable();
       auto parsed_subtable = parse_tbl(subtable);
 
-      for (const auto& subprop : parsed_subtable) {
+      for (const auto& [name, subprop] : parsed_subtable) {
         const auto subprop_name =
-            fmt::format("{}::{}", subtable->GetName(), subprop.name);
-        const auto subprop_fixed = ClientProp(
-            subprop_name, prop->GetOffset() + subprop.offset, subprop.type);
+            fmt::format("{}::{}", subtable->GetName(), name);
 
-        props.push_back(subprop_fixed);
+        co_yield std::pair(
+            subprop_name,
+            ClientProp(prop->GetOffset() + subprop.offset, subprop.type));
       };
     } else {
-      const auto wrapped_prop = clientclasses::ClientProp(
-          prop->GetName(), prop->GetOffset(), prop->GetType());
-
-      props.push_back(wrapped_prop);
+      co_yield std::pair(std::string(prop->GetName()),
+                         ClientProp(prop->GetOffset(), prop->GetType()));
     }
   }
-  return props;
 }
 
 ClientClassManager::ClientClassManager()
@@ -45,10 +48,13 @@ ClientClassManager::ClientClassManager()
                             &pe_dump_props_to_file_callback) {
   for (auto client_class = Interfaces::ClientDll->GetAllClasses();
        client_class != nullptr; client_class = client_class->m_pNext) {
-    auto recv_tbl = client_class->m_pRecvTable;
-    auto clientclass_parsed = clientclasses::ClientClass(recv_tbl);
+    ZoneScoped;
+    auto class_name = client_class->GetName();
 
-    clientclasses.push_back(clientclass_parsed);
+    for (auto& [prop_name, prop] :
+         clientclasses::parse_tbl(client_class->m_pRecvTable)) {
+      clientclasses[std::pair(class_name, prop_name)] = prop;
+    };
   }
 }
 
@@ -60,11 +66,19 @@ void ClientClassManager::dump_props_to_file(const CCommand& cmd) {
 
   auto output_file = std::ofstream(cmd[1]);
 
-  for (auto clientclass : clientclasses) {
-    fmt::print(output_file, "CLIENTCLASS: {}\n", clientclass.get_name());
+  for (auto clientclass_rng :
+       clientclasses | ranges::views::chunk_by([](auto&a, auto&b) {
+         // Group by class name
+         return a.first.first == b.first.first;
+       })) {
+    // A bit ugly...
+    (void)clientclass_rng;
+    // fmt::print(output_file, "CLIENTCLASS: {}\n", name);
 
-    for (auto prop : clientclass.get_props()) {
-      fmt::print(output_file, "\t{}: {:08X}\n", prop.name, prop.offset);
-    };
+    // for (auto prop : props) {
+    //   // fmt::print(output_file, "\t{}: {:08X}\n", prop.name, prop.offset);
+    // };
   }
 }
+
+std::unique_ptr<ClientClassManager> g_ClientClasses{};

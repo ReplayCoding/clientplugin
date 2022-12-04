@@ -113,7 +113,6 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 
  private:
   std::unique_ptr<ModuleManager> module_manager{};
-  std::unique_ptr<ClientClassManager> client_class_manager{};
   marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(4)};
 };
 
@@ -136,7 +135,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
              static_cast<std::uintptr_t>(
                  offsets::CEngineSoundServices_SetSoundFrametime));
 
-  client_class_manager = std::make_unique<ClientClassManager>();
+  g_ClientClasses = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();
 
   return true;
@@ -152,7 +151,7 @@ void ServerPlugin::Unload(void) {
   // destructor, which will crash)
 
   module_manager.reset();
-  client_class_manager.reset();
+  g_ClientClasses.reset();
 
   g_RTTI.reset();
 
