@@ -34,9 +34,11 @@
 #include "util/data_view.hpp"
 #include "util/error.hpp"
 #include "util/generator.hpp"
-#include "util/mmap.hpp"
 
 std::unique_ptr<RttiManager> g_RTTI{};
+
+using RelocMap = absl::flat_hash_map<std::uintptr_t, std::string>;
+using Vtable = std::pair<std::string, std::vector<std::uintptr_t>>;
 
 Generator<std::pair<std::uintptr_t, std::string>> get_relocations(
     LoadedModule& loaded_mod,
