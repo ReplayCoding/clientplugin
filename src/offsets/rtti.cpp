@@ -1,3 +1,5 @@
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <fcntl.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
@@ -11,6 +13,7 @@
 #include <cstring>
 #include <elfio/elfio.hpp>
 #include <iterator>
+#include <memory>
 #include <mutex>
 #include <range/v3/action/remove_if.hpp>
 #include <range/v3/algorithm/any_of.hpp>
@@ -18,6 +21,7 @@
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/to_container.hpp>
 #include <range/v3/view/chunk_by.hpp>
+#include <string>
 #include <string_view>
 #include <tracy/Tracy.hpp>
 #include <utility>
@@ -121,9 +125,9 @@ uintptr_t get_typeinfo_addr(uintptr_t v) {
 }
 
 Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
-                                          RelocMap& relocations,
-                                          DataRangeChecker& function_ranges) {
-  std::unordered_set<uintptr_t> instances_of_typeinfo_relocs{};
+                                     RelocMap& relocations,
+                                     DataRangeChecker& function_ranges) {
+  absl::flat_hash_set<uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
       instances_of_typeinfo_relocs.insert(addr);
@@ -164,8 +168,8 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
 
   // Generate a list of constructor vtables, this unfortunately means we
   // lose some real vtables
-  std::unordered_set<uintptr_t> invalid_typeinfo{};
-  std::unordered_set<uintptr_t> seen_typeinfo{};
+  absl::flat_hash_set<uintptr_t> invalid_typeinfo{};
+  absl::flat_hash_set<uintptr_t> seen_typeinfo{};
   uintptr_t prev_typeinfo{0};
 
   for (auto& candidate : vftable_candidates) {
@@ -233,12 +237,12 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
 }
 
 uintptr_t RttiManager::get_function(std::string module,
-                                         std::string name,
-                                         uint16_t vftable,
-                                         uint16_t function) {
+                                    std::string name,
+                                    uint16_t vftable,
+                                    uint16_t function) {
   auto vftable_ptr = module_vtables.at(std::pair{module, name}).at(vftable);
   return *reinterpret_cast<uintptr_t*>(vftable_ptr +
-                                            (sizeof(void*) * function));
+                                       (sizeof(void*) * function));
 }
 
 struct module_info {
