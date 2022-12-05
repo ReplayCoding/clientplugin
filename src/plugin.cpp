@@ -132,7 +132,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   g_RTTI = std::make_unique<RttiManager>();
 
   fmt::print("POOTIS IS AT! {:08X}\n",
-             static_cast<std::uintptr_t>(
+             static_cast<uintptr_t>(
                  offsets::CEngineSoundServices_SetSoundFrametime));
 
   g_ClientClasses = std::make_unique<ClientClassManager>();

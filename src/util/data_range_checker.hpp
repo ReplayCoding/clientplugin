@@ -10,16 +10,16 @@ using range_bs_t =
                               // to hold even LLVM's memory space)
 
 struct DataRange {
-  DataRange(std::uintptr_t begin, std::uintptr_t length)
+  DataRange(uintptr_t begin, uintptr_t length)
       : begin(begin), length(length) {}
 
-  std::uintptr_t begin;
-  std::uintptr_t length;
+  uintptr_t begin;
+  uintptr_t length;
 };
 
 class DataRangeChecker {
  public:
-  DataRangeChecker(std::uintptr_t base = 0)
+  DataRangeChecker(uintptr_t base = 0)
       : base(base), range(std::make_unique<range_bs_t>()) {}
 
   inline void add_range(const DataRange& r) {
@@ -28,11 +28,11 @@ class DataRangeChecker {
     }
   }
 
-  inline bool is_position_in_range(std::uintptr_t position) {
+  inline bool is_position_in_range(uintptr_t position) {
     return range->test(position - base);
   }
 
  private:
-  std::uintptr_t base{};
+  uintptr_t base{};
   std::unique_ptr<range_bs_t> range{};
 };

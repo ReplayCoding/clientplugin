@@ -20,13 +20,13 @@ class ElfModuleEhFrameParser {
     uint8_t fde_pointer_encoding;
   };
 
-  static CieInfo handle_cie(const std::uintptr_t cie_address);
+  static CieInfo handle_cie(const uintptr_t cie_address);
   static std::vector<DataRange> handle_eh_frame(
-      const std::uintptr_t start_address,
-      const std::uintptr_t end_address);
+      const uintptr_t start_address,
+      const uintptr_t end_address);
 
   std::vector<DataRange> function_ranges;
 
   // Cached
-  std::uintptr_t base_address{};
+  uintptr_t base_address{};
 };

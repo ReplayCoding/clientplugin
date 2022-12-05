@@ -97,7 +97,7 @@ GfxOverlayMod::GfxOverlayMod(
   modules = modules_ref;
 
   sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
-      reinterpret_cast<std::uintptr_t>(SDL_GL_SwapWindow),
+      reinterpret_cast<uintptr_t>(SDL_GL_SwapWindow),
       [this](auto context) { SDL_GL_SwapWindow_handler(context); });
 }
 GfxOverlayMod::~GfxOverlayMod() {

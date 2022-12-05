@@ -4,30 +4,30 @@
 #include <string>
 
 struct LoadedModule {
-  LoadedModule(const std::string path, const std::uintptr_t base_address);
+  LoadedModule(const std::string path, const uintptr_t base_address);
 
-  inline std::uintptr_t get_online_address_from_offline(
-      std::uintptr_t offline_addr) {
+  inline uintptr_t get_online_address_from_offline(
+      uintptr_t offline_addr) {
     return base_address + (offline_addr - offline_baseaddr);
   }
 
-  inline std::uintptr_t get_offline_address_from_online(
-      std::uintptr_t online_addr) {
+  inline uintptr_t get_offline_address_from_online(
+      uintptr_t online_addr) {
     return offline_baseaddr + (online_addr - base_address);
   }
 
   ELFIO::elfio elf{};
 
-  const std::uintptr_t base_address{};
+  const uintptr_t base_address{};
 
  private:
-  std::uintptr_t offline_baseaddr{UINTPTR_MAX};
+  uintptr_t offline_baseaddr{UINTPTR_MAX};
 };
 
 class ManualOffset {
  public:
   ManualOffset() = default;
-  ManualOffset(std::uintptr_t address) : manual_address(address) {}
+  ManualOffset(uintptr_t address) : manual_address(address) {}
 
   template <typename T>
   inline ManualOffset operator+(T rhs) const {
@@ -40,9 +40,9 @@ class ManualOffset {
   }
 
  private:
-  virtual std::uintptr_t get_address() const { return manual_address; };
+  virtual uintptr_t get_address() const { return manual_address; };
 
-  const std::uintptr_t manual_address{};
+  const uintptr_t manual_address{};
 };
 
 using Offset = ManualOffset;
@@ -53,10 +53,10 @@ class SharedLibOffset : public ManualOffset {
       : module(module), offset(offset){};
 
  private:
-  std::uintptr_t get_address() const override;
+  uintptr_t get_address() const override;
 
   const std::string module;
-  const std::uintptr_t offset;
+  const uintptr_t offset;
 };
 
 class VtableOffset : public ManualOffset {
@@ -68,7 +68,7 @@ class VtableOffset : public ManualOffset {
       : module(module), name(name), function(function), vftable(vftable){};
 
  private:
-  std::uintptr_t get_address() const override;
+  uintptr_t get_address() const override;
 
   const std::string module;
   const std::string name;
@@ -82,7 +82,7 @@ class SharedLibSymbol : public ManualOffset {
       : module(module), symbol(symbol){};
 
  private:
-  std::uintptr_t get_address() const override;
+  uintptr_t get_address() const override;
 
   const std::string module;
   const std::string symbol;

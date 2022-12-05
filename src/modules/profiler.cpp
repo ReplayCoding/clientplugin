@@ -228,7 +228,7 @@ ProfilerMod::ProfilerMod() {
   } else {
     g_Interceptor->replace(
         offsets::TelemetryTick,
-        reinterpret_cast<std::uintptr_t>(TelemetryTick_replacement), nullptr);
+        reinterpret_cast<uintptr_t>(TelemetryTick_replacement), nullptr);
   }
 
   frame_hook = std::make_unique<AttachmentHookEnter>(

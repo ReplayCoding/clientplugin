@@ -8,7 +8,7 @@
 #include "util/error.hpp"
 
 ElfModuleEhFrameParser::CieInfo ElfModuleEhFrameParser::handle_cie(
-    const std::uintptr_t cie_address) {
+    const uintptr_t cie_address) {
   DataView cie_data{cie_address};
 
   uint32_t cie_length = cie_data.read<uint32_t>();
@@ -83,8 +83,8 @@ ElfModuleEhFrameParser::CieInfo ElfModuleEhFrameParser::handle_cie(
 }
 
 std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
-    const std::uintptr_t start_address,
-    const std::uintptr_t end_address) {
+    const uintptr_t start_address,
+    const uintptr_t end_address) {
   std::vector<DataRange> function_ranges{};
   DataView fde_data{start_address};
 
@@ -125,13 +125,13 @@ std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
                              // added when grabbing the CIE offset
       const auto cie_data = handle_cie(cie_pointer);
 
-      std::optional<std::uintptr_t> fde_pc_begin =
+      std::optional<uintptr_t> fde_pc_begin =
           fde_data.read_dwarf_encoded(cie_data.fde_pointer_encoding);
       if (!fde_pc_begin) {
         throw StringError("PC Begin required, but not provided");
       }
 
-      auto fde_pc_range = fde_data.read<std::uintptr_t>();
+      auto fde_pc_range = fde_data.read<uintptr_t>();
       function_ranges.emplace_back(fde_pc_begin.value(), fde_pc_range);
     }
 
@@ -163,7 +163,7 @@ ElfModuleEhFrameParser::ElfModuleEhFrameParser(LoadedModule* module) {
     if (section->get_name() == ".eh_frame") {
       auto eh_frame_address =
           module->get_online_address_from_offline(section->get_address());
-      std::uintptr_t eh_frame_end_addr = eh_frame_address + section->get_size();
+      uintptr_t eh_frame_end_addr = eh_frame_address + section->get_size();
 
       function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
     }

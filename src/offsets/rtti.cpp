@@ -37,10 +37,10 @@
 
 std::unique_ptr<RttiManager> g_RTTI{};
 
-using RelocMap = absl::flat_hash_map<std::uintptr_t, std::string>;
-using Vtable = std::pair<std::string, std::vector<std::uintptr_t>>;
+using RelocMap = absl::flat_hash_map<uintptr_t, std::string>;
+using Vtable = std::pair<std::string, std::vector<uintptr_t>>;
 
-Generator<std::pair<std::uintptr_t, std::string>> get_relocations(
+Generator<std::pair<uintptr_t, std::string>> get_relocations(
     LoadedModule& loaded_mod,
     ELFIO::section* section) {
   const ELFIO::relocation_section_accessor relocations{loaded_mod.elf, section};
@@ -74,7 +74,7 @@ Generator<std::pair<std::uintptr_t, std::string>> get_relocations(
     if (type == 0 /* NONE rel type */ || symbol_type == /* ELFIO:: */ STN_UNDEF)
       continue;
 
-    std::uintptr_t online_reladdress =
+    uintptr_t online_reladdress =
         loaded_mod.get_online_address_from_offline(offset);
 
     co_yield std::pair{online_reladdress, symbol_name};
@@ -91,7 +91,7 @@ Generator<DataRange> section_ranges(LoadedModule& loaded_mod) {
   }
 }
 
-size_t get_typeinfo_size(RelocMap& relocations, std::uintptr_t addr) {
+size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
   const auto vtable_type = relocations[addr];
   uint32_t size = 2 * sizeof(void*); /* vtable ptr + name ptr */
 
@@ -116,24 +116,24 @@ size_t get_typeinfo_size(RelocMap& relocations, std::uintptr_t addr) {
   return size;
 }
 
-std::uintptr_t get_typeinfo_addr(std::uintptr_t v) {
+uintptr_t get_typeinfo_addr(uintptr_t v) {
   return *reinterpret_cast<uintptr_t*>(v - sizeof(void*));
 }
 
-Generator<std::uintptr_t> locate_vftables(LoadedModule& loaded_mod,
+Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
                                           RelocMap& relocations,
                                           DataRangeChecker& function_ranges) {
-  std::unordered_set<std::uintptr_t> instances_of_typeinfo_relocs{};
+  std::unordered_set<uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
       instances_of_typeinfo_relocs.insert(addr);
   }
 
-  std::vector<std::uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
+  std::vector<uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
   DataRangeChecker typeinfo_ranges{loaded_mod.base_address};
 
   for (DataRange& range : section_ranges(loaded_mod)) {
-    for (std::uintptr_t addr{range.begin}; addr < (range.begin + range.length);
+    for (uintptr_t addr{range.begin}; addr < (range.begin + range.length);
          addr += sizeof(void*)) {
       uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
       if (!function_ranges.is_position_in_range(addr) &&
@@ -160,13 +160,13 @@ Generator<std::uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   auto vftable_candidates =
       std::move(vftable_candidates_rtti_ptr_with_cvtables);
   ranges::for_each(vftable_candidates,
-                   [](std::uintptr_t& v) { v += sizeof(void*); });
+                   [](uintptr_t& v) { v += sizeof(void*); });
 
   // Generate a list of constructor vtables, this unfortunately means we
   // lose some real vtables
-  std::unordered_set<std::uintptr_t> invalid_typeinfo{};
-  std::unordered_set<std::uintptr_t> seen_typeinfo{};
-  std::uintptr_t prev_typeinfo{0};
+  std::unordered_set<uintptr_t> invalid_typeinfo{};
+  std::unordered_set<uintptr_t> seen_typeinfo{};
+  uintptr_t prev_typeinfo{0};
 
   for (auto& candidate : vftable_candidates) {
     uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
@@ -210,8 +210,8 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
 
   auto vf_tables = locate_vftables(loaded_mod, relocations, function_ranges);
 
-  std::vector<std::uintptr_t> current_chunk{};
-  std::uintptr_t prev_entry{};
+  std::vector<uintptr_t> current_chunk{};
+  uintptr_t prev_entry{};
   for (const auto& entry : vf_tables) {
     if (prev_entry != 0) {
       if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
@@ -232,18 +232,18 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
   }
 }
 
-std::uintptr_t RttiManager::get_function(std::string module,
+uintptr_t RttiManager::get_function(std::string module,
                                          std::string name,
                                          uint16_t vftable,
                                          uint16_t function) {
   auto vftable_ptr = module_vtables.at(std::pair{module, name}).at(vftable);
-  return *reinterpret_cast<std::uintptr_t*>(vftable_ptr +
+  return *reinterpret_cast<uintptr_t*>(vftable_ptr +
                                             (sizeof(void*) * function));
 }
 
 struct module_info {
   std::string name;
-  std::uintptr_t addr;
+  uintptr_t addr;
 };
 
 RttiManager::RttiManager() {
@@ -286,7 +286,7 @@ RttiManager::RttiManager() {
       try {
         LoadedModule loaded_mod{
             module.name,
-            static_cast<std::uintptr_t>(module.addr),
+            static_cast<uintptr_t>(module.addr),
         };
 
         ElfModuleEhFrameParser eh_frame{&loaded_mod};

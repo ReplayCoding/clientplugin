@@ -9,7 +9,7 @@
 #include "util/error.hpp"
 
 LoadedModule::LoadedModule(const std::string path,
-                           const std::uintptr_t base_address)
+                           const uintptr_t base_address)
     : base_address(base_address) {
   ZoneScoped;
   elf.load(path);
@@ -28,7 +28,7 @@ LoadedModule::LoadedModule(const std::string path,
   };
 }
 
-std::uintptr_t SharedLibOffset::get_address() const {
+uintptr_t SharedLibOffset::get_address() const {
   auto base_address = gum_module_find_base_address(module.c_str());
 
   if (base_address == 0)
@@ -36,17 +36,17 @@ std::uintptr_t SharedLibOffset::get_address() const {
   return base_address + offset;
 }
 
-std::uintptr_t VtableOffset::get_address() const {
+uintptr_t VtableOffset::get_address() const {
   return g_RTTI->get_function(module, name, vftable, function);
 }
 
-std::uintptr_t SharedLibSymbol::get_address() const {
+uintptr_t SharedLibSymbol::get_address() const {
   auto handle = dlopen(module.c_str(), RTLD_LAZY | RTLD_NOLOAD);
   if (handle == nullptr) {
     throw StringError("Failed to get handle for module {}", module);
   }
 
-  auto addr = reinterpret_cast<std::uintptr_t>(dlsym(handle, symbol.c_str()));
+  auto addr = reinterpret_cast<uintptr_t>(dlsym(handle, symbol.c_str()));
   if (addr == 0)
     throw StringError("Failed to get address of symbol {} from module {}\n",
                       module, symbol);

@@ -13,7 +13,7 @@ class RttiManager {
  public:
   RttiManager();
 
-  std::uintptr_t get_function(std::string module,
+  uintptr_t get_function(std::string module,
                               std::string name,
                               uint16_t vftable,
                               uint16_t function);
@@ -21,7 +21,7 @@ class RttiManager {
  private:
   // module, name = vftable ptrs
   absl::flat_hash_map<std::pair<std::string, std::string>,
-                      std::vector<std::uintptr_t>>
+                      std::vector<uintptr_t>>
       module_vtables{};
 };
 

@@ -92,7 +92,7 @@ class DataView {
 
     switch (value_format) {
       case eh_dwarf_format::DW_EH_PE_absptr: {
-        value_without_application_applied = read<std::uintptr_t>();
+        value_without_application_applied = read<uintptr_t>();
         break;
       }
 
@@ -140,7 +140,7 @@ class DataView {
     return value_without_application_applied;
   }
 
-  std::optional<std::uintptr_t> read_dwarf_encoded(const uint8_t encoding) {
+  std::optional<uintptr_t> read_dwarf_encoded(const uint8_t encoding) {
     const auto pc_rel_ptr = data_ptr;
 
     if (auto value_without_application_applied =
@@ -163,11 +163,11 @@ class DataView {
         }
       }
 
-      return static_cast<std::uintptr_t>(value_with_application);
+      return static_cast<uintptr_t>(value_with_application);
     } else {
       return std::nullopt;
     }
   }
 
-  std::uintptr_t data_ptr;
+  uintptr_t data_ptr;
 };

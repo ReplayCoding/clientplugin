@@ -8,7 +8,7 @@
 #include "hook/gum/x86patcher.hpp"
 #include "util/error.hpp"
 
-X86Patcher::X86Patcher(std::uintptr_t address,
+X86Patcher::X86Patcher(uintptr_t address,
                        std::size_t code_size,
                        std::function<void(GumX86Writer*)> function,
                        bool enable) {
