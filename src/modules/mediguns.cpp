@@ -1,9 +1,9 @@
 #include <convar.h>
 #include <fmt/core.h>
 
-#include "clientclasses.hpp"
 #include "hook/attachmenthook.hpp"
 #include "modules/modules.hpp"
+#include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"
 
 class MediGunsMod : public IModule {

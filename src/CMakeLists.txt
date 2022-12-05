@@ -3,12 +3,12 @@ add_library(
 
   interfaces.cpp
   plugin.cpp
-  clientclasses.cpp
   x264encoder.cpp
   util/mmap.cpp
   offsets/offsets.cpp
   offsets/eh_frame.cpp
   offsets/rtti.cpp
+  offsets/clientclasses.cpp
   modules/modules.cpp
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp

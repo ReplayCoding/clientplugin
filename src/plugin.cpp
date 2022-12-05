@@ -9,10 +9,10 @@
 #include <unistd.h>
 #include <memory>
 
-#include "clientclasses.hpp"
 #include "hook/gum/interceptor.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
+#include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 
@@ -131,9 +131,9 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
 
   g_RTTI = std::make_unique<RttiManager>();
 
-  fmt::print("POOTIS IS AT! {:08X}\n",
-             static_cast<uintptr_t>(
-                 offsets::CEngineSoundServices_SetSoundFrametime));
+  fmt::print(
+      "POOTIS IS AT! {:08X}\n",
+      static_cast<uintptr_t>(offsets::CEngineSoundServices_SetSoundFrametime));
 
   g_ClientClasses = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();

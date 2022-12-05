@@ -13,8 +13,8 @@
 #include <range/v3/view/transform.hpp>
 #include <tracy/Tracy.hpp>
 
-#include "clientclasses.hpp"
 #include "interfaces.hpp"
+#include "offsets/clientclasses.hpp"
 #include "util/generator.hpp"
 
 Generator<std::pair<std::string, clientclasses::ClientProp>>
