@@ -236,15 +236,6 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
   }
 }
 
-uintptr_t RttiManager::get_function(std::string module,
-                                    std::string name,
-                                    uint16_t vftable,
-                                    uint16_t function) {
-  auto vftable_ptr = module_vtables.at(std::pair{module, name}).at(vftable);
-  return *reinterpret_cast<uintptr_t*>(vftable_ptr +
-                                       (sizeof(void*) * function));
-}
-
 struct module_info {
   std::string name;
   uintptr_t addr;
@@ -299,7 +290,7 @@ RttiManager::RttiManager() {
           vtable_mutex.lock();
           defer(vtable_mutex.unlock());
 
-          module_vtables[std::pair{fname, vtable.first}] = vtable.second;
+          module_vtables[fname][vtable.first] = vtable.second;
         };
 
       } catch (std::exception& e) {

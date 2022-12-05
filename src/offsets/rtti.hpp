@@ -14,14 +14,17 @@ class RttiManager {
   RttiManager();
 
   uintptr_t get_function(std::string module,
-                              std::string name,
-                              uint16_t vftable,
-                              uint16_t function);
+                         std::string name,
+                         uint16_t vftable,
+                         uint16_t function) {
+    auto vftable_ptr = module_vtables.at(module).at(name).at(vftable);
+    return *reinterpret_cast<uintptr_t*>(vftable_ptr +
+                                         (sizeof(void*) * function));
+  };
 
  private:
-  // module, name = vftable ptrs
-  absl::flat_hash_map<std::pair<std::string, std::string>,
-                      std::vector<uintptr_t>>
+  absl::flat_hash_map<std::string,
+                      absl::flat_hash_map<std::string, std::vector<uintptr_t>>>
       module_vtables{};
 };
 

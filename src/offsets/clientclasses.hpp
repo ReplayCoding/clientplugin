@@ -30,14 +30,13 @@ class ClientClassManager {
  public:
   ClientClassManager();
   std::ptrdiff_t get_prop_offset(std::string classname, std::string propname) {
-    return clientclasses.at(std::pair(classname, propname)).offset;
+    return clientclasses.at(classname).at(propname).offset;
   }
 
  private:
   void dump_props_to_file(const CCommand& cmd);
-  // class name, prop name = prop
-  absl::btree_map<std::pair<std::string, std::string>,
-                  clientclasses::ClientProp>
+  absl::btree_map<std::string,
+                  absl::btree_map<std::string, clientclasses::ClientProp>>
       clientclasses;
 
   ConCommandCallbacks pe_dump_props_to_file_callback;

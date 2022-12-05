@@ -23,7 +23,8 @@ clientclasses::parse_tbl(RecvTable* tbl) {
   for (auto idx = 0; idx < tbl->GetNumProps(); idx++) {
     auto prop = tbl->GetProp(idx);
 
-    if (prop->GetType() == SendPropType::DPT_DataTable) {
+    auto prop_type = prop->GetType();
+    if (prop_type == SendPropType::DPT_DataTable) {
       auto subtable = prop->GetDataTable();
       auto parsed_subtable = parse_tbl(subtable);
 
@@ -37,7 +38,7 @@ clientclasses::parse_tbl(RecvTable* tbl) {
       };
     } else {
       co_yield std::pair(std::string(prop->GetName()),
-                         ClientProp(prop->GetOffset(), prop->GetType()));
+                         ClientProp(prop->GetOffset(), prop_type));
     }
   }
 }
@@ -53,7 +54,7 @@ ClientClassManager::ClientClassManager()
 
     for (auto& [prop_name, prop] :
          clientclasses::parse_tbl(client_class->m_pRecvTable)) {
-      clientclasses[std::pair(class_name, prop_name)] = prop;
+      clientclasses[class_name][prop_name] = prop;
     };
   }
 }
@@ -66,18 +67,12 @@ void ClientClassManager::dump_props_to_file(const CCommand& cmd) {
 
   auto output_file = std::ofstream(cmd[1]);
 
-  for (auto clientclass_rng :
-       clientclasses | ranges::views::chunk_by([](auto&a, auto&b) {
-         // Group by class name
-         return a.first.first == b.first.first;
-       })) {
-    // A bit ugly...
-    (void)clientclass_rng;
-    // fmt::print(output_file, "CLIENTCLASS: {}\n", name);
+  for (auto& [name, props] : clientclasses) {
+    fmt::print(output_file, "CLIENTCLASS: {}\n", name);
 
-    // for (auto prop : props) {
-    //   // fmt::print(output_file, "\t{}: {:08X}\n", prop.name, prop.offset);
-    // };
+    for (auto& [name, prop] : props) {
+      fmt::print(output_file, "\t{}: {:08X}\n", name, prop.offset);
+    };
   }
 }
 
