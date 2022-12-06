@@ -1,13 +1,11 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <fcntl.h>
-#include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <marl/defer.h>
 #include <marl/waitgroup.h>
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <coroutine>
 #include <cstdint>
 #include <cstring>
@@ -38,6 +36,7 @@
 #include "util/data_view.hpp"
 #include "util/error.hpp"
 #include "util/generator.hpp"
+#include "util/timedscope.hpp"
 
 std::unique_ptr<RttiManager> g_RTTI{};
 
@@ -235,7 +234,7 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
 }
 
 RttiManager::RttiManager() {
-  auto start_time = std::chrono::high_resolution_clock::now();
+  TimedScope("RTTI");
 
   // This whole module handler shouldn't be here
   struct module_info {
@@ -309,8 +308,4 @@ RttiManager::RttiManager() {
   }
 
   wg.wait();
-
-  auto duration = std::chrono::high_resolution_clock::now() - start_time;
-  fmt::print("Handling modules took {}\n",
-             std::chrono::duration_cast<std::chrono::milliseconds>(duration));
 }

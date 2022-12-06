@@ -15,6 +15,7 @@
 #include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
+#include "util/timedscope.hpp"
 
 class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  public:
@@ -113,11 +114,12 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 
  private:
   std::unique_ptr<ModuleManager> module_manager{};
-  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(4)};
+  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(6)};
 };
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
+  TimedScope("plugin load");
   // FIXME: This is terrible
   // printf("Waiting to attach BIG CHUNGUS!\n");
   // sleep(3);
