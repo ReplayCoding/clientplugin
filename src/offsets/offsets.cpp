@@ -8,8 +8,7 @@
 #include "offsets/rtti.hpp"
 #include "util/error.hpp"
 
-LoadedModule::LoadedModule(const std::string path,
-                           const uintptr_t base_address)
+LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
     : base_address(base_address) {
   ZoneScoped;
   elf.load(path);
@@ -66,7 +65,7 @@ namespace offsets {
   const SharedLibOffset SND_G_LINEAR_COUNT{"engine.so", 0x00858900 - 0x10000};
   const SharedLibOffset SND_G_VOL{"engine.so", 0x008588f0 - 0x10000};
 
-  const SharedLibOffset FindAndHealTargets{"client.so", 0xdccea0};
+  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd020};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};

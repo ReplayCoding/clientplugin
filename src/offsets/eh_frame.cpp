@@ -6,9 +6,9 @@
 #include "util/data_range_checker.hpp"
 #include "util/data_view.hpp"
 #include "util/error.hpp"
+#include "util/generator.hpp"
 
-ElfModuleEhFrameParser::CieInfo ElfModuleEhFrameParser::handle_cie(
-    const uintptr_t cie_address) {
+CieInfo handle_cie(const uintptr_t cie_address) {
   DataView cie_data{cie_address};
 
   uint32_t cie_length = cie_data.read<uint32_t>();
@@ -82,10 +82,8 @@ ElfModuleEhFrameParser::CieInfo ElfModuleEhFrameParser::handle_cie(
   return {.fde_pointer_encoding = fde_pointer_encoding};
 }
 
-std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
-    const uintptr_t start_address,
-    const uintptr_t end_address) {
-  std::vector<DataRange> function_ranges{};
+Generator<DataRange> handle_eh_frame(const uintptr_t start_address,
+                                     const uintptr_t end_address) {
   DataView fde_data{start_address};
 
   while (fde_data.data_ptr < end_address) {
@@ -132,7 +130,7 @@ std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
       }
 
       auto fde_pc_range = fde_data.read<uintptr_t>();
-      function_ranges.emplace_back(fde_pc_begin.value(), fde_pc_range);
+      co_yield DataRange(fde_pc_begin.value(), fde_pc_range);
     }
 
     // We don't parse the entire structure, but if we overflow into the next
@@ -150,22 +148,24 @@ std::vector<DataRange> ElfModuleEhFrameParser::handle_eh_frame(
     while ((fde_data.data_ptr % sizeof(void*)) != 0)
       fde_data.data_ptr += 1;
   }
-
-  return function_ranges;
 }
 
-ElfModuleEhFrameParser::ElfModuleEhFrameParser(LoadedModule* module) {
+DataRangeChecker get_eh_frame_ranges(LoadedModule& module) {
   ZoneScoped;
-  base_address = module->base_address;
+  DataRangeChecker ranges{module.base_address};
 
-  // TODO: Range
-  for (ELFIO::section* section : module->elf.sections) {
+  for (ELFIO::section* section : module.elf.sections) {
     if (section->get_name() == ".eh_frame") {
       auto eh_frame_address =
-          module->get_online_address_from_offline(section->get_address());
+          module.get_online_address_from_offline(section->get_address());
       uintptr_t eh_frame_end_addr = eh_frame_address + section->get_size();
 
-      function_ranges = handle_eh_frame(eh_frame_address, eh_frame_end_addr);
+      for (auto& function_range :
+           handle_eh_frame(eh_frame_address, eh_frame_end_addr)) {
+        ranges.add_range(function_range);
+      }
     }
   }
+
+  return ranges;
 }

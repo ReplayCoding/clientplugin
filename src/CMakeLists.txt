@@ -56,6 +56,7 @@ target_link_libraries(
   OpenGL::GL
   imgui::imgui
   absl::numeric
+  absl::btree
   absl::flat_hash_set
   absl::flat_hash_map
   absl::inlined_vector

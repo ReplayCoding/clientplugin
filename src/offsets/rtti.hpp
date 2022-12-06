@@ -7,7 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include "offsets.hpp"
+#include "offsets/offsets.hpp"
+#include "util/data_range_checker.hpp"
 
 class RttiManager {
  public:

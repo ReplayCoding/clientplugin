@@ -198,11 +198,9 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   }
 }
 
-Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
-                                          ElfModuleEhFrameParser& eh_frame) {
+Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
   ZoneScoped;
-
-  auto function_ranges = std::move(eh_frame.as_data_range_checker());
+  auto function_ranges = get_eh_frame_ranges(loaded_mod);
 
   RelocMap relocations{};
   for (auto section : loaded_mod.elf.sections) {
@@ -236,15 +234,16 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod,
   }
 }
 
-struct module_info {
-  std::string name;
-  uintptr_t addr;
-};
-
 RttiManager::RttiManager() {
   auto start_time = std::chrono::high_resolution_clock::now();
-  std::vector<module_info> modules;
 
+  // This whole module handler shouldn't be here
+  struct module_info {
+    std::string name;
+    DataRange mod_range;
+  };
+
+  std::vector<module_info> modules{};
   dl_iterate_phdr(
       [](dl_phdr_info* info, size_t info_size, void* user_data) {
         ZoneScopedN("dl_iterate_phdr func");
@@ -263,7 +262,15 @@ RttiManager::RttiManager() {
           return 0;
         }
 
-        modules->emplace_back(std::string(info->dlpi_name), info->dlpi_addr);
+        auto end_addr = info->dlpi_addr;
+        for (size_t i = 0; i < info->dlpi_phnum; i++) {
+          end_addr = info->dlpi_addr +
+                     (info->dlpi_phdr->p_vaddr + info->dlpi_phdr->p_memsz);
+        }
+
+        modules->emplace_back(
+            std::string(info->dlpi_name),
+            DataRange(info->dlpi_addr, end_addr - info->dlpi_addr));
 
         return 0;
       },
@@ -281,12 +288,10 @@ RttiManager::RttiManager() {
       try {
         LoadedModule loaded_mod{
             module.name,
-            static_cast<uintptr_t>(module.addr),
+            static_cast<uintptr_t>(module.mod_range.begin),
         };
 
-        ElfModuleEhFrameParser eh_frame{&loaded_mod};
-
-        for (auto& vtable : get_vtables_from_module(loaded_mod, eh_frame)) {
+        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
           vtable_mutex.lock();
           defer(vtable_mutex.unlock());
 
