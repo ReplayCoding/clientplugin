@@ -114,7 +114,6 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 
  private:
   std::unique_ptr<ModuleManager> module_manager{};
-  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(6)};
 };
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
@@ -124,18 +123,14 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
   // printf("Waiting to attach BIG CHUNGUS!\n");
   // sleep(3);
 
-  scheduler.bind();
-
   gum_init_embedded();
   g_Interceptor = std::make_unique<Gum::Interceptor>();
 
   Interfaces::Load(interfaceFactory);
 
-  g_RTTI = std::make_unique<RttiManager>();
-
-  fmt::print(
-      "POOTIS IS AT! {:08X}\n",
-      static_cast<uintptr_t>(offsets::CEngineSoundServices_SetSoundFrametime));
+  init_offsets();
+  fmt::print("POOTIS IS AT! {:08X}\n",
+             static_cast<uintptr_t>(offsets::CEngine_Frame));
 
   g_ClientClasses = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();
@@ -155,14 +150,10 @@ void ServerPlugin::Unload(void) {
   module_manager.reset();
   g_ClientClasses.reset();
 
-  g_RTTI.reset();
-
   Interfaces::Unload();
 
   g_Interceptor.reset();
   gum_deinit_embedded();
-
-  scheduler.unbind();
 }
 
 ServerPlugin plugin{};

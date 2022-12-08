@@ -10,6 +10,7 @@
 #include "hook/attachmenthook.hpp"
 #include "modules/gfxoverlay.hpp"
 #include "modules/modules.hpp"
+#include "offsets/offsets.hpp"
 
 void GfxOverlayMod::init_imgui(SDL_Window* window) {
   IMGUI_CHECKVERSION();
@@ -97,7 +98,7 @@ GfxOverlayMod::GfxOverlayMod(
   modules = modules_ref;
 
   sdl_gl_swapWindow_hook = std::make_unique<AttachmentHookEnter>(
-      reinterpret_cast<uintptr_t>(SDL_GL_SwapWindow),
+      offsets::SDL_GL_SwapWindow,
       [this](auto context) { SDL_GL_SwapWindow_handler(context); });
 }
 GfxOverlayMod::~GfxOverlayMod() {

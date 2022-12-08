@@ -1,18 +1,18 @@
 #pragma once
+#include <absl/container/flat_hash_map.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
+#include <forward_list>
 #include <string>
 
 struct LoadedModule {
   LoadedModule(const std::string path, const uintptr_t base_address);
 
-  inline uintptr_t get_online_address_from_offline(
-      uintptr_t offline_addr) {
+  inline uintptr_t get_online_address_from_offline(uintptr_t offline_addr) {
     return base_address + (offline_addr - offline_baseaddr);
   }
 
-  inline uintptr_t get_offline_address_from_online(
-      uintptr_t online_addr) {
+  inline uintptr_t get_offline_address_from_online(uintptr_t online_addr) {
     return offline_baseaddr + (online_addr - base_address);
   }
 
@@ -24,51 +24,81 @@ struct LoadedModule {
   uintptr_t offline_baseaddr{UINTPTR_MAX};
 };
 
-class ManualOffset {
- public:
-  ManualOffset() = default;
-  ManualOffset(uintptr_t address) : manual_address(address) {}
+void init_offsets();
 
+class Offset;
+extern std::forward_list<Offset*> g_offset_list;
+
+using ModuleVtables = absl::flat_hash_map<
+    std::string,
+    absl::flat_hash_map<std::string, std::vector<uintptr_t>>>;
+
+class Offset {
+  friend void init_offsets();
+
+ public:
+  Offset() { g_offset_list.push_front(this); };
   template <typename T>
-  inline ManualOffset operator+(T rhs) const {
-    return ManualOffset(get_address() + rhs);
+  inline auto operator+(T rhs) const {
+    assert(cached_address != 0);
+    return Offset(cached_address + rhs);
   }
 
   template <typename T>
   inline operator T() const {
-    return reinterpret_cast<T>(get_address());
+    assert(cached_address != 0);
+    return reinterpret_cast<T>(cached_address);
   }
 
  private:
-  virtual uintptr_t get_address() const { return manual_address; };
+  Offset(uintptr_t addr) : cached_address(addr){};
+
+  virtual uintptr_t get_address(ModuleVtables& vtables) const = 0;
+  virtual void cache_address(ModuleVtables& vtables) {
+    cached_address = get_address(vtables);
+  };
+
+  uintptr_t cached_address{};
+};
+
+class ManualOffset : public Offset {
+ public:
+  ManualOffset(uintptr_t address) : Offset(), manual_address(address) {}
+
+ private:
+  virtual uintptr_t get_address(ModuleVtables& vtables) const override {
+    return manual_address;
+  };
 
   const uintptr_t manual_address{};
 };
 
-using Offset = ManualOffset;
-
-class SharedLibOffset : public ManualOffset {
+class SharedLibOffset : public Offset {
  public:
   SharedLibOffset(std::string module, uintptr_t offset)
-      : module(module), offset(offset){};
+      : Offset(), module(module), offset(offset){};
 
  private:
-  uintptr_t get_address() const override;
+  uintptr_t get_address(ModuleVtables& vtables) const override;
 
   const std::string module;
   const uintptr_t offset;
 };
 
-class VtableOffset : public ManualOffset {
+class VtableOffset : public Offset {
  public:
   VtableOffset(std::string module,
                std::string name,
                uint32_t function,
                uint16_t vftable = 0)
-      : module(module), name(name), function(function), vftable(vftable){};
+      : Offset(),
+        module(module),
+        name(name),
+        function(function),
+        vftable(vftable){};
 
  private:
-  uintptr_t get_address() const override;
+  uintptr_t get_address(ModuleVtables& vtables) const override;
 
   const std::string module;
   const std::string name;
@@ -76,29 +106,20 @@ class VtableOffset : public ManualOffset {
   const uint16_t vftable;
 };
 
-class SharedLibSymbol : public ManualOffset {
+class SharedLibSymbol : public Offset {
  public:
   SharedLibSymbol(std::string module, std::string symbol)
-      : module(module), symbol(symbol){};
+      : Offset(), module(module), symbol(symbol){};
 
  private:
-  uintptr_t get_address() const override;
+  uintptr_t get_address(ModuleVtables& vtables) const override;
 
   const std::string module;
   const std::string symbol;
 };
 
 namespace offsets {
-  const extern SharedLibOffset SCR_UpdateScreen;
-  const extern SharedLibOffset SND_RecordBuffer;
-
-  const extern SharedLibOffset GetSoundTime;
-
-  const extern VtableOffset CEngineSoundServices_SetSoundFrametime;
-
-  const extern SharedLibOffset SND_G_P;
-  const extern SharedLibOffset SND_G_LINEAR_COUNT;
-  const extern SharedLibOffset SND_G_VOL;
+  const extern SharedLibSymbol SDL_GL_SwapWindow;
 
   const extern SharedLibOffset FindAndHealTargets;
 

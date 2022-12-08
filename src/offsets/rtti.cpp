@@ -2,8 +2,6 @@
 #include <absl/container/flat_hash_set.h>
 #include <fcntl.h>
 #include <fmt/core.h>
-#include <marl/defer.h>
-#include <marl/waitgroup.h>
 #include <algorithm>
 #include <cassert>
 #include <coroutine>
@@ -25,10 +23,6 @@
 #include <utility>
 #include <vector>
 
-// It's just a header, it can't hurt you
-// (Must be AFTER elfio)
-#include <link.h>
-
 #include "offsets/eh_frame.hpp"
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
@@ -36,9 +30,6 @@
 #include "util/data_view.hpp"
 #include "util/error.hpp"
 #include "util/generator.hpp"
-#include "util/timedscope.hpp"
-
-std::unique_ptr<RttiManager> g_RTTI{};
 
 using RelocMap = absl::flat_hash_map<uintptr_t, std::string>;
 using Vtable = std::pair<std::string, std::vector<uintptr_t>>;
@@ -74,7 +65,7 @@ Generator<std::pair<uintptr_t, std::string>> get_relocations(
                             _symbol_other))
       continue;
 
-    if (type == 0 /* NONE rel type */ || symbol_type == /* ELFIO:: */ STN_UNDEF)
+    if (type == 0 /* NONE rel type */ || symbol_type == ELFIO::STN_UNDEF)
       continue;
 
     uintptr_t online_reladdress =
@@ -203,7 +194,7 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
 
   RelocMap relocations{};
   for (auto section : loaded_mod.elf.sections) {
-    if (section->get_type() == /* ELFIO:: */ SHT_REL) {
+    if (section->get_type() == ELFIO::SHT_REL) {
       for (auto& reloc : get_relocations(loaded_mod, section))
         relocations[reloc.first] = reloc.second;
     }
@@ -231,81 +222,4 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
 
     prev_entry = entry;
   }
-}
-
-RttiManager::RttiManager() {
-  TimedScope("RTTI");
-
-  // This whole module handler shouldn't be here
-  struct module_info {
-    std::string name;
-    DataRange mod_range;
-  };
-
-  std::vector<module_info> modules{};
-  dl_iterate_phdr(
-      [](dl_phdr_info* info, size_t info_size, void* user_data) {
-        ZoneScopedN("dl_iterate_phdr func");
-
-        auto* modules = reinterpret_cast<std::vector<module_info>*>(user_data);
-        const std::string_view fname = basename(info->dlpi_name);
-
-        constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
-                                                       "libclientplugin.so"};
-
-        if (info->dlpi_addr == 0 || info->dlpi_name == nullptr ||
-            info->dlpi_name[0] == '\0') {
-          return 0;
-        } else if (ranges::any_of(excluded_paths,
-                                  [&](auto b) { return fname == b; })) {
-          return 0;
-        }
-
-        auto end_addr = info->dlpi_addr;
-        for (size_t i = 0; i < info->dlpi_phnum; i++) {
-          end_addr = info->dlpi_addr +
-                     (info->dlpi_phdr->p_vaddr + info->dlpi_phdr->p_memsz);
-        }
-
-        modules->emplace_back(
-            std::string(info->dlpi_name),
-            DataRange(info->dlpi_addr, end_addr - info->dlpi_addr));
-
-        return 0;
-      },
-      &modules);
-
-  marl::WaitGroup wg(modules.size());
-  TracyLockable(std::mutex, vtable_mutex);
-  for (auto& module : modules) {
-    marl::schedule([=, &vtable_mutex, this] {
-      ZoneScopedN("handle module");
-      defer(wg.done());
-
-      const std::string fname = basename(module.name.c_str());
-
-      try {
-        LoadedModule loaded_mod{
-            module.name,
-            static_cast<uintptr_t>(module.mod_range.begin),
-        };
-
-        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
-          vtable_mutex.lock();
-          defer(vtable_mutex.unlock());
-
-          module_vtables[fname][vtable.first] = vtable.second;
-        };
-
-      } catch (std::exception& e) {
-        fmt::print(
-            "while handling module {}:\n"
-            "\t{}\n",
-            fname, e.what());
-        throw;
-      };
-    });
-  }
-
-  wg.wait();
 }

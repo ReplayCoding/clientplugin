@@ -1,12 +1,22 @@
 #include <dlfcn.h>
 #include <frida-gum.h>
+#include <marl/defer.h>
+#include <marl/waitgroup.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
+#include <range/v3/algorithm/any_of.hpp>
 #include <tracy/Tracy.hpp>
+
+// It's just a header, it can't hurt you
+// (Must be AFTER elfio)
+#include <link.h>
 
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 #include "util/error.hpp"
+#include "util/timedscope.hpp"
+
+std::forward_list<Offset*> g_offset_list{};
 
 LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
     : base_address(base_address) {
@@ -14,7 +24,7 @@ LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
   elf.load(path);
 
   for (ELFIO::segment* segment : elf.segments) {
-    if (segment->get_type() == ELFIO::PT_LOAD) {
+    if (segment->get_type() == /* ELFIO:: */ PT_LOAD) {
       offline_baseaddr =
           std::min(offline_baseaddr,
                    static_cast<uintptr_t>(segment->get_virtual_address()));
@@ -27,7 +37,7 @@ LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
   };
 }
 
-uintptr_t SharedLibOffset::get_address() const {
+uintptr_t SharedLibOffset::get_address(ModuleVtables& vtables) const {
   auto base_address = gum_module_find_base_address(module.c_str());
 
   if (base_address == 0)
@@ -35,11 +45,13 @@ uintptr_t SharedLibOffset::get_address() const {
   return base_address + offset;
 }
 
-uintptr_t VtableOffset::get_address() const {
-  return g_RTTI->get_function(module, name, vftable, function);
+uintptr_t VtableOffset::get_address(ModuleVtables& vtables) const {
+  auto vftable_ptr = vtables.at(module).at(name).at(vftable);
+  return *reinterpret_cast<uintptr_t*>(vftable_ptr +
+                                       (sizeof(void*) * function));
 }
 
-uintptr_t SharedLibSymbol::get_address() const {
+uintptr_t SharedLibSymbol::get_address(ModuleVtables& vtables) const {
   auto handle = dlopen(module.c_str(), RTLD_LAZY | RTLD_NOLOAD);
   if (handle == nullptr) {
     throw StringError("Failed to get handle for module {}", module);
@@ -52,18 +64,93 @@ uintptr_t SharedLibSymbol::get_address() const {
   return addr;
 }
 
+void init_offsets() {
+  TimedScope("offsets");
+  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(4)};
+  scheduler.bind();
+  ModuleVtables module_vtables{};
+
+  struct module_info {
+    std::string name;
+    DataRange mod_range;
+  };
+
+  std::vector<module_info> modules{};
+  dl_iterate_phdr(
+      [](dl_phdr_info* info, size_t info_size, void* user_data) {
+        ZoneScopedN("dl_iterate_phdr func");
+
+        auto* modules = reinterpret_cast<std::vector<module_info>*>(user_data);
+        const std::string_view fname = basename(info->dlpi_name);
+
+        constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
+                                                       "libclientplugin.so"};
+
+        if (info->dlpi_addr == 0 || info->dlpi_name == nullptr ||
+            info->dlpi_name[0] == '\0') {
+          return 0;
+        } else if (ranges::any_of(excluded_paths,
+                                  [&](auto b) { return fname == b; })) {
+          return 0;
+        }
+
+        auto end_addr = info->dlpi_addr;
+        for (size_t i = 0; i < info->dlpi_phnum; i++) {
+          end_addr = info->dlpi_addr +
+                     (info->dlpi_phdr->p_vaddr + info->dlpi_phdr->p_memsz);
+        }
+
+        modules->emplace_back(
+            std::string(info->dlpi_name),
+            DataRange(info->dlpi_addr, end_addr - info->dlpi_addr));
+
+        return 0;
+      },
+      &modules);
+
+  marl::WaitGroup wg(modules.size());
+  TracyLockable(std::mutex, vtable_mutex);
+  for (auto& module : modules) {
+    marl::schedule([=, &vtable_mutex, &module_vtables] {
+      ZoneScopedN("handle module");
+      defer(wg.done());
+
+      const std::string fname = basename(module.name.c_str());
+
+      try {
+        LoadedModule loaded_mod{
+            module.name,
+            static_cast<uintptr_t>(module.mod_range.begin),
+        };
+
+        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
+          vtable_mutex.lock();
+          defer(vtable_mutex.unlock());
+
+          module_vtables[fname][vtable.first] = vtable.second;
+        };
+
+      } catch (std::exception& e) {
+        fmt::print(
+            "while handling module {}:\n"
+            "\t{}\n",
+            fname, e.what());
+        throw;
+      };
+    });
+  }
+
+  wg.wait();
+
+  for (auto* offset : g_offset_list) {
+    offset->cache_address(module_vtables);
+  }
+  scheduler.unbind();
+};
+
 namespace offsets {
-  const SharedLibOffset SCR_UpdateScreen{"engine.so", 0x39eab0};
-  const SharedLibOffset SND_RecordBuffer{"engine.so", 0x281410};
-
-  const SharedLibOffset GetSoundTime{"engine.so", 0x2648c0};
-
-  const VtableOffset CEngineSoundServices_SetSoundFrametime{
-      "engine.so", "20CEngineSoundServices", 7};
-
-  const SharedLibOffset SND_G_P{"engine.so", 0x00858910 - 0x10000};
-  const SharedLibOffset SND_G_LINEAR_COUNT{"engine.so", 0x00858900 - 0x10000};
-  const SharedLibOffset SND_G_VOL{"engine.so", 0x008588f0 - 0x10000};
+  const SharedLibSymbol SDL_GL_SwapWindow{"libSDL2-2.0.so.0",
+                                          "SDL_GL_SwapWindow"};
 
   const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd020};
 
