@@ -3,7 +3,6 @@ add_library(
 
   interfaces.cpp
   plugin.cpp
-  x264encoder.cpp
   util/mmap.cpp
   offsets/offsets.cpp
   offsets/eh_frame.cpp
@@ -13,7 +12,6 @@ add_library(
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp
   modules/mediguns.cpp
-  modules/videorecord.cpp
   modules/profiler.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
@@ -40,7 +38,6 @@ find_package(imgui CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
 find_package(elfio CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
-pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264)
 
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
@@ -52,7 +49,6 @@ target_link_libraries(
   sdk::bitmap
 
   fmt::fmt
-  PkgConfig::x264
   OpenGL::GL
   imgui::imgui
   absl::numeric
