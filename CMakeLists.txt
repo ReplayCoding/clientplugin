@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24)
 
 # mimic source engine here
 set(OpenGL_GL_PREFERENCE "LEGACY")

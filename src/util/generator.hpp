@@ -31,7 +31,7 @@ struct Generator : public ranges::view_facade<Generator<T>> {
       return {};
     }
 
-    void return_void() const noexcept {}
+    void return_void() noexcept { result = std::monostate(); }
 
     void throw_if_exception() {
       if (std::holds_alternative<std::exception_ptr>(result))

@@ -1,6 +1,6 @@
-# TODO: Make the frida stuff into a Find*.cmake file
-
 cmake_policy(SET CMP0135 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
 include(FetchContent)
 FetchContent_Declare(
   _GUM
@@ -13,20 +13,26 @@ add_library(frida-gum STATIC IMPORTED GLOBAL)
 set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${_gum_SOURCE_DIR}/libfrida-gum.a)
 target_include_directories(frida-gum INTERFACE ${_gum_SOURCE_DIR})
 
+set(ABSL_PROPAGATE_CXX_STD "" ON)
+set(ABSL_USE_SYSTEM_INCLUDES "" ON)
+FetchContent_Declare(
+  abseil-cpp
+  GIT_REPOSITORY https://github.com/abseil/abseil-cpp
+  GIT_TAG 522606b7fae37836c138e83f6eec0eabb9947dc0
+)
+FetchContent_MakeAvailable(abseil-cpp)
 
-# WARNING: These are cached so you need to delete the build dir to change
-# these, or you can change them manually
-option(TRACY_NO_CRASH_HANDLER "" ON)
-option(TRACY_NO_CALLSTACK "" ON)
-option(TRACY_NO_CALLSTACK_INLINES "" ON)
-option(TRACY_NO_SAMPLING "" ON)
-option(TRACY_NO_SYSTEM_TRACING "" ON)
-option(TRACY_ON_DEMAND "" ON)
-add_subdirectory(tracy)
+set(TRACY_NO_CRASH_HANDLER ON)
+set(TRACY_NO_CALLSTACK ON)
+set(TRACY_NO_CALLSTACK_INLINES ON)
+set(TRACY_NO_SAMPLING ON)
+set(TRACY_NO_SYSTEM_TRACING ON)
+set(TRACY_ON_DEMAND ON)
+FetchContent_Declare(
+  tracy
+  GIT_REPOSITORY https://github.com/ReplayCoding/tracy
+  GIT_TAG 1480590824c0006e465f41da80232a87325f4364
+)
+FetchContent_MakeAvailable(tracy)
 
-option(ABSL_PROPAGATE_CXX_STD "" ON)
-option(ABSL_USE_SYSTEM_INCLUDES "" ON)
-add_subdirectory(abseil-cpp)
-
-add_subdirectory(marl)
 add_subdirectory(source-sdk)

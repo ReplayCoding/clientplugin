@@ -4,8 +4,6 @@
 #include <fmt/core.h>
 #include <igameevents.h>
 #include <interface.h>
-#include <marl/defer.h>
-#include <marl/scheduler.h>
 #include <unistd.h>
 #include <memory>
 

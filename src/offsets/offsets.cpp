@@ -1,6 +1,4 @@
 #include <dlfcn.h>
-#include <marl/defer.h>
-#include <marl/waitgroup.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <range/v3/algorithm/any_of.hpp>
@@ -68,8 +66,6 @@ uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
 
 void init_offsets() {
   TimedScope("offsets");
-  marl::Scheduler scheduler{marl::Scheduler::Config().setWorkerThreadCount(4)};
-  scheduler.bind();
   ModuleVtables module_vtables{};
 
   ModuleRangeMap modules{};
@@ -105,39 +101,32 @@ void init_offsets() {
       },
       &modules);
 
-  marl::WaitGroup wg(modules.size());
   TracyLockable(std::mutex, vtable_mutex);
   for (auto& [mod_name, mod_range] : modules) {
-    marl::schedule([=, &vtable_mutex, &module_vtables] {
-      ZoneScopedN("handle module");
-      defer(wg.done());
+    ZoneScopedN("handle module");
 
-      const std::string fname = basename(mod_name.c_str());
+    const std::string fname = basename(mod_name.c_str());
 
-      try {
-        LoadedModule loaded_mod{
-            mod_name,
-            static_cast<uintptr_t>(mod_range.begin),
-        };
-
-        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
-          vtable_mutex.lock();
-          defer(vtable_mutex.unlock());
-
-          module_vtables[fname].insert(vtable);
-        };
-
-      } catch (std::exception& e) {
-        fmt::print(
-            "while handling module {}:\n"
-            "\t{}\n",
-            fname, e.what());
-        throw;
+    try {
+      LoadedModule loaded_mod{
+          mod_name,
+          static_cast<uintptr_t>(mod_range.begin),
       };
-    });
-  }
 
-  wg.wait();
+      for (auto& vtable : get_vtables_from_module(loaded_mod)) {
+        vtable_mutex.lock();
+        module_vtables[fname].insert(vtable);
+        vtable_mutex.unlock();
+      };
+
+    } catch (std::exception& e) {
+      fmt::print(
+          "while handling module {}:\n"
+          "\t{}\n",
+          fname, e.what());
+      throw;
+    };
+  }
 
   ModuleRangeMap cleaned_modules;
   for (auto& [mod_name, mod_range] : modules) {
@@ -148,7 +137,6 @@ void init_offsets() {
   for (auto* offset : g_offset_list) {
     offset->cache_address(cleaned_modules, module_vtables);
   }
-  scheduler.unbind();
 };
 
 namespace offsets {
