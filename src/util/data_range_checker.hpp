@@ -10,8 +10,7 @@ using range_bs_t =
                               // to hold even LLVM's memory space)
 
 struct DataRange {
-  DataRange(uintptr_t begin, uintptr_t length)
-      : begin(begin), length(length) {}
+  DataRange(uintptr_t begin, uintptr_t length) : begin(begin), length(length) {}
 
   uintptr_t begin;
   uintptr_t length;

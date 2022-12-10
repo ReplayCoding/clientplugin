@@ -1,5 +1,4 @@
 #include <dlfcn.h>
-#include <frida-gum.h>
 #include <marl/defer.h>
 #include <marl/waitgroup.h>
 #include <cstdint>
@@ -37,21 +36,24 @@ LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
   };
 }
 
-uintptr_t SharedLibOffset::get_address(ModuleVtables& vtables) const {
-  auto base_address = gum_module_find_base_address(module.c_str());
+uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
+                                       ModuleVtables& vtables) const {
+  auto base_address = modules.at(module).begin;
 
   if (base_address == 0)
     throw StringError("Failed to get address of module: {}", module);
   return base_address + offset;
 }
 
-uintptr_t VtableOffset::get_address(ModuleVtables& vtables) const {
+uintptr_t VtableOffset::get_address(ModuleRangeMap& modules,
+                                    ModuleVtables& vtables) const {
   auto vftable_ptr = vtables.at(module).at(name).at(vftable);
   return *reinterpret_cast<uintptr_t*>(vftable_ptr +
                                        (sizeof(void*) * function));
 }
 
-uintptr_t SharedLibSymbol::get_address(ModuleVtables& vtables) const {
+uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
+                                       ModuleVtables& vtables) const {
   auto handle = dlopen(module.c_str(), RTLD_LAZY | RTLD_NOLOAD);
   if (handle == nullptr) {
     throw StringError("Failed to get handle for module {}", module);
@@ -70,17 +72,12 @@ void init_offsets() {
   scheduler.bind();
   ModuleVtables module_vtables{};
 
-  struct module_info {
-    std::string name;
-    DataRange mod_range;
-  };
-
-  std::vector<module_info> modules{};
+  ModuleRangeMap modules{};
   dl_iterate_phdr(
       [](dl_phdr_info* info, size_t info_size, void* user_data) {
         ZoneScopedN("dl_iterate_phdr func");
 
-        auto* modules = reinterpret_cast<std::vector<module_info>*>(user_data);
+        auto* modules = reinterpret_cast<ModuleRangeMap*>(user_data);
         const std::string_view fname = basename(info->dlpi_name);
 
         constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
@@ -100,9 +97,9 @@ void init_offsets() {
                      (info->dlpi_phdr->p_vaddr + info->dlpi_phdr->p_memsz);
         }
 
-        modules->emplace_back(
-            std::string(info->dlpi_name),
-            DataRange(info->dlpi_addr, end_addr - info->dlpi_addr));
+        modules->insert(
+            {std::string(info->dlpi_name),
+             DataRange(info->dlpi_addr, end_addr - info->dlpi_addr)});
 
         return 0;
       },
@@ -110,24 +107,24 @@ void init_offsets() {
 
   marl::WaitGroup wg(modules.size());
   TracyLockable(std::mutex, vtable_mutex);
-  for (auto& module : modules) {
+  for (auto& [mod_name, mod_range] : modules) {
     marl::schedule([=, &vtable_mutex, &module_vtables] {
       ZoneScopedN("handle module");
       defer(wg.done());
 
-      const std::string fname = basename(module.name.c_str());
+      const std::string fname = basename(mod_name.c_str());
 
       try {
         LoadedModule loaded_mod{
-            module.name,
-            static_cast<uintptr_t>(module.mod_range.begin),
+            mod_name,
+            static_cast<uintptr_t>(mod_range.begin),
         };
 
         for (auto& vtable : get_vtables_from_module(loaded_mod)) {
           vtable_mutex.lock();
           defer(vtable_mutex.unlock());
 
-          module_vtables[fname][vtable.first] = vtable.second;
+          module_vtables[fname].insert(vtable);
         };
 
       } catch (std::exception& e) {
@@ -142,8 +139,14 @@ void init_offsets() {
 
   wg.wait();
 
+  ModuleRangeMap cleaned_modules;
+  for (auto& [mod_name, mod_range] : modules) {
+    const std::string cleaned_name = basename(mod_name.c_str());
+    cleaned_modules.insert({cleaned_name, mod_range});
+  }
+
   for (auto* offset : g_offset_list) {
-    offset->cache_address(module_vtables);
+    offset->cache_address(cleaned_modules, module_vtables);
   }
   scheduler.unbind();
 };
@@ -152,7 +155,7 @@ namespace offsets {
   const SharedLibSymbol SDL_GL_SwapWindow{"libSDL2-2.0.so.0",
                                           "SDL_GL_SwapWindow"};
 
-  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd020};
+  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd140};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};

@@ -5,6 +5,8 @@
 #include <forward_list>
 #include <string>
 
+#include "util/data_range_checker.hpp"
+
 struct LoadedModule {
   LoadedModule(const std::string path, const uintptr_t base_address);
 
@@ -23,6 +25,8 @@ struct LoadedModule {
  private:
   uintptr_t offline_baseaddr{UINTPTR_MAX};
 };
+
+using ModuleRangeMap = absl::flat_hash_map<std::string, DataRange>;
 
 void init_offsets();
 
@@ -53,9 +57,10 @@ class Offset {
  private:
   Offset(uintptr_t addr) : cached_address(addr){};
 
-  virtual uintptr_t get_address(ModuleVtables& vtables) const = 0;
-  virtual void cache_address(ModuleVtables& vtables) {
-    cached_address = get_address(vtables);
+  virtual uintptr_t get_address(ModuleRangeMap& modules,
+                                ModuleVtables& vtables) const = 0;
+  virtual void cache_address(ModuleRangeMap& modules, ModuleVtables& vtables) {
+    cached_address = get_address(modules, vtables);
   };
 
   uintptr_t cached_address{};
@@ -66,7 +71,8 @@ class ManualOffset : public Offset {
   ManualOffset(uintptr_t address) : Offset(), manual_address(address) {}
 
  private:
-  virtual uintptr_t get_address(ModuleVtables& vtables) const override {
+  virtual uintptr_t get_address(ModuleRangeMap& modules,
+                                ModuleVtables& vtables) const override {
     return manual_address;
   };
 
@@ -79,7 +85,8 @@ class SharedLibOffset : public Offset {
       : Offset(), module(module), offset(offset){};
 
  private:
-  uintptr_t get_address(ModuleVtables& vtables) const override;
+  uintptr_t get_address(ModuleRangeMap& modules,
+                        ModuleVtables& vtables) const override;
 
   const std::string module;
   const uintptr_t offset;
@@ -98,7 +105,8 @@ class VtableOffset : public Offset {
         vftable(vftable){};
 
  private:
-  uintptr_t get_address(ModuleVtables& vtables) const override;
+  uintptr_t get_address(ModuleRangeMap& modules,
+                        ModuleVtables& vtables) const override;
 
   const std::string module;
   const std::string name;
@@ -112,7 +120,8 @@ class SharedLibSymbol : public Offset {
       : Offset(), module(module), symbol(symbol){};
 
  private:
-  uintptr_t get_address(ModuleVtables& vtables) const override;
+  uintptr_t get_address(ModuleRangeMap& modules,
+                        ModuleVtables& vtables) const override;
 
   const std::string module;
   const std::string symbol;
