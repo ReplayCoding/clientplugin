@@ -3,7 +3,6 @@
   "dependencies": [
     "fmt",
     "elfio",
-    "range-v3",
     {
       "name": "imgui",
       "features": ["sdl2-binding", "opengl3-binding", "freetype"]

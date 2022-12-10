@@ -30,12 +30,10 @@ target_include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(range-v3 CONFIG REQUIRED)
 find_package(elfio CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 
