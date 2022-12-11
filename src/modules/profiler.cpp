@@ -89,9 +89,11 @@ std::shared_mutex telemetry_level_mutex{};
 class TelemetryReplacement : TM_API_STRUCT_STUB {
  public:
   TelemetryReplacement() {
+    this->tmCoreMessage = tmCoreMessage_replace;
+    this->tmCoreDynamicString = tmCoreDynamicString_replace;
+
     this->tmCoreEnter = tmCoreEnter_replace;
     this->tmCoreLeave = tmCoreLeave_replace;
-    this->tmCoreMessage = tmCoreMessage_replace;
   }
 
  private:
@@ -106,6 +108,16 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
 
     return false;
   }
+
+  static const char* tmCoreDynamicString_replace(HTELEMETRY cx, char const* s) {
+    if (s == nullptr)
+      return "";
+
+    auto len = strnlen(s, 127);
+    auto arr = new char[len + 1];
+    strncpy(arr, s, len);
+    return arr;
+  };
 
   static void tmCoreMessage_replace(HTELEMETRY cx,
                                     TmU32 const kThreadId,
@@ -192,9 +204,7 @@ class ProfilerMod : public IModule {
   ProfilerMod();
   ~ProfilerMod();
 
-  bool should_draw_overlay() override {
-    return TracyIsConnected;
-  }
+  bool should_draw_overlay() override { return TracyIsConnected; }
   void draw_overlay() override;
 
  private:
