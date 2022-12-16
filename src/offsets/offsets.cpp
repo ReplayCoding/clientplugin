@@ -143,7 +143,7 @@ namespace offsets {
   const SharedLibSymbol SDL_GL_SwapWindow{"libSDL2-2.0.so.0",
                                           "SDL_GL_SwapWindow"};
 
-  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd140};
+  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd700};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
