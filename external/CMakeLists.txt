@@ -64,4 +64,8 @@ CPMAddPackage(
     "RANGES_VERBOSE_BUILD ON"
 )
 
-add_subdirectory(source-sdk)
+CPMAddPackage(
+  NAME source-sdk
+  GITHUB_REPOSITORY ReplayCoding/hl2sdk-cmake
+  GIT_TAG 6e3028c724298c1e3c8bc780d07879779e4f8d4c
+)
