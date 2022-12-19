@@ -1,8 +1,6 @@
 {
   "name": "clientplugin",
   "dependencies": [
-    "fmt",
-    "elfio",
     {
       "name": "imgui",
       "features": ["sdl2-binding", "opengl3-binding", "freetype"]

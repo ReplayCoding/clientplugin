@@ -154,7 +154,7 @@ DataRangeChecker get_eh_frame_ranges(LoadedModule& module) {
   ZoneScoped;
   DataRangeChecker ranges{module.base_address};
 
-  for (ELFIO::section* section : module.elf.sections) {
+  for (auto& section : module.elf.sections) {
     if (section->get_name() == ".eh_frame") {
       auto eh_frame_address =
           module.get_online_address_from_offline(section->get_address());

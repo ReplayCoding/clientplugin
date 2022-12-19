@@ -19,5 +19,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
  add_compile_options (-fcolor-diagnostics)
 endif ()
 
+add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
+
 add_subdirectory("external")
 add_subdirectory("src")

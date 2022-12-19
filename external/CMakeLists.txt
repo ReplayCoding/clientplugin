@@ -69,3 +69,9 @@ CPMAddPackage(
   GITHUB_REPOSITORY ReplayCoding/hl2sdk-cmake
   GIT_TAG 6e3028c724298c1e3c8bc780d07879779e4f8d4c
 )
+
+CPMAddPackage("gh:fmtlib/fmt#9.1.0")
+CPMAddPackage("gh:serge1/ELFIO#6fc23e53ddf6109b0d9c0f3d8ed62964405369d2")
+if (ELFIO_ADDED)
+  target_compile_options(elfio INTERFACE -Wno-missing-field-initializers)
+endif()

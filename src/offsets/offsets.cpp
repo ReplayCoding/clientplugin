@@ -20,7 +20,7 @@ LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
   ZoneScoped;
   elf.load(path);
 
-  for (ELFIO::segment* segment : elf.segments) {
+  for (auto& segment : elf.segments) {
     if (segment->get_type() == /* ELFIO:: */ PT_LOAD) {
       offline_baseaddr =
           std::min(offline_baseaddr,

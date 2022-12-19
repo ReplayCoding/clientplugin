@@ -36,8 +36,8 @@ using Vtable = std::pair<std::string, std::vector<uintptr_t>>;
 
 Generator<std::pair<uintptr_t, std::string>> get_relocations(
     LoadedModule& loaded_mod,
-    ELFIO::section* section) {
-  const ELFIO::relocation_section_accessor relocations{loaded_mod.elf, section};
+    std::unique_ptr<ELFIO::section>& section) {
+  const ELFIO::relocation_section_accessor relocations{loaded_mod.elf, section.get() /* ugh... */};
   const ELFIO::symbol_section_accessor symbols{
       loaded_mod.elf, loaded_mod.elf.sections[section->get_link()]};
 
@@ -45,7 +45,7 @@ Generator<std::pair<uintptr_t, std::string>> get_relocations(
   for (size_t relidx = 0; relidx < relocations.get_entries_num(); ++relidx) {
     ELFIO::Elf64_Addr offset{};
     ELFIO::Elf_Word symbol{};
-    uint8_t type{};
+    uint32_t type{};
     ELFIO::Elf_Sxword _addend{};
 
     if (!relocations.get_entry(relidx, offset, symbol, type, _addend))
@@ -76,7 +76,7 @@ Generator<std::pair<uintptr_t, std::string>> get_relocations(
 }
 
 Generator<DataRange> section_ranges(LoadedModule& loaded_mod) {
-  for (auto section : loaded_mod.elf.sections) {
+  for (auto& section : loaded_mod.elf.sections) {
     if (section->get_address() != 0) {
       co_yield DataRange(
           loaded_mod.get_online_address_from_offline(section->get_address()),
@@ -193,7 +193,7 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
   auto function_ranges = get_eh_frame_ranges(loaded_mod);
 
   RelocMap relocations{};
-  for (auto section : loaded_mod.elf.sections) {
+  for (auto& section : loaded_mod.elf.sections) {
     if (section->get_type() == ELFIO::SHT_REL) {
       for (auto& reloc : get_relocations(loaded_mod, section))
         relocations[reloc.first] = reloc.second;
