@@ -99,13 +99,12 @@ namespace Gum {
     gum_interceptor_detach(get_obj(), listener->get_listener());
   }
 
-  GumReplaceReturn Interceptor::replace(
-      const uintptr_t address,
-      const uintptr_t replacement_address,
-      void* user_data) {
+  GumReplaceReturn Interceptor::replace(const uintptr_t address,
+                                        const uintptr_t replacement_address,
+                                        void* user_data) {
     return gum_interceptor_replace(get_obj(), reinterpret_cast<void*>(address),
                                    reinterpret_cast<void*>(replacement_address),
-                                   user_data);
+                                   user_data, nullptr);
   }
 
   void Interceptor::revert(const uintptr_t address) {

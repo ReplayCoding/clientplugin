@@ -18,39 +18,31 @@ endif()
 
 include(${CPM_DOWNLOAD_LOCATION})
 
-function(FetchContent_MakeAvailable_EXCLUDED name)
-  FetchContent_GetProperties(${name})
-  if(NOT "${name}_POPULATED")
-    FetchContent_Populate(${name})
-    add_subdirectory(${${name}_SOURCE_DIR} ${${name}_BINARY_DIR} EXCLUDE_FROM_ALL)
-  endif()
-endfunction()
-
-include(FetchContent)
-FetchContent_Declare(
-  _GUM
-  FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER
-  URL https://github.com/frida/frida/releases/download/15.1.28/frida-gum-devkit-15.1.28-linux-x86.tar.xz
-  URL_HASH SHA256=45276051648a12f88b6763b06b31ac30fcd3e27c22b2b70623cd5da19ad92558
+CPMAddPackage(
+  NAME frida-gum
+  DOWNLOAD_ONLY YES
+  URL https://github.com/frida/frida/releases/download/16.0.8/frida-gum-devkit-16.0.8-linux-x86.tar.xz
 )
-FetchContent_MakeAvailable(_GUM)
-add_library(frida-gum STATIC IMPORTED GLOBAL)
-set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${_gum_SOURCE_DIR}/libfrida-gum.a)
-target_include_directories(frida-gum INTERFACE ${_gum_SOURCE_DIR})
+if(frida-gum_ADDED)
+  add_library(frida-gum STATIC IMPORTED GLOBAL)
+  set_target_properties(frida-gum PROPERTIES IMPORTED_LOCATION ${frida-gum_SOURCE_DIR}/libfrida-gum.a)
+  target_include_directories(frida-gum INTERFACE ${frida-gum_SOURCE_DIR})
+endif()
 
-set(ABSL_PROPAGATE_CXX_STD ON)
-set(ABSL_USE_SYSTEM_INCLUDES ON)
-FetchContent_Declare(
-  abseil-cpp
+CPMAddPackage(
+  NAME abseil-cpp
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG 522606b7fae37836c138e83f6eec0eabb9947dc0
+  GIT_TAG d2c0c9d06128f9b63ad2f1e5165a16cb8512cdf2
+  OPTIONS
+    "ABSL_PROPAGATE_CXX_STD ON"
+    "ABSL_USE_SYSTEM_INCLUDES ON"
 )
 
 CPMAddPackage(
-  tracy
+  NAME tracy
   GITHUB_REPOSITORY wolfpld/tracy
-  GIT_TAG d5191ccbd4e05b2a13e00db651476518bf9b116a
-  EXCLUDE_FROM_ALL 1
+  GIT_TAG b80ede3ec607c5b4d7254cf00e8f548656ed9879
+  EXCLUDE_FROM_ALL YES
   OPTIONS
     "TRACY_NO_CRASH_HANDLER ON"
     "TRACY_NO_CALLSTACK ON"
@@ -61,17 +53,15 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
-  range-v3
+  NAME range-v3
   GITHUB_REPOSITORY ericniebler/range-v3
-  GIT_TAG c097c0e8d1378d95763426f024fbfeea745b4093
-  EXCLUDE_FROM_ALL 1
+  GIT_TAG 4624c63972c6f2c2871c7b87813c42048ddb80ad
+  EXCLUDE_FROM_ALL YES
   OPTIONS
     "RANGES_NATIVE OFF"
     "RANGES_DEEP_STL_INTEGRATION ON"
     "RANGES_PREFER_REAL_CONCEPTS ON"
     "RANGES_VERBOSE_BUILD ON"
 )
-
-FetchContent_MakeAvailable(abseil-cpp)
 
 add_subdirectory(source-sdk)
