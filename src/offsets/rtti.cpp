@@ -10,7 +10,6 @@
 #include <elfio/elfio.hpp>
 #include <iterator>
 #include <memory>
-#include <mutex>
 #include <range/v3/action/remove_if.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/algorithm/for_each.hpp>

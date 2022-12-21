@@ -145,6 +145,11 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
     std::string_view file_sv{kpLocation};
     TELEMETRY_FORMAT(buf, kpFmt)
 
+    // POTENTIALLY VERSION SPECIFIC HACK
+    constexpr auto WAIT = "Wait";
+    if (strncmp(buf, WAIT, strlen(WAIT)) == 0)
+      return;
+
     telemetry_ctx_stack.push(kLine, file_sv, UNAVAILABLE, buf);
   }
 
