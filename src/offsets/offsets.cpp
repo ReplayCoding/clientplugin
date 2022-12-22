@@ -1,6 +1,10 @@
 #include <dlfcn.h>
+#include <marl/defer.h>
+#include <marl/scheduler.h>
+#include <marl/waitgroup.h>
 #include <cstdint>
 #include <elfio/elfio.hpp>
+#include <mutex>
 #include <range/v3/algorithm/any_of.hpp>
 #include <tracy/Tracy.hpp>
 
@@ -101,32 +105,41 @@ void init_offsets() {
       },
       &modules);
 
+  marl::Scheduler sched(marl::Scheduler::Config().setWorkerThreadCount(4));
+  sched.bind();
+  defer(sched.unbind());
+
   TracyLockable(std::mutex, vtable_mutex);
+  marl::WaitGroup wg(modules.size());
   for (auto& [mod_name, mod_range] : modules) {
-    ZoneScopedN("handle module");
+    marl::schedule([&, wg]() {
+      defer(wg.done());
+      ZoneScopedN("handle module");
 
-    const std::string fname = basename(mod_name.c_str());
+      const std::string fname = basename(mod_name.c_str());
 
-    try {
-      LoadedModule loaded_mod{
-          mod_name,
-          static_cast<uintptr_t>(mod_range.begin),
+      try {
+        LoadedModule loaded_mod{
+            mod_name,
+            static_cast<uintptr_t>(mod_range.begin),
+        };
+
+        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
+          std::unique_lock l(vtable_mutex);
+          module_vtables[fname].insert(vtable);
+        };
+
+      } catch (std::exception& e) {
+        fmt::print(
+            "while handling module {}:\n"
+            "\t{}\n",
+            fname, e.what());
+        throw;
       };
-
-      for (auto& vtable : get_vtables_from_module(loaded_mod)) {
-        vtable_mutex.lock();
-        module_vtables[fname].insert(vtable);
-        vtable_mutex.unlock();
-      };
-
-    } catch (std::exception& e) {
-      fmt::print(
-          "while handling module {}:\n"
-          "\t{}\n",
-          fname, e.what());
-      throw;
-    };
+    });
   }
+
+  wg.wait();
 
   ModuleRangeMap cleaned_modules;
   for (auto& [mod_name, mod_range] : modules) {

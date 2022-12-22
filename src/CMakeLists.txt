@@ -33,6 +33,7 @@ target_include_directories(
 find_package(OpenGL REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(marl CONFIG REQUIRED)
 
 target_link_options(clientplugin PRIVATE LINKER:--no-undefined)
 target_link_libraries(
@@ -55,6 +56,7 @@ target_link_libraries(
   elfio::elfio
   Tracy::TracyClient
   SDL2::SDL2
+  marl::marl
 
   frida-gum
 )
