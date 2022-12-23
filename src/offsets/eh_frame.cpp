@@ -150,9 +150,8 @@ Generator<DataRange> handle_eh_frame(const uintptr_t start_address,
   }
 }
 
-DataRangeChecker get_eh_frame_ranges(LoadedModule& module) {
+Generator<DataRange> get_eh_frame_ranges(LoadedModule& module) {
   ZoneScoped;
-  DataRangeChecker ranges{module.base_address};
 
   for (auto& section : module.elf.sections) {
     if (section->get_name() == ".eh_frame") {
@@ -162,10 +161,8 @@ DataRangeChecker get_eh_frame_ranges(LoadedModule& module) {
 
       for (auto& function_range :
            handle_eh_frame(eh_frame_address, eh_frame_end_addr)) {
-        ranges.add_range(function_range);
+        co_yield function_range;
       }
     }
   }
-
-  return ranges;
 }

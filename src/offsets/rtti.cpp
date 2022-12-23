@@ -36,7 +36,8 @@ using Vtable = std::pair<std::string, std::vector<uintptr_t>>;
 Generator<std::pair<uintptr_t, std::string>> get_relocations(
     LoadedModule& loaded_mod,
     std::unique_ptr<ELFIO::section>& section) {
-  const ELFIO::relocation_section_accessor relocations{loaded_mod.elf, section.get() /* ugh... */};
+  const ELFIO::relocation_section_accessor relocations{
+      loaded_mod.elf, section.get() /* ugh... */};
   const ELFIO::symbol_section_accessor symbols{
       loaded_mod.elf, loaded_mod.elf.sections[section->get_link()]};
 
@@ -187,9 +188,16 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   }
 }
 
-Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
+Generator<Vtable> get_vtables_from_module(
+    LoadedModule& loaded_mod,
+    std::span<DataRange> function_ranges) {
   ZoneScoped;
-  auto function_ranges = get_eh_frame_ranges(loaded_mod);
+
+  DataRangeChecker function_range_checker{loaded_mod.base_address};
+
+  for (auto& function_range : get_eh_frame_ranges(loaded_mod)) {
+    function_range_checker.add_range(function_range);
+  }
 
   RelocMap relocations{};
   for (auto& section : loaded_mod.elf.sections) {
@@ -199,7 +207,8 @@ Generator<Vtable> get_vtables_from_module(LoadedModule& loaded_mod) {
     }
   }
 
-  auto vf_tables = locate_vftables(loaded_mod, relocations, function_ranges);
+  auto vf_tables =
+      locate_vftables(loaded_mod, relocations, function_range_checker);
 
   std::vector<uintptr_t> current_chunk{};
   uintptr_t prev_entry{};

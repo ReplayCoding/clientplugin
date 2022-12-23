@@ -12,4 +12,4 @@ CieInfo handle_cie(const uintptr_t cie_address);
 Generator<DataRange> handle_eh_frame(const uintptr_t start_address,
                                      const uintptr_t end_address);
 
-DataRangeChecker get_eh_frame_ranges(LoadedModule& module);
+Generator<DataRange> get_eh_frame_ranges(LoadedModule& module);

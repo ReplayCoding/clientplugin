@@ -2,6 +2,7 @@
 #include <marl/defer.h>
 #include <marl/scheduler.h>
 #include <marl/waitgroup.h>
+#include <algorithm>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <mutex>
@@ -12,6 +13,7 @@
 // (Must be AFTER elfio)
 #include <link.h>
 
+#include "offsets/eh_frame.hpp"
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
 #include "util/error.hpp"
@@ -19,7 +21,8 @@
 
 std::forward_list<Offset*> g_offset_list{};
 
-LoadedModule::LoadedModule(const std::string& path, const uintptr_t base_address)
+LoadedModule::LoadedModule(const std::string& path,
+                           const uintptr_t base_address)
     : base_address(base_address) {
   ZoneScoped;
   elf.load(path);
@@ -124,7 +127,13 @@ void init_offsets() {
             static_cast<uintptr_t>(mod_range.begin),
         };
 
-        for (auto& vtable : get_vtables_from_module(loaded_mod)) {
+        std::vector<DataRange> eh_frame_ranges;
+        for (auto& r : get_eh_frame_ranges(loaded_mod)) {
+          eh_frame_ranges.push_back(r);
+        }
+
+        for (auto& vtable :
+             get_vtables_from_module(loaded_mod, eh_frame_ranges)) {
           std::unique_lock l(vtable_mutex);
           module_vtables[fname].insert(vtable);
         };
