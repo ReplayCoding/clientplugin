@@ -8,7 +8,7 @@
 #include "util/data_range_checker.hpp"
 
 struct LoadedModule {
-  LoadedModule(const std::string path, const uintptr_t base_address);
+  LoadedModule(const std::string& path, const uintptr_t base_address);
 
   inline uintptr_t get_online_address_from_offline(uintptr_t offline_addr) {
     return base_address + (offline_addr - offline_baseaddr);
@@ -81,7 +81,7 @@ class ManualOffset : public Offset {
 
 class SharedLibOffset : public Offset {
  public:
-  SharedLibOffset(std::string module, uintptr_t offset)
+  SharedLibOffset(std::string&& module, uintptr_t offset)
       : Offset(), module(module), offset(offset){};
 
  private:
@@ -94,8 +94,8 @@ class SharedLibOffset : public Offset {
 
 class VtableOffset : public Offset {
  public:
-  VtableOffset(std::string module,
-               std::string name,
+  VtableOffset(std::string&& module,
+               std::string&& name,
                uint32_t function,
                uint16_t vftable = 0)
       : Offset(),
@@ -116,7 +116,7 @@ class VtableOffset : public Offset {
 
 class SharedLibSymbol : public Offset {
  public:
-  SharedLibSymbol(std::string module, std::string symbol)
+  SharedLibSymbol(std::string&& module, std::string&& symbol)
       : Offset(), module(module), symbol(symbol){};
 
  private:

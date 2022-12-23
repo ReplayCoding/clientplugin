@@ -19,7 +19,7 @@
 
 std::forward_list<Offset*> g_offset_list{};
 
-LoadedModule::LoadedModule(const std::string path, const uintptr_t base_address)
+LoadedModule::LoadedModule(const std::string& path, const uintptr_t base_address)
     : base_address(base_address) {
   ZoneScoped;
   elf.load(path);
