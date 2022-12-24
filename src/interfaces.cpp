@@ -8,6 +8,11 @@
 #include <tier3/tier3.h>
 #include <toolframework/ienginetool.h>
 
+// Very well written code.
+// I can't fucking wait for module support in CMake...
+#include <edict.h>
+#include <game/server/iplayerinfo.h>
+
 #include "interfaces.hpp"
 
 namespace Interfaces {
@@ -17,6 +22,7 @@ namespace Interfaces {
   IBaseClientDLL* ClientDll;
   IEngineTool* EngineTool;
   IMaterialSystem* MaterialSystem;
+  IPlayerInfoManager* PlayerInfoManager;
 
   void Load(CreateInterfaceFn factory) {
     ConnectTier1Libraries(&factory, 1);
@@ -35,11 +41,15 @@ namespace Interfaces {
     Interfaces::MaterialSystem = static_cast<IMaterialSystem*>(
         factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr));
 
-    CreateInterfaceFn gameClientFactory;
-    EngineTool->GetClientFactory(gameClientFactory);
+    CreateInterfaceFn game_client_factory;
+    CreateInterfaceFn game_server_factory;
+    EngineTool->GetClientFactory(game_client_factory);
+    EngineTool->GetServerFactory(game_server_factory);
 
     Interfaces::ClientDll = static_cast<IBaseClientDLL*>(
-        gameClientFactory(CLIENT_DLL_INTERFACE_VERSION, nullptr));
+        game_client_factory(CLIENT_DLL_INTERFACE_VERSION, nullptr));
+    Interfaces::PlayerInfoManager = static_cast<IPlayerInfoManager*>(
+        game_server_factory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr));
   }
 
   void Unload() {

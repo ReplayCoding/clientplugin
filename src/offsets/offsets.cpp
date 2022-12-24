@@ -167,6 +167,7 @@ namespace offsets {
                                           "SDL_GL_SwapWindow"};
 
   const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd700};
+  const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so", 0x00c01d20 - 0x10000};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
@@ -176,4 +177,5 @@ namespace offsets {
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
                                              "_ZN10CVProfNode9ExitScopeEv"};
   const VtableOffset CEngine_Frame{"engine.so", "CEngine", 6};
+
 }  // namespace offsets

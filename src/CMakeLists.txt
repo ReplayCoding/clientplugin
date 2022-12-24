@@ -12,6 +12,7 @@ add_library(
   modules/unhidecvars.cpp
   modules/gfxoverlay.cpp
   modules/mediguns.cpp
+  modules/nav_workshop_fix.cpp
   modules/profiler.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp

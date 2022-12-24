@@ -8,6 +8,7 @@ class IEngineClientReplay;
 class IBaseClientDLL;
 class IEngineTool;
 class IMaterialSystem;
+class IPlayerInfoManager;
 
 namespace Interfaces {
   void Load(CreateInterfaceFn factory);
@@ -19,4 +20,5 @@ namespace Interfaces {
   extern IBaseClientDLL* ClientDll;
   extern IEngineTool* EngineTool;
   extern IMaterialSystem* MaterialSystem;
+  extern IPlayerInfoManager* PlayerInfoManager;
 }  // namespace Interfaces
