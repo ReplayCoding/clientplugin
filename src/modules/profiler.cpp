@@ -188,16 +188,8 @@ void TelemetryTick_replacement() {
 
   if (telemetry->Level != last_observed_telemetry_level) {
     std::unique_lock l{telemetry_level_mutex};
-    // If this is set normally, something is very wrong anyways, so just take
-    // the performance hit.
-    if (last_observed_telemetry_level == UINT32_MAX) {
-      // Clear them out just in case these somehow got inited before
-      // we take control
-      std::memset(telemetry->tmContext, 0, sizeof(telemetry->tmContext));
-    } else {
-      telemetry->tmContext[last_observed_telemetry_level] = nullptr;
-    }
 
+    std::memset(telemetry->tmContext, 0, sizeof(telemetry->tmContext));
     telemetry->tmContext[telemetry->Level] = &telemetry_replacement;
 
     fmt::print("telems level: {}, old level: {}\n", telemetry->Level,
@@ -221,8 +213,6 @@ class ProfilerMod : public IModule {
   std::unique_ptr<AttachmentHookEnter> frame_hook;
   std::unique_ptr<AttachmentHookEnter> thread_name_hook;
 };
-
-std::atomic_flag have_thread_names_inited{};
 
 void ProfilerMod::draw_overlay() {
   ImGui::Text(
