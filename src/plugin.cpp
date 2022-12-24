@@ -15,10 +15,10 @@
 #include "offsets/rtti.hpp"
 #include "util/timedscope.hpp"
 
-class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
+class ClientPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
  public:
-  ServerPlugin(){};
-  ~ServerPlugin(){};
+  ClientPlugin(){};
+  ~ClientPlugin(){};
   // Initialize the plugin to run
   // Return false if there is an error during startup.
   virtual bool Load(CreateInterfaceFn interfaceFactory,
@@ -36,7 +36,7 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 
   // Returns string describing current plugin.  e.g., Admin-Mod.
   virtual const char* GetPluginDescription(void) {
-    return "A testing server plugin";
+    return "A client plugin";
   };
 
   // Called any time a new level is started (after GameInit() also on level
@@ -114,7 +114,7 @@ class ServerPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
   std::unique_ptr<ModuleManager> module_manager{};
 };
 
-bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
+bool ClientPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
   TimedScope("plugin load");
   // FIXME: This is terrible
@@ -137,7 +137,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory,
 }
 
 // Called when the plugin should be shutdown
-void ServerPlugin::Unload(void) {
+void ClientPlugin::Unload(void) {
   // gum_interceptor_end_transaction crashes when you call it in a (library)
   // destructor, and this function is used in gum_interceptor_detach, which is
   // called to cleanup loose hooks.
@@ -154,7 +154,7 @@ void ServerPlugin::Unload(void) {
   gum_deinit_embedded();
 }
 
-ServerPlugin plugin{};
+ClientPlugin plugin{};
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(ServerPlugin,
                                   IServerPluginCallbacks,
                                   INTERFACEVERSION_ISERVERPLUGINCALLBACKS,

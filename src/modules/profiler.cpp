@@ -1,3 +1,4 @@
+#include <exception>
 #define private public
 #include <vprof.h>
 #undef private
@@ -31,11 +32,11 @@
 #include "modules/telemetrystubs.hpp"
 #include "offsets/offsets.hpp"
 
-#define TELEMETRY_FORMAT(name, format)        \
-  char name[256] = {};                        \
-  va_list args;                               \
-  va_start(args, format);                     \
-  vsnprintf(name, sizeof(buf), format, args); \
+#define TELEMETRY_FORMAT(name, format)             \
+  char name[256] = {0};                            \
+  va_list args;                                    \
+  va_start(args, format);                          \
+  vsnprintf(name, sizeof(name) - 1, format, args); \
   va_end(args);
 
 constexpr std::string_view UNAVAILABLE = "unavailable";
@@ -89,8 +90,9 @@ std::shared_mutex telemetry_level_mutex{};
 class TelemetryReplacement : TM_API_STRUCT_STUB {
  public:
   TelemetryReplacement() {
-    this->tmCoreMessage = tmCoreMessage_replace;
-    this->tmCoreDynamicString = tmCoreDynamicString_replace;
+    // Brokened
+    // this->tmCoreMessage = tmCoreMessage_replace;
+    // this->tmCoreDynamicString = tmCoreDynamicString_replace;
 
     this->tmCoreEnter = tmCoreEnter_replace;
     this->tmCoreLeave = tmCoreLeave_replace;
