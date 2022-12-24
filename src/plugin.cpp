@@ -35,9 +35,7 @@ class ClientPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
   virtual void UnPause(void){};
 
   // Returns string describing current plugin.  e.g., Admin-Mod.
-  virtual const char* GetPluginDescription(void) {
-    return "A client plugin";
-  };
+  virtual const char* GetPluginDescription(void) { return "A client plugin"; };
 
   // Called any time a new level is started (after GameInit() also on level
   // transitions within a game)

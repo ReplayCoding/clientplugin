@@ -35,7 +35,7 @@ extern std::forward_list<Offset*> g_offset_list;
 
 using ModuleVtables = absl::flat_hash_map<
     std::string,
-    absl::flat_hash_map<std::string, std::vector<uintptr_t>>>;
+    absl::flat_hash_map<std::string_view, std::vector<uintptr_t>>>;
 
 class Offset {
   friend void init_offsets();

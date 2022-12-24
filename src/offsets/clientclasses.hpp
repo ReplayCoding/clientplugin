@@ -29,7 +29,8 @@ namespace clientclasses {
 class ClientClassManager {
  public:
   ClientClassManager();
-  std::ptrdiff_t get_prop_offset(std::string classname, std::string propname) {
+  std::ptrdiff_t get_prop_offset(const std::string& classname,
+                                 const std::string& propname) {
     return clientclasses.at(classname).at(propname).offset;
   }
 

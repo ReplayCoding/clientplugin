@@ -52,7 +52,8 @@ uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
 
 uintptr_t VtableOffset::get_address(ModuleRangeMap& modules,
                                     ModuleVtables& vtables) const {
-  auto vftable_ptr = vtables.at(module).at(name).at(vftable);
+  auto vftable_ptr =
+      vtables.at(module).at(std::to_string(name.size()) + name).at(vftable);
   return *reinterpret_cast<uintptr_t*>(vftable_ptr +
                                        (sizeof(void*) * function));
 }
@@ -174,5 +175,5 @@ namespace offsets {
                                               "_ZN10CVProfNode10EnterScopeEv"};
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
                                              "_ZN10CVProfNode9ExitScopeEv"};
-  const VtableOffset CEngine_Frame{"engine.so", "7CEngine", 6};
+  const VtableOffset CEngine_Frame{"engine.so", "CEngine", 6};
 }  // namespace offsets

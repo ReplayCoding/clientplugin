@@ -31,7 +31,6 @@
 #include "util/generator.hpp"
 
 using RelocMap = absl::flat_hash_map<uintptr_t, std::string>;
-using Vtable = std::pair<std::string, std::vector<uintptr_t>>;
 
 Generator<std::pair<uintptr_t, std::string>> get_relocations(
     LoadedModule& loaded_mod,
@@ -168,7 +167,7 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
     // Avoid constructor vftables while keeping normal consecutive subtables
     if ((typeinfo_addr != prev_typeinfo) &&
         seen_typeinfo.contains(typeinfo_addr)) {
-      // std::string typeinfo_name =
+      // std::string_view typeinfo_name =
       //     *reinterpret_cast<char**>(typeinfo_addr + sizeof(void*));
       // fmt::print("INVALID TYPEINFO: {} @ candidate {:08X}\n", typeinfo_name,
       //            candidate);
@@ -217,7 +216,7 @@ Generator<Vtable> get_vtables_from_module(
       if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
         current_chunk.push_back(entry);
       } else {
-        std::string typeinfo_name = *reinterpret_cast<char**>(
+        std::string_view typeinfo_name = *reinterpret_cast<char**>(
             get_typeinfo_addr(current_chunk[0]) + sizeof(void*));
         co_yield Vtable{typeinfo_name, current_chunk};
 
