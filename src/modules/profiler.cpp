@@ -1,10 +1,10 @@
-#include <exception>
 #define private public
 #include <vprof.h>
 #undef private
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
+#include <convar.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -14,7 +14,9 @@
 #include <tracy/TracyC.h>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -41,6 +43,8 @@
 
 constexpr std::string_view UNAVAILABLE = "unavailable";
 constexpr bool IS_TELEMETRY = true;
+
+static ConVar profile_all_levels{"pe_profile_all_levels", 0};
 
 template <typename T, size_t size>
 using InlineStack = std::stack<T, absl::InlinedVector<T, size>>;
@@ -80,11 +84,18 @@ class ContextStack {
   InlineStack<TracyCZoneCtx, 32> ctx_stack{};
 };
 
+struct TelemetryLevelState {
+  uint32_t level;
+  bool profile_all_levels;
+
+  bool operator==(const TelemetryLevelState& other) const = default;
+};
+
 thread_local ContextStack vprof_ctx_stack{};
 thread_local ContextStack telemetry_ctx_stack{};
 
-uint32_t last_observed_telemetry_level{};
-thread_local uint32_t last_observed_telemetry_level_per_thread{};
+TelemetryLevelState telemetry_level_state{};
+thread_local TelemetryLevelState last_observed_telemetry_state_per_thread{};
 std::shared_mutex telemetry_level_mutex{};
 
 class TelemetryReplacement : TM_API_STRUCT_STUB {
@@ -101,9 +112,8 @@ class TelemetryReplacement : TM_API_STRUCT_STUB {
  private:
   static inline bool check_level() {
     std::shared_lock l{telemetry_level_mutex};
-    if (last_observed_telemetry_level_per_thread !=
-        last_observed_telemetry_level) {
-      last_observed_telemetry_level_per_thread = last_observed_telemetry_level;
+    if (last_observed_telemetry_state_per_thread != telemetry_level_state) {
+      last_observed_telemetry_state_per_thread = telemetry_level_state;
       telemetry_ctx_stack.clear();
       return true;
     }
@@ -186,15 +196,25 @@ struct TelemetryData {
 void TelemetryTick_replacement() {
   auto telemetry = static_cast<TelemetryData*>(offsets::g_Telemetry);
 
-  if (telemetry->Level != last_observed_telemetry_level) {
+  if (telemetry->Level != telemetry_level_state.level ||
+      telemetry_level_state.profile_all_levels !=
+          profile_all_levels.GetBool()) {
     std::unique_lock l{telemetry_level_mutex};
 
-    std::memset(telemetry->tmContext, 0, sizeof(telemetry->tmContext));
-    telemetry->tmContext[telemetry->Level] = &telemetry_replacement;
+    if (!profile_all_levels.GetBool()) {
+      std::memset(telemetry->tmContext, 0, sizeof(telemetry->tmContext));
+      telemetry->tmContext[telemetry->Level] = &telemetry_replacement;
+    } else {
+      for (size_t l = 0; l < sizeof(telemetry->tmContext) / sizeof(HTELEMETRY);
+           l++) {
+        telemetry->tmContext[l] = &telemetry_replacement;
+      }
+    }
 
     fmt::print("telems level: {}, old level: {}\n", telemetry->Level,
-               last_observed_telemetry_level);
-    last_observed_telemetry_level = telemetry->Level;
+               telemetry_level_state.level);
+    telemetry_level_state.level = telemetry->Level;
+    telemetry_level_state.profile_all_levels = profile_all_levels.GetBool();
   }
 }
 
@@ -220,7 +240,8 @@ void ProfilerMod::draw_overlay() {
 }
 
 ProfilerMod::ProfilerMod() {
-  last_observed_telemetry_level = UINT32_MAX;
+  telemetry_level_state = {.level = UINT32_MAX,
+                           .profile_all_levels = profile_all_levels.GetBool()};
 
   if (!IS_TELEMETRY) {
     enter_node_hook = std::make_unique<AttachmentHookEnter>(
