@@ -38,11 +38,10 @@ const char* GetCleanMapName(const char* inp, char* out)
     V_strncat(out, clean_name, 0x100, -1);
   }
 
-  // What does this do?
-  // clean_name = strstr(out, ".ugc");
-  // if (clean_name != nullptr) {
-  //   *clean_name = '\0';
-  // }
+  auto ugc_loc = strstr(out, ".ugc");
+  if (ugc_loc != nullptr) {
+    *ugc_loc = '\0';
+  }
 
   return out;
 }
