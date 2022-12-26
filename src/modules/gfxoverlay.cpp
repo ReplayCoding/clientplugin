@@ -5,6 +5,7 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
 #include <memory>
+#include <tracy/Tracy.hpp>
 
 #include "guifont.hpp"
 #include "hook/attachmenthook.hpp"
@@ -24,9 +25,13 @@ void GfxOverlayMod::init_imgui(SDL_Window* window) {
   font_config.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
   io.Fonts->AddFontFromMemoryCompressedTTF(
       gui_font_compressed_data, gui_font_compressed_size, 16, &font_config);
+
+  large_font = io.Fonts->AddFontFromMemoryCompressedTTF(
+      gui_font_compressed_data, gui_font_compressed_size, 24, &font_config);
 }
 
 void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
+  ZoneScoped;
   auto window = context.get_arg<SDL_Window*>(0);
   auto their_context = SDL_GL_GetCurrentContext();
 
@@ -51,33 +56,37 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
   ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-      ImGuiWindowFlags_NoNav;
+      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove;
 
-  if (corner != -1) {
-    const float PAD = 10.0f;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImVec2 work_pos =
-        viewport->WorkPos;  // Use work area to avoid menu-bar/task-bar, if any!
-    ImVec2 work_size = viewport->WorkSize;
-    ImVec2 window_pos, window_pos_pivot;
-    window_pos.x =
-        (corner & 1) ? (work_pos.x + work_size.x - PAD) : (work_pos.x + PAD);
-    window_pos.y =
-        (corner & 2) ? (work_pos.y + work_size.y - PAD) : (work_pos.y + PAD);
-    window_pos_pivot.x = (corner & 1) ? 1.0f : 0.0f;
-    window_pos_pivot.y = (corner & 2) ? 1.0f : 0.0f;
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-    window_flags |= ImGuiWindowFlags_NoMove;
-  }
+  const float PAD = 10.0f;
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImVec2 work_pos =
+      viewport->WorkPos;  // Use work area to avoid menu-bar/task-bar, if any!
+  ImVec2 next_window_pos, next_window_pos_pivot;
+  next_window_pos.x = work_pos.x + PAD;
+  next_window_pos.y = work_pos.y + PAD;
+  next_window_pos_pivot.x = 0.0f;
+  next_window_pos_pivot.y = 0.0f;
+  ImGui::SetNextWindowPos(next_window_pos, ImGuiCond_Always,
+                          next_window_pos_pivot);
 
   for (auto& module : *modules) {
     if (module->should_draw_overlay()) {
-      if (ImGui::Begin("", nullptr, window_flags)) {
-        ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
+      ZoneScoped;
+      ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
+      if (ImGui::Begin(module->name, nullptr, window_flags)) {
+        ImGui::PushFont(large_font);
+        ImGui::Text("%s", module->name);
+        ImGui::PopFont();
 
         module->draw_overlay();
 
+        next_window_pos.y =
+            ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + PAD;
         ImGui::End();
+
+        ImGui::SetNextWindowPos(next_window_pos, ImGuiCond_Always,
+                                next_window_pos_pivot);
       }
     }
   }

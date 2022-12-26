@@ -6,4 +6,5 @@ steam-run "$TF2_PATH/hl2.sh" \
   -game tf \
   -steam -insecure +sv_lan 1 \
   -console -novid \
-  -nominidumps -nobreakpad
+  -nominidumps -nobreakpad \
+  -dev +spew_consolelog_to_debugstring 1

@@ -236,7 +236,11 @@ class ProfilerMod : public IModule {
 
 void ProfilerMod::draw_overlay() {
   ImGui::Text(
-      fmt::format("Tracy ({})", IS_TELEMETRY ? "Telemetry" : "VProf").c_str());
+      fmt::format("Mode: {}", IS_TELEMETRY ? "Telemetry" : "VProf").c_str());
+  {
+    std::shared_lock l(telemetry_level_mutex);
+    ImGui::Text(fmt::format("Level: {}", telemetry_level_state.level).c_str());
+  }
 }
 
 ProfilerMod::ProfilerMod() {

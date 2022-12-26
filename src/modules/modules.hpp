@@ -10,6 +10,8 @@ class IModule {
 
   virtual bool should_draw_overlay() { return false; };
   virtual void draw_overlay(){};
+
+  const char* name{};
 };
 
 class ModuleDesc;
@@ -26,9 +28,12 @@ class ModuleDesc {
   std::function<std::unique_ptr<IModule>()> factory;
 };
 
-#define REGISTER_MODULE(M) \
-  static ModuleDesc mod_desc_##M([]() { return std::make_unique<M>(); });
-
+#define REGISTER_MODULE(M)              \
+  static ModuleDesc mod_desc_##M([]() { \
+    auto m = std::make_unique<M>();     \
+    m->name = #M;                       \
+    return m;                           \
+  });
 class GfxOverlayMod;
 class ModuleManager {
  public:

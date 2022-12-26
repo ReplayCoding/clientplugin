@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <imgui.h>
 #include <memory>
 
 #include "hook/attachmenthook.hpp"
@@ -15,8 +16,8 @@ class GfxOverlayMod : public IModule {
   // need the window
   bool have_we_inited_ui = false;
   SDL_GLContext our_context;
+  ImFont* large_font;
 
-  int corner = 0;
   std::unique_ptr<AttachmentHookEnter> sdl_gl_swapWindow_hook;
   std::vector<std::unique_ptr<IModule>>* modules;
 
