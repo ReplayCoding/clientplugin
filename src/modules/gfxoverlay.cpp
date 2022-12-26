@@ -71,8 +71,9 @@ void GfxOverlayMod::SDL_GL_SwapWindow_handler(InvocationContext context) {
                           next_window_pos_pivot);
 
   for (auto& module : *modules) {
+    ZoneScopedN("iter module");
     if (module->should_draw_overlay()) {
-      ZoneScoped;
+      ZoneScopedN("draw module");
       ImGui::SetNextWindowBgAlpha(0.75f);  // Transparent background
       if (ImGui::Begin(module->name, nullptr, window_flags)) {
         ImGui::PushFont(large_font);
