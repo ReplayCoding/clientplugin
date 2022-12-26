@@ -1,5 +1,6 @@
 #pragma once
 #include <absl/container/flat_hash_map.h>
+#include <bit>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <forward_list>
@@ -51,7 +52,7 @@ class Offset {
   template <typename T>
   inline operator T() const {
     assert(cached_address != 0);
-    return reinterpret_cast<T>(cached_address);
+    return std::bit_cast<T>(cached_address);
   }
 
  private:

@@ -1,4 +1,5 @@
 #include <frida-gum.h>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -13,7 +14,7 @@ X86Patcher::X86Patcher(uintptr_t address,
                        std::function<void(GumX86Writer*)> function,
                        bool enable) {
   original_code = new uint8_t[code_size];
-  std::memcpy(original_code, reinterpret_cast<void*>(address), code_size);
+  std::memcpy(original_code, std::bit_cast<void*>(address), code_size);
 
   callback_data.address = address;
   callback_data.code_size = code_size;
@@ -27,7 +28,7 @@ X86Patcher::X86Patcher(uintptr_t address,
 
 void X86Patcher::enable() {
   gum_memory_patch_code(
-      reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
+      std::bit_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
         auto callback_data = static_cast<callback_data_t*>(user_data);
         auto x86writer = gum_x86_writer_new(memory);
@@ -47,10 +48,10 @@ void X86Patcher::enable() {
 
 void X86Patcher::disable() {
   gum_memory_patch_code(
-      reinterpret_cast<void*>(callback_data.address), callback_data.code_size,
+      std::bit_cast<void*>(callback_data.address), callback_data.code_size,
       [](void* memory, void* user_data) {
         auto callback_data = static_cast<callback_data_t*>(user_data);
-        memcpy(memory, reinterpret_cast<void*>(callback_data->original_code),
+        memcpy(memory, std::bit_cast<void*>(callback_data->original_code),
                callback_data->code_size);
       },
       static_cast<void*>(&callback_data));

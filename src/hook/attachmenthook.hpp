@@ -1,4 +1,5 @@
 #pragma once
+#include <bit>
 #include <frida-gum.h>
 #include <cstdint>
 #include <functional>
@@ -13,26 +14,26 @@ class InvocationContext {
 
   template <typename T>
   inline T get_arg(size_t index) {
-    return reinterpret_cast<T>(
+    return std::bit_cast<T>(
         gum_invocation_context_get_nth_argument(context, index));
   }
 
   template <typename T>
   inline void set_arg(size_t index, T value) {
     gum_invocation_context_replace_nth_argument(context, index,
-                                                reinterpret_cast<void*>(value));
+                                                std::bit_cast<void*>(value));
   }
 
   template <typename T>
   inline T get_return() {
-    return reinterpret_cast<T>(
+    return std::bit_cast<T>(
         gum_invocation_context_get_return_value(context));
   }
 
   template <typename T>
   inline void set_return(T value) {
     gum_invocation_context_replace_return_value(context,
-                                                reinterpret_cast<void*>(value));
+                                                std::bit_cast<void*>(value));
   }
 
   inline uint32_t thread_id() {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <absl/numeric/int128.h>
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -40,14 +41,14 @@ class DataView {
 
   template <typename T>
   inline T read() {
-    T data = *(reinterpret_cast<T*>(data_ptr));
+    T data = *(std::bit_cast<T*>(data_ptr));
     data_ptr += sizeof(T);
 
     return data;
   }
 
   inline std::string_view read_string() {
-    const char* string_raw = reinterpret_cast<char*>(data_ptr);
+    const char* string_raw = std::bit_cast<char*>(data_ptr);
     data_ptr += strlen(string_raw) + 1 /* null byte */;
 
     return string_raw;
@@ -57,7 +58,7 @@ class DataView {
     const char* leb_error{};
     unsigned leb_size{};
 
-    auto decoded_leb = decodeULEB128(reinterpret_cast<uint8_t*>(data_ptr),
+    auto decoded_leb = decodeULEB128(std::bit_cast<uint8_t*>(data_ptr),
                                      &leb_size, nullptr, &leb_error);
     if (leb_error != nullptr)
       throw StringError("Error while decoding unsigned LEB128 at {:08X}: {}",
@@ -71,7 +72,7 @@ class DataView {
     const char* leb_error{};
     unsigned leb_size{};
 
-    auto decoded_leb = decodeSLEB128(reinterpret_cast<uint8_t*>(data_ptr),
+    auto decoded_leb = decodeSLEB128(std::bit_cast<uint8_t*>(data_ptr),
                                      &leb_size, nullptr, &leb_error);
     if (leb_error != nullptr)
       throw StringError("Error while decoding signed LEB128 at {:08X}: {}",

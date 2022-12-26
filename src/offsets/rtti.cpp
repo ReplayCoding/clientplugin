@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <fmt/core.h>
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <coroutine>
 #include <cstdint>
@@ -93,7 +94,7 @@ size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
   } else if (vtable_type.ends_with("__vmi_class_type_infoE")) {
     size += sizeof(unsigned int);  // __flags
 
-    auto base_count = *reinterpret_cast<unsigned int*>(addr + size);
+    auto base_count = *std::bit_cast<unsigned int*>(addr + size);
     size += sizeof(unsigned int);
 
     for (unsigned int base{0}; base < base_count; base++) {
@@ -110,7 +111,7 @@ size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
 }
 
 uintptr_t get_typeinfo_addr(uintptr_t v) {
-  return *reinterpret_cast<uintptr_t*>(v - sizeof(void*));
+  return *std::bit_cast<uintptr_t*>(v - sizeof(void*));
 }
 
 Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
@@ -128,7 +129,7 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   for (DataRange& range : section_ranges(loaded_mod)) {
     for (uintptr_t addr{range.begin}; addr < (range.begin + range.length);
          addr += sizeof(void*)) {
-      uintptr_t potential_typeinfo_addr = *reinterpret_cast<uintptr_t*>(addr);
+      uintptr_t potential_typeinfo_addr = *std::bit_cast<uintptr_t*>(addr);
       if (!function_ranges.is_position_in_range(addr) &&
           instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
         auto typeinfo_size =
@@ -168,7 +169,7 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
     if ((typeinfo_addr != prev_typeinfo) &&
         seen_typeinfo.contains(typeinfo_addr)) {
       // std::string_view typeinfo_name =
-      //     *reinterpret_cast<char**>(typeinfo_addr + sizeof(void*));
+      //     *std::bit_cast<char**>(typeinfo_addr + sizeof(void*));
       // fmt::print("INVALID TYPEINFO: {} @ candidate {:08X}\n", typeinfo_name,
       //            candidate);
       invalid_typeinfo.insert(typeinfo_addr);
@@ -216,7 +217,7 @@ Generator<Vtable> get_vtables_from_module(
       if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
         current_chunk.push_back(entry);
       } else {
-        std::string_view typeinfo_name = *reinterpret_cast<char**>(
+        std::string_view typeinfo_name = *std::bit_cast<char**>(
             get_typeinfo_addr(current_chunk[0]) + sizeof(void*));
         co_yield Vtable{typeinfo_name, current_chunk};
 

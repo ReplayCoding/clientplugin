@@ -1,4 +1,5 @@
 #include <frida-gum.h>
+#include <bit>
 #include <cstdint>
 
 #include "hook/gum/interceptor.hpp"
@@ -64,7 +65,7 @@ namespace Gum {
     begin_transaction();
 
     auto retval =
-        gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
+        gum_interceptor_attach(get_obj(), std::bit_cast<void*>(address),
                                listener->get_listener(), user_data);
     if (retval != GUM_ATTACH_OK)
       throw StringError("Failed to attach to address {:08X}", address);
@@ -84,7 +85,7 @@ namespace Gum {
     begin_transaction();
 
     auto retval =
-        gum_interceptor_attach(get_obj(), reinterpret_cast<void*>(address),
+        gum_interceptor_attach(get_obj(), std::bit_cast<void*>(address),
                                listener->get_listener(), user_data);
     if (retval != GUM_ATTACH_OK)
       throw StringError("Failed to attach to address {:08X}", address);
@@ -102,13 +103,13 @@ namespace Gum {
   GumReplaceReturn Interceptor::replace(const uintptr_t address,
                                         const uintptr_t replacement_address,
                                         void* user_data) {
-    return gum_interceptor_replace(get_obj(), reinterpret_cast<void*>(address),
-                                   reinterpret_cast<void*>(replacement_address),
+    return gum_interceptor_replace(get_obj(), std::bit_cast<void*>(address),
+                                   std::bit_cast<void*>(replacement_address),
                                    user_data, nullptr);
   }
 
   void Interceptor::revert(const uintptr_t address) {
-    gum_interceptor_revert(get_obj(), reinterpret_cast<void*>(address));
+    gum_interceptor_revert(get_obj(), std::bit_cast<void*>(address));
   }
 }  // namespace Gum
 

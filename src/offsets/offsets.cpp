@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <bit>
 #include <marl/defer.h>
 #include <marl/scheduler.h>
 #include <marl/waitgroup.h>
@@ -54,7 +55,7 @@ uintptr_t VtableOffset::get_address(ModuleRangeMap& modules,
                                     ModuleVtables& vtables) const {
   auto vftable_ptr =
       vtables.at(module).at(std::to_string(name.size()) + name).at(vftable);
-  return *reinterpret_cast<uintptr_t*>(vftable_ptr +
+  return *std::bit_cast<uintptr_t*>(vftable_ptr +
                                        (sizeof(void*) * function));
 }
 
@@ -65,7 +66,7 @@ uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
     throw StringError("Failed to get handle for module {}", module);
   }
 
-  auto addr = reinterpret_cast<uintptr_t>(dlsym(handle, symbol.c_str()));
+  auto addr = std::bit_cast<uintptr_t>(dlsym(handle, symbol.c_str()));
   if (addr == 0)
     throw StringError("Failed to get address of symbol {} from module {}\n",
                       module, symbol);
@@ -81,7 +82,7 @@ void init_offsets() {
       [](dl_phdr_info* info, size_t info_size, void* user_data) {
         ZoneScopedN("dl_iterate_phdr func");
 
-        auto* modules = reinterpret_cast<ModuleRangeMap*>(user_data);
+        auto* modules = std::bit_cast<ModuleRangeMap*>(user_data);
         const std::string_view fname = basename(info->dlpi_name);
 
         constexpr std::string_view excluded_paths[] = {"linux-vdso.so.1",
