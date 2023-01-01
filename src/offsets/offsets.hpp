@@ -6,6 +6,7 @@
 #include <forward_list>
 #include <string>
 
+#include "offsets/rtti.hpp"
 #include "util/data_range_checker.hpp"
 
 struct LoadedModule {
@@ -34,9 +35,9 @@ void init_offsets();
 class Offset;
 extern std::forward_list<Offset*> g_offset_list;
 
-using ModuleVtables = absl::flat_hash_map<
-    std::string,
-    absl::flat_hash_map<std::string_view, std::vector<uintptr_t>>>;
+using ModuleVtables =
+    absl::flat_hash_map<std::string,
+                        absl::flat_hash_map<std::string_view, Vftables>>;
 
 class Offset {
   friend void init_offsets();

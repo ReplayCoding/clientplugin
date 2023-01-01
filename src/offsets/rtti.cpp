@@ -1,5 +1,6 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/container/inlined_vector.h>
 #include <fcntl.h>
 #include <fmt/core.h>
 #include <algorithm>
@@ -104,7 +105,7 @@ size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
   } else if (vtable_type.ends_with("__class_type_infoE")) {
     // already handled
   } else {
-    throw StringError("Unkown RTTI type {}", vtable_type);
+    throw StringError("Unknown RTTI type {}", vtable_type);
   }
 
   return size;
@@ -210,7 +211,7 @@ Generator<Vtable> get_vtables_from_module(
   auto vf_tables =
       locate_vftables(loaded_mod, relocations, function_range_checker);
 
-  std::vector<uintptr_t> current_chunk{};
+  Vftables current_chunk{};
   uintptr_t prev_entry{};
   for (const auto& entry : vf_tables) {
     if (prev_entry != 0) {

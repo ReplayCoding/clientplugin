@@ -1,9 +1,9 @@
 #include <dlfcn.h>
-#include <bit>
 #include <marl/defer.h>
 #include <marl/scheduler.h>
 #include <marl/waitgroup.h>
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <mutex>
@@ -55,8 +55,7 @@ uintptr_t VtableOffset::get_address(ModuleRangeMap& modules,
                                     ModuleVtables& vtables) const {
   auto vftable_ptr =
       vtables.at(module).at(std::to_string(name.size()) + name).at(vftable);
-  return *std::bit_cast<uintptr_t*>(vftable_ptr +
-                                       (sizeof(void*) * function));
+  return *std::bit_cast<uintptr_t*>(vftable_ptr + (sizeof(void*) * function));
 }
 
 uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
@@ -168,7 +167,8 @@ namespace offsets {
                                           "SDL_GL_SwapWindow"};
 
   const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd700};
-  const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so", 0x00c01d20 - 0x10000};
+  const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
+                                                    0x00c01d20 - 0x10000};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
