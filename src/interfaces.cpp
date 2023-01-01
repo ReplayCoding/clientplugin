@@ -1,4 +1,5 @@
 #include <cdll_int.h>
+#include <eiface.h>
 #include <igameevents.h>
 #include <materialsystem/imaterialsystem.h>
 #include <mathlib/mathlib.h>
@@ -17,6 +18,7 @@
 
 namespace Interfaces {
   IVEngineClient* EngineClient;
+  IVEngineServer* EngineServer;
   IGameEventManager2* GameEventManager;
   IEngineClientReplay* EngineClientReplay;
   IBaseClientDLL* ClientDll;
@@ -32,6 +34,8 @@ namespace Interfaces {
 
     Interfaces::EngineClient = static_cast<IVEngineClient*>(
         factory(VENGINE_CLIENT_INTERFACE_VERSION, nullptr));
+    Interfaces::EngineServer = static_cast<IVEngineServer*>(
+        factory(INTERFACEVERSION_VENGINESERVER, nullptr));
     Interfaces::GameEventManager = static_cast<IGameEventManager2*>(
         factory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr));
     Interfaces::EngineClientReplay = static_cast<IEngineClientReplay*>(

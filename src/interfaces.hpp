@@ -3,6 +3,7 @@
 #include <interface.h>
 
 class IVEngineClient;
+class IVEngineServer;
 class IGameEventManager2;
 class IEngineClientReplay;
 class IBaseClientDLL;
@@ -15,6 +16,7 @@ namespace Interfaces {
   void Unload();
 
   extern IVEngineClient* EngineClient;
+  extern IVEngineServer* EngineServer;
   extern IGameEventManager2* GameEventManager;
   extern IEngineClientReplay* EngineClientReplay;
   extern IBaseClientDLL* ClientDll;
