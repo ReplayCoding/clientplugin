@@ -117,8 +117,9 @@ void init_offsets() {
   marl::WaitGroup wg(modules.size());
   for (auto& [mod_name, mod_range] : modules) {
     marl::schedule([&, wg]() {
-      defer(wg.done());
+      TimedScope(fmt::format("module {}", mod_name));
       ZoneScopedN("handle module");
+      defer(wg.done());
 
       const std::string fname = basename(mod_name.c_str());
 
@@ -135,6 +136,7 @@ void init_offsets() {
 
         for (auto& vtable :
              get_vtables_from_module(loaded_mod, eh_frame_ranges)) {
+          ZoneScopedN("vtable insertion");
           std::unique_lock l(vtable_mutex);
           module_vtables[fname].insert(vtable);
         };

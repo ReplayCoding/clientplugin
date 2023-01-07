@@ -1,4 +1,7 @@
 #pragma once
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <tracy/TracyC.h>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
@@ -19,15 +22,15 @@ struct Generator : public ranges::view_facade<Generator<T>> {
 
     void unhandled_exception() { result = std::current_exception(); };
 
-    // template <std::convertible_to<T> From>
-    // std::suspend_always yield_value(const From& value) {
-    //   result = value;
-    //   return {};
-    // }
+    template <std::convertible_to<T> From>
+    std::suspend_always yield_value(const From& value) {
+      result = std::addressof(value);
+      return {};
+    }
 
     template <std::convertible_to<T> From>
     std::suspend_always yield_value(From&& value) {
-      result = std::addressof(value);
+      result = std::move(value);
       return {};
     }
 
@@ -60,6 +63,7 @@ struct Generator : public ranges::view_facade<Generator<T>> {
       assert(!coro->done());
 
       coro->resume();
+
       if (coro->done()) {
         auto handle = std::exchange(coro, nullptr);
         handle->promise().throw_if_exception();

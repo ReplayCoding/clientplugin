@@ -159,33 +159,29 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
 
   // Generate a list of constructor vtables, this unfortunately means we
   // lose some real vtables
-  absl::flat_hash_set<uintptr_t> invalid_typeinfo{};
   absl::flat_hash_set<uintptr_t> seen_typeinfo{};
   uintptr_t prev_typeinfo{0};
 
   for (auto& candidate : vftable_candidates) {
+    ZoneScopedN("filter - remove invalids");
     uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
 
     // Avoid constructor vftables while keeping normal consecutive subtables
-    if ((typeinfo_addr != prev_typeinfo) &&
-        seen_typeinfo.contains(typeinfo_addr)) {
-      // std::string_view typeinfo_name =
-      //     *std::bit_cast<char**>(typeinfo_addr + sizeof(void*));
-      // fmt::print("INVALID TYPEINFO: {} @ candidate {:08X}\n", typeinfo_name,
-      //            candidate);
-      invalid_typeinfo.insert(typeinfo_addr);
+    // TOOD: Clean up this so we can short-circuit?
+    if (!((typeinfo_addr != prev_typeinfo) &&
+          seen_typeinfo.contains(typeinfo_addr))) {
+      co_yield candidate;
     }
+    // else {
+    //   std::string_view typeinfo_name =
+    //       *std::bit_cast<char**>(typeinfo_addr + sizeof(void*));
+    //   fmt::print("INVALID TYPEINFO: {} @ candidate {:08X}\n",
+    //   typeinfo_name,
+    //              candidate);
+    // }
 
     prev_typeinfo = typeinfo_addr;
     seen_typeinfo.insert(typeinfo_addr);
-  }
-
-  for (auto& candidate : vftable_candidates) {
-    uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
-    if (invalid_typeinfo.contains(typeinfo_addr))
-      continue;
-
-    co_yield candidate;
   }
 }
 
@@ -204,16 +200,14 @@ Generator<Vtable> get_vtables_from_module(
   for (auto& section : loaded_mod.elf.sections) {
     if (section->get_type() == ELFIO::SHT_REL) {
       for (auto& reloc : get_relocations(loaded_mod, section))
-        relocations[reloc.first] = reloc.second;
+        relocations.insert(reloc);
     }
   }
 
-  auto vf_tables =
-      locate_vftables(loaded_mod, relocations, function_range_checker);
-
   Vftables current_chunk{};
   uintptr_t prev_entry{};
-  for (const auto& entry : vf_tables) {
+  for (const auto& entry :
+       locate_vftables(loaded_mod, relocations, function_range_checker)) {
     if (prev_entry != 0) {
       if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
         current_chunk.push_back(entry);

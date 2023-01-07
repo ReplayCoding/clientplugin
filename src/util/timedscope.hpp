@@ -5,7 +5,7 @@
 #include <chrono>
 
 struct TimedScope_ {
-  TimedScope_(const char* name)
+  TimedScope_(const std::string& name)
       : name(name), start_time(std::chrono::high_resolution_clock::now()){};
   ~TimedScope_() {
     auto duration = std::chrono::high_resolution_clock::now() - start_time;
@@ -13,7 +13,7 @@ struct TimedScope_ {
                std::chrono::duration_cast<std::chrono::milliseconds>(duration));
   }
 
-  const char* name;
+  const std::string name;
   std::chrono::time_point<std::chrono::system_clock> start_time;
 };
 
