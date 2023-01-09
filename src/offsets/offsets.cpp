@@ -7,7 +7,12 @@
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <mutex>
+#include <range/v3/algorithm/all_of.hpp>
 #include <range/v3/algorithm/any_of.hpp>
+#include <range/v3/view/chunk.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/sliding.hpp>
+#include <range/v3/view/zip.hpp>
 #include <tracy/Tracy.hpp>
 
 // It's just a header, it can't hurt you
@@ -43,7 +48,8 @@ LoadedModule::LoadedModule(const std::string& path,
 }
 
 uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
-                                       ModuleVtables& vtables) const {
+                                       ModuleVtables& vtables,
+                                       EhFrameRanges& eh_frame) const {
   auto base_address = modules.at(module).begin;
 
   if (base_address == 0)
@@ -52,14 +58,16 @@ uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
 }
 
 uintptr_t VtableOffset::get_address(ModuleRangeMap& modules,
-                                    ModuleVtables& vtables) const {
+                                    ModuleVtables& vtables,
+                                    EhFrameRanges& eh_frame) const {
   auto vftable_ptr =
       vtables.at(module).at(std::to_string(name.size()) + name).at(vftable);
   return *std::bit_cast<uintptr_t*>(vftable_ptr + (sizeof(void*) * function));
 }
 
 uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
-                                       ModuleVtables& vtables) const {
+                                       ModuleVtables& vtables,
+                                       EhFrameRanges& eh_frame) const {
   auto handle = dlopen(module.c_str(), RTLD_LAZY | RTLD_NOLOAD);
   if (handle == nullptr) {
     throw StringError("Failed to get handle for module {}", module);
@@ -72,11 +80,50 @@ uintptr_t SharedLibSymbol::get_address(ModuleRangeMap& modules,
   return addr;
 }
 
+uintptr_t SharedLibSignature::get_address(ModuleRangeMap& modules,
+                                          ModuleVtables& vtables,
+                                          EhFrameRanges& eh_frame) const {
+  auto module = modules.at(module_name);
+  auto mod_data = module.data_at_mem();
+
+  fmt::print("SEARCHING {:08X} -> {:08X}\n", module.begin,
+             module.begin + module.length);
+
+  auto window = ranges::views::sliding(mod_data, signature.size());
+  for (const auto& [idx, bytes] : window | ranges::views::enumerate) {
+    // for (auto row : bytes | ranges::views::chunk(16)) {
+    //   for (auto b : row)
+    //     fmt::print("{:02x} ", b);
+    //   fmt::print(" | ");
+    //   for (auto b : row) {
+    //     auto c = static_cast<char>(b);
+    //     if (c != '\n' && isprint(b))
+    //       fmt::print("{:c}", b);
+    //     else
+    //       fmt::print(".");
+    //   }
+    //   fmt::print("\n");
+    // }
+    // fmt::print("\n---------------------\n");
+
+    if (ranges::all_of(ranges::views::zip(bytes, signature, mask), [](auto t) {
+          auto [orig_byte, sig_byte, mask_byte] = t;
+          return (orig_byte & mask_byte) == sig_byte;
+        })) {
+      fmt::print("FOUND {} {:08x}\n", module_name, idx);
+      return idx + module.begin;
+    }
+  }
+
+  throw StringError("Couldn't find pattern in memory range");
+}
+
 void init_offsets() {
   TimedScope("offsets");
   ModuleVtables module_vtables{};
-
+  EhFrameRanges eh_frame_ranges{};
   ModuleRangeMap modules{};
+
   dl_iterate_phdr(
       [](dl_phdr_info* info, size_t info_size, void* user_data) {
         ZoneScopedN("dl_iterate_phdr func");
@@ -117,7 +164,7 @@ void init_offsets() {
   marl::WaitGroup wg(modules.size());
   for (auto& [mod_name, mod_range] : modules) {
     marl::schedule([&, wg]() {
-      TimedScope(fmt::format("module {}", mod_name));
+      // TimedScope(fmt::format("module {}", mod_name));
       ZoneScopedN("handle module");
       defer(wg.done());
 
@@ -129,13 +176,15 @@ void init_offsets() {
             static_cast<uintptr_t>(mod_range.begin),
         };
 
-        std::vector<DataRange> eh_frame_ranges;
+        std::vector<DataRange> mod_eh_frame_ranges;
         for (auto& r : get_eh_frame_ranges(loaded_mod)) {
-          eh_frame_ranges.push_back(r);
+          mod_eh_frame_ranges.push_back(r);
         }
 
+        eh_frame_ranges[fname] = mod_eh_frame_ranges;
+
         for (auto& vtable :
-             get_vtables_from_module(loaded_mod, eh_frame_ranges)) {
+             get_vtables_from_module(loaded_mod, mod_eh_frame_ranges)) {
           ZoneScopedN("vtable insertion");
           std::unique_lock l(vtable_mutex);
           module_vtables[fname].insert(vtable);
@@ -160,7 +209,7 @@ void init_offsets() {
   }
 
   for (auto* offset : g_offset_list) {
-    offset->cache_address(cleaned_modules, module_vtables);
+    offset->cache_address(cleaned_modules, module_vtables, eh_frame_ranges);
   }
 };
 
@@ -168,7 +217,38 @@ namespace offsets {
   const SharedLibSymbol SDL_GL_SwapWindow{"libSDL2-2.0.so.0",
                                           "SDL_GL_SwapWindow"};
 
-  const SharedLibOffset FindAndHealTargets{"client.so", 0xdcd700};
+  const SharedLibSignature FindAndHealTargets{
+      "client.so",
+      "5589e557565381ec5c01000065a1140000008945e431c08b5d088b0da42359db8b83f404"
+      "000085c0742283f8ff0fb7d0bfff1f00000f44d7c1e20401ca89d183c1047408c1e81039"
+      "41047424",
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      "ffffffff"};
+  // const SharedLibSignature CNavMesh_GetNavDataFromFile{
+  //     "server.so",
+  //     "5589e557568dbde0feffff5381ec3c02000065a1140000008945e431c0a1306988018b5d"
+  //     "0c8b75108b503cb89aeb400185d20f45c28d95e0fdffff89042489542404e8f92bdcffb9"
+  //     "4100000089c231c0f3ab8dbde0feffff8954240cc7442408cd4e3401c744240404010000"
+  //     "893c24e8dc474500a1106b88018d50048b4004c744241800000000c744241400000000c7"
+  //     "44241000000000895c240cc744240814f72201897c2404891424ff503884c0741f31c08b"
+  //     "75e4653335140000000f85a800000081c43c0200005b5e5f5dc36690a1106b88018d5004"
+  //     "8b4004c744241800000000c744241400000000c744241000000000895c240cc74424083c"
+  //     "893e01897c2404891424ff503884c0741385f674a0c60601eb9b8d76008dbc2700000000"
+  //     "a1106b88018d50048b4004c744241800000000c744241400000000c74424100000000089"
+  //     "5c240cc74424083c893e01c7442404d94e3401891424ff503884c075acb801000000e948"
+  //     "ffffffe8f4fdd300",
+  //     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000ffff"
+  //     "ffffffffffffffff00000000ffffffffffffffffffffffffffffffffffffff00000000ff"
+  //     "00000000ffffffffffffffffffffffffffffffffff00000000000000ff00000000000000"
+  //     "ffffffff00000000ff00000000ffffffffffffffffffffffffffffffffffffffffffffff"
+  //     "ffffffffffffffffffffffff00000000000000ffffffffffffffff0000ffffff00ffffff"
+  //     "ffffffffffffffffffffff00000000ffffffffffffffffffffff0000ff00000000ffffff"
+  //     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000"
+  //     "000000ffffffffffffffff0000ffffff00ffffff00ffffffff0000000000000000000000"
+  //     "ff00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  //     "ffffffff00000000000000ff00000000000000ffffffff0000ffffff00ffffffffffff00"
+  //     "000000ff00000000"};
   const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
                                                     0x00c01d20 - 0x10000};
 
@@ -180,5 +260,4 @@ namespace offsets {
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
                                              "_ZN10CVProfNode9ExitScopeEv"};
   const VtableOffset CEngine_Frame{"engine.so", "CEngine", 6};
-
 }  // namespace offsets

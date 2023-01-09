@@ -127,6 +127,8 @@ bool ClientPlugin::Load(CreateInterfaceFn interfaceFactory,
   init_offsets();
   fmt::print("POOTIS IS AT! {:08X}\n",
              static_cast<uintptr_t>(offsets::CEngine_Frame));
+  fmt::print("POOTIS2 IS AT! {:08X}\n",
+             static_cast<uintptr_t>(offsets::FindAndHealTargets));
 
   g_ClientClasses = std::make_unique<ClientClassManager>();
   module_manager = std::make_unique<ModuleManager>();

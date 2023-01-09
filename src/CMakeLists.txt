@@ -57,6 +57,7 @@ target_link_libraries(
   Tracy::TracyClient
   SDL2::SDL2
   marl::marl
+  Boost::algorithm
 
   frida-gum
 )

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <bit>
 #include <bitset>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <utility>
 
 using range_bs_t =
@@ -11,6 +13,10 @@ using range_bs_t =
 
 struct DataRange {
   DataRange(uintptr_t begin, uintptr_t length) : begin(begin), length(length) {}
+
+  inline std::span<uint8_t> data_at_mem() {
+    return std::span(std::bit_cast<uint8_t*>(begin), length);
+  }
 
   uintptr_t begin;
   uintptr_t length;

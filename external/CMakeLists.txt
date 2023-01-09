@@ -72,6 +72,7 @@ CPMAddPackage(
 
 CPMAddPackage("gh:fmtlib/fmt#9.1.0")
 CPMAddPackage("gh:serge1/ELFIO#6fc23e53ddf6109b0d9c0f3d8ed62964405369d2")
+CPMAddPackage("gh:boostorg/boost#boost-1.81.0")
 if (ELFIO_ADDED)
   target_compile_options(elfio INTERFACE -Wno-missing-field-initializers)
 endif()

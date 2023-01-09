@@ -1,13 +1,16 @@
 #pragma once
 #include <absl/container/flat_hash_map.h>
 #include <bit>
+#include <boost/algorithm/hex.hpp>
 #include <cstdint>
 #include <elfio/elfio.hpp>
 #include <forward_list>
+#include <iterator>
 #include <string>
 
 #include "offsets/rtti.hpp"
 #include "util/data_range_checker.hpp"
+#include "util/error.hpp"
 
 struct LoadedModule {
   LoadedModule(const std::string& path, const uintptr_t base_address);
@@ -28,16 +31,16 @@ struct LoadedModule {
   uintptr_t offline_baseaddr{UINTPTR_MAX};
 };
 
+using ModuleVtables =
+    absl::flat_hash_map<std::string,
+                        absl::flat_hash_map<std::string_view, Vftables>>;
 using ModuleRangeMap = absl::flat_hash_map<std::string, DataRange>;
+using EhFrameRanges = absl::flat_hash_map<std::string, std::vector<DataRange>>;
 
 void init_offsets();
 
 class Offset;
 extern std::forward_list<Offset*> g_offset_list;
-
-using ModuleVtables =
-    absl::flat_hash_map<std::string,
-                        absl::flat_hash_map<std::string_view, Vftables>>;
 
 class Offset {
   friend void init_offsets();
@@ -60,9 +63,12 @@ class Offset {
   Offset(uintptr_t addr) : cached_address(addr){};
 
   virtual uintptr_t get_address(ModuleRangeMap& modules,
-                                ModuleVtables& vtables) const = 0;
-  virtual void cache_address(ModuleRangeMap& modules, ModuleVtables& vtables) {
-    cached_address = get_address(modules, vtables);
+                                ModuleVtables& vtables,
+                                EhFrameRanges& eh_frame) const = 0;
+  virtual void cache_address(ModuleRangeMap& modules,
+                             ModuleVtables& vtables,
+                             EhFrameRanges& eh_frame) {
+    cached_address = get_address(modules, vtables, eh_frame);
   };
 
   uintptr_t cached_address{};
@@ -74,7 +80,8 @@ class ManualOffset : public Offset {
 
  private:
   virtual uintptr_t get_address(ModuleRangeMap& modules,
-                                ModuleVtables& vtables) const override {
+                                ModuleVtables& vtables,
+                                EhFrameRanges& eh_frame) const override {
     return manual_address;
   };
 
@@ -88,7 +95,8 @@ class SharedLibOffset : public Offset {
 
  private:
   uintptr_t get_address(ModuleRangeMap& modules,
-                        ModuleVtables& vtables) const override;
+                        ModuleVtables& vtables,
+                        EhFrameRanges& eh_frame) const override;
 
   const std::string module;
   const uintptr_t offset;
@@ -108,7 +116,8 @@ class VtableOffset : public Offset {
 
  private:
   uintptr_t get_address(ModuleRangeMap& modules,
-                        ModuleVtables& vtables) const override;
+                        ModuleVtables& vtables,
+                        EhFrameRanges& eh_frame) const override;
 
   const std::string module;
   const std::string name;
@@ -123,16 +132,49 @@ class SharedLibSymbol : public Offset {
 
  private:
   uintptr_t get_address(ModuleRangeMap& modules,
-                        ModuleVtables& vtables) const override;
+                        ModuleVtables& vtables,
+                        EhFrameRanges& eh_frame) const override;
 
   const std::string module;
   const std::string symbol;
 };
 
+struct Signature {
+  std::vector<uint8_t> bytes;
+  std::vector<uint8_t> mask;
+};
+
+class SharedLibSignature : public Offset {
+ public:
+  SharedLibSignature(std::string&& module,
+                     std::string&& signature_str,
+                     std::string&& mask_str)
+      : Offset(), module_name(module) {
+    boost::algorithm::unhex(signature_str.begin(), signature_str.end(),
+                            std::back_inserter(signature));
+    boost::algorithm::unhex(mask_str.begin(), mask_str.end(),
+                            std::back_inserter(mask));
+
+    if (signature.size() != mask.size())
+      throw StringError("signature and mask must be same size");
+    if (signature.size() == 0)
+      throw StringError("signature must be nonzero size");
+  }
+
+ private:
+  uintptr_t get_address(ModuleRangeMap& modules,
+                        ModuleVtables& vtables,
+                        EhFrameRanges& eh_frame) const override;
+
+  const std::string module_name;
+  std::vector<uint8_t> signature;
+  std::vector<uint8_t> mask;
+};
+
 namespace offsets {
   const extern SharedLibSymbol SDL_GL_SwapWindow;
 
-  const extern SharedLibOffset FindAndHealTargets;
+  const extern SharedLibSignature FindAndHealTargets;
   const extern SharedLibOffset CNavMesh_GetNavDataFromFile;
 
   const extern SharedLibSymbol g_Telemetry;
