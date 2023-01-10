@@ -1,14 +1,10 @@
 #pragma once
-#include <fmt/core.h>
-#include <fmt/format.h>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
-#include <iterator>
-#include <optional>
 #include <range/v3/detail/range_access.hpp>
+#include <range/v3/iterator/default_sentinel.hpp>
 #include <range/v3/view/facade.hpp>
-#include <utility>
 #include <variant>
 
 template <typename T>
@@ -51,41 +47,34 @@ struct Generator : public ranges::view_facade<Generator<T>> {
   };
 
   struct Cursor {
-    Cursor() noexcept = default;
     explicit Cursor(const std::coroutine_handle<promise_type>& coro) noexcept
         : coro{&coro} {}
 
-    bool equal(const Cursor& other) const { return this->coro == other.coro; };
+    bool equal(ranges::default_sentinel_t) const {
+      if (coro->done()) {
+        coro->promise().throw_if_exception();
+        return true;
+      }
+
+      return false;
+    };
 
     void next() {
       assert(coro != nullptr);
       assert(!coro->done());
 
       coro->resume();
-
-      if (coro->done()) {
-        auto handle = std::exchange(coro, nullptr);
-        handle->promise().throw_if_exception();
-      }
     }
 
-    T& read() const noexcept {
+    T& read() const {
       assert(coro != nullptr);
       assert(!coro->done());
+
       return coro->promise().get_value();
     }
 
    private:
     const std::coroutine_handle<promise_type>* coro;
-  };
-
-  Generator(Generator&& other) noexcept
-      : coro{std::exchange(other.coro, nullptr)} {}
-
-  Generator& operator=(Generator&& other) noexcept {
-    if (coro)
-      coro.destroy();
-    coro = std::exchange(other.coro, nullptr);
   };
 
   ~Generator() {
@@ -94,18 +83,13 @@ struct Generator : public ranges::view_facade<Generator<T>> {
   };
 
   Cursor begin_cursor() const {
-    if (coro.done())
-      return end_cursor();
-
-    auto i = Cursor(coro);
-    if (!coro.promise().has_value())
-      i.next();
-
-    return i;
+    // Get initial value.
+    coro.resume();
+    return Cursor(coro);
   };
-  Cursor end_cursor() const noexcept { return Cursor{}; };
 
  private:
+  explicit Generator() noexcept = default;
   explicit Generator(promise_type& promise) noexcept
       : coro{std::coroutine_handle<promise_type>::from_promise(promise)} {};
 
