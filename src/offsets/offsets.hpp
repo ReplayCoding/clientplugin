@@ -49,13 +49,11 @@ class Offset {
   Offset() { g_offset_list.push_front(this); };
   template <typename T>
   inline auto operator+(T rhs) const {
-    assert(cached_address != 0);
     return Offset(cached_address + rhs);
   }
 
   template <typename T>
   inline operator T() const {
-    assert(cached_address != 0);
     return std::bit_cast<T>(cached_address);
   }
 
@@ -69,6 +67,9 @@ class Offset {
                              ModuleVtables& vtables,
                              EhFrameRanges& eh_frame) {
     cached_address = get_address(modules, vtables, eh_frame);
+    if (cached_address == 0)
+      throw StringError("Error while getting offset ({}), got nullptr",
+                        typeid(*this).name());
   };
 
   uintptr_t cached_address{};
