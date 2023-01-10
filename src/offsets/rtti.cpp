@@ -13,9 +13,8 @@
 #include <iterator>
 #include <memory>
 #include <range/v3/action/remove_if.hpp>
-#include <range/v3/algorithm/any_of.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/action/sort.hpp>
+#include <range/v3/action/transform.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/chunk_by.hpp>
 #include <string>
@@ -111,7 +110,7 @@ size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
   return size;
 }
 
-uintptr_t get_typeinfo_addr(uintptr_t v) {
+uintptr_t get_typeinfo_addr_from_vtable(uintptr_t v) {
   return *std::bit_cast<uintptr_t*>(v - sizeof(void*));
 }
 
@@ -143,19 +142,16 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
     }
   }
 
-  vftable_candidates_rtti_ptr_with_cvtables |=
+  // Now actually make this a list of vftables
+  auto vftable_candidates =
+      std::move(vftable_candidates_rtti_ptr_with_cvtables) |
       ranges::actions::remove_if([&typeinfo_ranges](auto candidate) {
         // This is a reference inside of a typeinfo graph, not a vtable
         return typeinfo_ranges.is_position_in_range(candidate);
-      });
-
-  ranges::sort(vftable_candidates_rtti_ptr_with_cvtables);
-
-  // Now actually make this a list of vftables
-  auto vftable_candidates =
-      std::move(vftable_candidates_rtti_ptr_with_cvtables);
-  ranges::for_each(vftable_candidates,
-                   [](uintptr_t& v) { v += sizeof(void*); });
+      }) |
+      ranges::actions::transform(
+          [](uintptr_t v) { return v + sizeof(void*); }) |
+      ranges::actions::sort;
 
   // Generate a list of constructor vtables, this unfortunately means we
   // lose some real vtables
@@ -164,10 +160,9 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
 
   for (auto& candidate : vftable_candidates) {
     ZoneScopedN("filter - remove invalids");
-    uintptr_t typeinfo_addr = get_typeinfo_addr(candidate);
+    uintptr_t typeinfo_addr = get_typeinfo_addr_from_vtable(candidate);
 
     // Avoid constructor vftables while keeping normal consecutive subtables
-    // TOOD: Clean up this so we can short-circuit?
     if (!((typeinfo_addr != prev_typeinfo) &&
           seen_typeinfo.contains(typeinfo_addr))) {
       co_yield candidate;
@@ -209,11 +204,11 @@ Generator<Vtable> get_vtables_from_module(
   for (const auto& entry :
        locate_vftables(loaded_mod, relocations, function_range_checker)) {
     if (prev_entry != 0) {
-      if (get_typeinfo_addr(entry) == get_typeinfo_addr(prev_entry)) {
+      if (get_typeinfo_addr_from_vtable(entry) == get_typeinfo_addr_from_vtable(prev_entry)) {
         current_chunk.push_back(entry);
       } else {
         std::string_view typeinfo_name = *std::bit_cast<char**>(
-            get_typeinfo_addr(current_chunk[0]) + sizeof(void*));
+            get_typeinfo_addr_from_vtable(current_chunk[0]) + sizeof(void*));
         co_yield Vtable{typeinfo_name, current_chunk};
 
         current_chunk.clear();

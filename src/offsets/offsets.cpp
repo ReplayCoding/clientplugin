@@ -225,30 +225,6 @@ namespace offsets {
       "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       "ffffffff"};
-  // const SharedLibSignature CNavMesh_GetNavDataFromFile{
-  //     "server.so",
-  //     "5589e557568dbde0feffff5381ec3c02000065a1140000008945e431c0a1306988018b5d"
-  //     "0c8b75108b503cb89aeb400185d20f45c28d95e0fdffff89042489542404e8f92bdcffb9"
-  //     "4100000089c231c0f3ab8dbde0feffff8954240cc7442408cd4e3401c744240404010000"
-  //     "893c24e8dc474500a1106b88018d50048b4004c744241800000000c744241400000000c7"
-  //     "44241000000000895c240cc744240814f72201897c2404891424ff503884c0741f31c08b"
-  //     "75e4653335140000000f85a800000081c43c0200005b5e5f5dc36690a1106b88018d5004"
-  //     "8b4004c744241800000000c744241400000000c744241000000000895c240cc74424083c"
-  //     "893e01897c2404891424ff503884c0741385f674a0c60601eb9b8d76008dbc2700000000"
-  //     "a1106b88018d50048b4004c744241800000000c744241400000000c74424100000000089"
-  //     "5c240cc74424083c893e01c7442404d94e3401891424ff503884c075acb801000000e948"
-  //     "ffffffe8f4fdd300",
-  //     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000ffff"
-  //     "ffffffffffffffff00000000ffffffffffffffffffffffffffffffffffffff00000000ff"
-  //     "00000000ffffffffffffffffffffffffffffffffff00000000000000ff00000000000000"
-  //     "ffffffff00000000ff00000000ffffffffffffffffffffffffffffffffffffffffffffff"
-  //     "ffffffffffffffffffffffff00000000000000ffffffffffffffff0000ffffff00ffffff"
-  //     "ffffffffffffffffffffff00000000ffffffffffffffffffffff0000ff00000000ffffff"
-  //     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000"
-  //     "000000ffffffffffffffff0000ffffff00ffffff00ffffffff0000000000000000000000"
-  //     "ff00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-  //     "ffffffff00000000000000ff00000000000000ffffffff0000ffffff00ffffffffffff00"
-  //     "000000ff00000000"};
   const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
                                                     0x00c01d20 - 0x10000};
 

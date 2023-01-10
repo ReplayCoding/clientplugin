@@ -9,7 +9,7 @@
 #include "util/data_range_checker.hpp"
 #include "util/generator.hpp"
 
-// HACK: Don't cause a dependency issue here
+// HACK: This causes a circular dependency, so just define what we need
 // #include "offsets/offsets.hpp"
 class LoadedModule;
 
