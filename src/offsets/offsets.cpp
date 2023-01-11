@@ -217,14 +217,8 @@ namespace offsets {
   const SharedLibSymbol SDL_GL_SwapWindow{"libSDL2-2.0.so.0",
                                           "SDL_GL_SwapWindow"};
 
-  const SharedLibSignature FindAndHealTargets{
-      "client.so",
-      "5589e557565381ec5c01000065a1140000008945e431c08b5d088b0da42359db8b83f404"
-      "000085c0742283f8ff0fb7d0bfff1f00000f44d7c1e20401ca89d183c1047408c1e81039"
-      "41047424",
-      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-      "ffffffff"};
+  // FID HASH F: f2bcda30797732a8, X: b724bdb369b5da37
+  const SharedLibOffset FindAndHealTargets{"client.so", 0x00dcd6e0};
   const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
                                                     0x00c01d20 - 0x10000};
 

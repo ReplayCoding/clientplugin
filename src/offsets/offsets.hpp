@@ -175,7 +175,7 @@ class SharedLibSignature : public Offset {
 namespace offsets {
   const extern SharedLibSymbol SDL_GL_SwapWindow;
 
-  const extern SharedLibSignature FindAndHealTargets;
+  const extern SharedLibOffset FindAndHealTargets;
   const extern SharedLibOffset CNavMesh_GetNavDataFromFile;
 
   const extern SharedLibSymbol g_Telemetry;
