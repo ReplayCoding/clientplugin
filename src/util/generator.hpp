@@ -67,7 +67,6 @@ struct Generator : public ranges::view_facade<Generator<T>> {
 
     T& read() const {
       assert(coro != nullptr);
-      assert(!coro->done());
 
       return coro->promise().get_value();
     }
@@ -82,9 +81,12 @@ struct Generator : public ranges::view_facade<Generator<T>> {
   };
 
   Cursor begin_cursor() const {
+    auto cur = Cursor(coro);
+
     // Get initial value.
-    coro.resume();
-    return Cursor(coro);
+    cur.next();
+
+    return cur;
   };
 
  private:
