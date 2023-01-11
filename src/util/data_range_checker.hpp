@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <memory>
 #include <span>
-#include <utility>
 
 using range_bs_t =
     std::bitset<1073741824>;  // Can represent 1 GiB of data (more than enough

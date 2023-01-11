@@ -1,6 +1,5 @@
 #pragma once
 #include <coroutine>
-#include <cstddef>
 #include <exception>
 #include <range/v3/detail/range_access.hpp>
 #include <range/v3/iterator/default_sentinel.hpp>

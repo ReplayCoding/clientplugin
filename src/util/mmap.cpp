@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <string>
 
-#include "./mmap.hpp"
 #include "util/error.hpp"
+#include "util/mmap.hpp"
 
 MemoryMappedFile::MemoryMappedFile(std::string fname) {
   auto fd = open(fname.c_str(), O_RDONLY);

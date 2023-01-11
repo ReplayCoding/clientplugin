@@ -5,27 +5,18 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
 #include <convar.h>
-#include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <imgui.h>
 #include <threadtools.h>
 #include <tracy/TracyC.h>
-#include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <exception>
-#include <filesystem>
-#include <fstream>
 #include <memory>
 #include <mutex>
-#include <range/v3/view/enumerate.hpp>
 #include <shared_mutex>
 #include <stack>
 #include <string_view>
-#include <thread>
 #include <tracy/Tracy.hpp>
 
 #include "hook/attachmenthook.hpp"
