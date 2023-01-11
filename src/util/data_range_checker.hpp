@@ -5,10 +5,9 @@
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <tracy/Tracy.hpp>
 
-using range_bs_t =
-    std::bitset<1073741824>;  // Can represent 1 GiB of data (more than enough
-                              // to hold even LLVM's memory space)
+using range_bs_t = std::bitset<134217700>;  // 128 MiB
 
 struct DataRange {
   DataRange(uintptr_t begin, uintptr_t length) : begin(begin), length(length) {}
@@ -23,8 +22,11 @@ struct DataRange {
 
 class DataRangeChecker {
  public:
-  DataRangeChecker(uintptr_t base = 0)
-      : base(base), range(std::make_unique<range_bs_t>()) {}
+  DataRangeChecker(uintptr_t base = 0) {
+    ZoneScoped;
+    this->base = base;
+    this->range = std::make_unique<range_bs_t>();
+  }
 
   inline void add_range(const DataRange& r) {
     for (auto i = r.begin; i < r.begin + r.length; i++) {

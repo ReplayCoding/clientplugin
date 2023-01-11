@@ -117,6 +117,7 @@ uintptr_t get_typeinfo_addr_from_vtable(uintptr_t v) {
 Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
                                      RelocMap& relocations,
                                      DataRangeChecker& function_ranges) {
+  ZoneScoped;
   absl::flat_hash_set<uintptr_t> instances_of_typeinfo_relocs{};
   for (const auto& [addr, name] : relocations) {
     if (name.ends_with("_class_type_infoE"))
@@ -188,14 +189,17 @@ Generator<Vtable> get_vtables_from_module(
   DataRangeChecker function_range_checker{loaded_mod.base_address};
 
   for (auto& function_range : get_eh_frame_ranges(loaded_mod)) {
+    ZoneScopedN("eh_frame insertion");
     function_range_checker.add_range(function_range);
   }
 
   RelocMap relocations{};
   for (auto& section : loaded_mod.elf.sections) {
     if (section->get_type() == ELFIO::SHT_REL) {
-      for (auto& reloc : get_relocations(loaded_mod, section))
+      for (auto& reloc : get_relocations(loaded_mod, section)) {
+        ZoneScopedN("get relocations");
         relocations.insert(reloc);
+      }
     }
   }
 
@@ -203,8 +207,10 @@ Generator<Vtable> get_vtables_from_module(
   uintptr_t prev_entry{};
   for (const auto& entry :
        locate_vftables(loaded_mod, relocations, function_range_checker)) {
+    ZoneScopedN("build chunks");
     if (prev_entry != 0) {
-      if (get_typeinfo_addr_from_vtable(entry) == get_typeinfo_addr_from_vtable(prev_entry)) {
+      if (get_typeinfo_addr_from_vtable(entry) ==
+          get_typeinfo_addr_from_vtable(prev_entry)) {
         current_chunk.push_back(entry);
       } else {
         std::string_view typeinfo_name = *std::bit_cast<char**>(
