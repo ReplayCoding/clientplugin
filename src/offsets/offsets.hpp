@@ -184,4 +184,6 @@ namespace offsets {
   const extern SharedLibSymbol CVProfNode_EnterScope;
   const extern SharedLibSymbol CVProfNode_ExitScope;
   const extern VtableOffset CEngine_Frame;
+
+  const extern VtableOffset CTFCleaver_CreateJarProjectile;
 }  // namespace offsets

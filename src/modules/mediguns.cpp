@@ -7,6 +7,11 @@
 #include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"
 
+ConVar dump_medigun("pe_dump_mediguns",
+                    0,
+                    FCVAR_NONE,
+                    "Enable mediguns module");
+
 class MediGunsMod : public IModule {
  public:
   MediGunsMod();
@@ -28,7 +33,8 @@ MediGunsMod::MediGunsMod() {
       [this, charge_val_offset](InvocationContext context) {
         uintptr_t self = context.get_arg<uintptr_t>(0);
         auto current_charge = *std::bit_cast<float*>(self + charge_val_offset);
-        fmt::print("OLD: {} NEW: {}\n", charge_val, current_charge);
+        if (dump_medigun.GetBool())
+          fmt::print("OLD: {} NEW: {}\n", charge_val, current_charge);
       });
 }
 

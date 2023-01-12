@@ -1,5 +1,6 @@
 #include <cdll_int.h>
 #include <eiface.h>
+#include <engine/ivdebugoverlay.h>
 #include <igameevents.h>
 #include <materialsystem/imaterialsystem.h>
 #include <mathlib/mathlib.h>
@@ -25,6 +26,7 @@ namespace Interfaces {
   IEngineTool* EngineTool;
   IMaterialSystem* MaterialSystem;
   IPlayerInfoManager* PlayerInfoManager;
+  IVDebugOverlay* DebugOverlay;
 
   void Load(CreateInterfaceFn factory) {
     ConnectTier1Libraries(&factory, 1);
@@ -44,6 +46,8 @@ namespace Interfaces {
         factory(VENGINETOOL_INTERFACE_VERSION, nullptr));
     Interfaces::MaterialSystem = static_cast<IMaterialSystem*>(
         factory(MATERIAL_SYSTEM_INTERFACE_VERSION, nullptr));
+    Interfaces::DebugOverlay = static_cast<IVDebugOverlay*>(
+        factory(VDEBUG_OVERLAY_INTERFACE_VERSION, nullptr));
 
     CreateInterfaceFn game_client_factory;
     CreateInterfaceFn game_server_factory;

@@ -7,7 +7,7 @@
 #include <span>
 #include <tracy/Tracy.hpp>
 
-using range_bs_t = std::bitset<134217700>;  // 128 MiB
+using range_bs_t = std::bitset<134217728>;  // 128 MiB
 
 struct DataRange {
   DataRange(uintptr_t begin, uintptr_t length) : begin(begin), length(length) {}

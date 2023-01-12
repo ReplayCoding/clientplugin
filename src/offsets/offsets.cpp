@@ -230,4 +230,7 @@ namespace offsets {
   const SharedLibSymbol CVProfNode_ExitScope{"libtier0.so",
                                              "_ZN10CVProfNode9ExitScopeEv"};
   const VtableOffset CEngine_Frame{"engine.so", "CEngine", 6};
+
+  const VtableOffset CTFCleaver_CreateJarProjectile{"server.so", "CTFCleaver",
+                                                    504};
 }  // namespace offsets

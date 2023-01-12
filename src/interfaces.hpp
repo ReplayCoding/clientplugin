@@ -10,6 +10,7 @@ class IBaseClientDLL;
 class IEngineTool;
 class IMaterialSystem;
 class IPlayerInfoManager;
+class IVDebugOverlay;
 
 namespace Interfaces {
   void Load(CreateInterfaceFn factory);
@@ -23,4 +24,5 @@ namespace Interfaces {
   extern IEngineTool* EngineTool;
   extern IMaterialSystem* MaterialSystem;
   extern IPlayerInfoManager* PlayerInfoManager;
+  extern IVDebugOverlay* DebugOverlay;
 }  // namespace Interfaces

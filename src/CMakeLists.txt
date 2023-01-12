@@ -14,6 +14,7 @@ add_library(
   modules/mediguns.cpp
   modules/nav_workshop_fix.cpp
   modules/profiler.cpp
+  modules/cleaverbug.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )
