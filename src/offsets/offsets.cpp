@@ -233,4 +233,6 @@ namespace offsets {
 
   const VtableOffset CTFCleaver_CreateJarProjectile{"server.so", "CTFCleaver",
                                                     504};
+  const VtableOffset CGameServer_FinishCertificateCheck{"engine.so",
+                                                        "CGameServer", 55};
 }  // namespace offsets

@@ -186,4 +186,5 @@ namespace offsets {
   const extern VtableOffset CEngine_Frame;
 
   const extern VtableOffset CTFCleaver_CreateJarProjectile;
+  const extern VtableOffset CGameServer_FinishCertificateCheck;
 }  // namespace offsets
