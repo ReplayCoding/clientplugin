@@ -8,7 +8,7 @@
 #include <tracy/Tracy.hpp>
 
 #include "guifont.hpp"
-#include "hook/attachmenthook.hpp"
+#include "hook/hook.hpp"
 #include "modules/gfxoverlay.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"

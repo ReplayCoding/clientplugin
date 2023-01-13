@@ -6,7 +6,7 @@
 #include <bit>
 #include <memory>
 
-#include "hook/attachmenthook.hpp"
+#include "hook/hook.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"

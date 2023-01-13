@@ -2,7 +2,7 @@
 #include <fmt/core.h>
 #include <bit>
 
-#include "hook/attachmenthook.hpp"
+#include "hook/hook.hpp"
 #include "modules/modules.hpp"
 #include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"

@@ -1,6 +1,6 @@
 #pragma once
-#include <bit>
 #include <frida-gum.h>
+#include <bit>
 #include <cstdint>
 #include <functional>
 
@@ -26,8 +26,7 @@ class InvocationContext {
 
   template <typename T>
   inline T get_return() {
-    return std::bit_cast<T>(
-        gum_invocation_context_get_return_value(context));
+    return std::bit_cast<T>(gum_invocation_context_get_return_value(context));
   }
 
   template <typename T>
@@ -112,4 +111,17 @@ class AttachmentHookBoth : public _CallAttachmentHook {
 
   attachment_hook_func_t enter_func;
   attachment_hook_func_t leave_func;
+};
+
+class ReplacementHook {
+ public:
+  ReplacementHook(const Offset& address, uintptr_t func)
+      : offset(address), func(func) {
+    g_Interceptor->replace(offset, func, nullptr);
+  }
+  ~ReplacementHook() { g_Interceptor->revert(offset); }
+
+ private:
+  const uintptr_t offset;
+  uintptr_t func;
 };

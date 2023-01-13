@@ -1,11 +1,14 @@
-#include "hook/gum/interceptor.hpp"
+#include <memory>
+
+#include "hook/hook.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"
 
 class AllowLoginNoSteamMod : public IModule {
  public:
   AllowLoginNoSteamMod();
-  ~AllowLoginNoSteamMod();
+
+  std::unique_ptr<ReplacementHook> finish_cert_check_hook;
 };
 
 bool FinishCertCheck_replace(void* this_ /*, ... */) {
@@ -13,13 +16,9 @@ bool FinishCertCheck_replace(void* this_ /*, ... */) {
 }
 
 AllowLoginNoSteamMod::AllowLoginNoSteamMod() {
-  g_Interceptor->replace(offsets::CGameServer_FinishCertificateCheck,
-                         reinterpret_cast<uintptr_t>(FinishCertCheck_replace),
-                         nullptr);
-}
-
-AllowLoginNoSteamMod::~AllowLoginNoSteamMod() {
-  g_Interceptor->revert(offsets::CGameServer_FinishCertificateCheck);
+  finish_cert_check_hook = std::make_unique<ReplacementHook>(
+      offsets::CGameServer_FinishCertificateCheck,
+      reinterpret_cast<uintptr_t>(FinishCertCheck_replace));
 }
 
 REGISTER_MODULE(AllowLoginNoSteamMod)

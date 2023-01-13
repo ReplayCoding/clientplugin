@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <memory>
 
-#include "hook/attachmenthook.hpp"
+#include "hook/hook.hpp"
 #include "modules/modules.hpp"
 
 class GfxOverlayMod : public IModule {

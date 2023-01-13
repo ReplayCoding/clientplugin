@@ -5,8 +5,9 @@
 #include <game/server/iplayerinfo.h>
 #include <strtools.h>
 #include <tier2.h>
+#include <memory>
 
-#include "hook/gum/interceptor.hpp"
+#include "hook/hook.hpp"
 #include "interfaces.hpp"
 #include "modules/modules.hpp"
 #include "offsets/offsets.hpp"
@@ -14,7 +15,9 @@
 class NavWorkshopMod : public IModule {
  public:
   NavWorkshopMod();
-  ~NavWorkshopMod();
+
+ private:
+  std::unique_ptr<ReplacementHook> get_nav_data_hook;
 };
 
 const char* GetCleanMapName(const char* inp, char* out)
@@ -88,13 +91,9 @@ NAV_ERROR_TYPE GetNavDataFromFile_replace(void* this_,
 }
 
 NavWorkshopMod::NavWorkshopMod() {
-  g_Interceptor->replace(
+  get_nav_data_hook = std::make_unique<ReplacementHook>(
       offsets::CNavMesh_GetNavDataFromFile,
-      reinterpret_cast<uintptr_t>(GetNavDataFromFile_replace), nullptr);
-}
-
-NavWorkshopMod::~NavWorkshopMod() {
-  g_Interceptor->revert(offsets::CNavMesh_GetNavDataFromFile);
+      reinterpret_cast<uintptr_t>(GetNavDataFromFile_replace));
 }
 
 REGISTER_MODULE(NavWorkshopMod)

@@ -19,8 +19,7 @@
 #include <string_view>
 #include <tracy/Tracy.hpp>
 
-#include "hook/attachmenthook.hpp"
-#include "hook/gum/interceptor.hpp"
+#include "hook/hook.hpp"
 #include "modules/modules.hpp"
 #include "modules/telemetrystubs.hpp"
 #include "offsets/offsets.hpp"
@@ -212,7 +211,6 @@ void TelemetryTick_replacement() {
 class ProfilerMod : public IModule {
  public:
   ProfilerMod();
-  ~ProfilerMod();
 
   bool should_draw_overlay() override { return TracyIsConnected; }
   void draw_overlay() override;
@@ -223,6 +221,8 @@ class ProfilerMod : public IModule {
 
   std::unique_ptr<AttachmentHookEnter> frame_hook;
   std::unique_ptr<AttachmentHookEnter> thread_name_hook;
+
+  std::unique_ptr<ReplacementHook> telemetry_tick_hook;
 };
 
 void ProfilerMod::draw_overlay() {
@@ -249,9 +249,9 @@ ProfilerMod::ProfilerMod() {
         offsets::CVProfNode_ExitScope,
         [](InvocationContext context) { vprof_ctx_stack.pop(); });
   } else {
-    g_Interceptor->replace(
+    telemetry_tick_hook = std::make_unique<ReplacementHook>(
         offsets::TelemetryTick,
-        reinterpret_cast<uintptr_t>(TelemetryTick_replacement), nullptr);
+        reinterpret_cast<uintptr_t>(TelemetryTick_replacement));
   }
 
   frame_hook = std::make_unique<AttachmentHookEnter>(
@@ -272,12 +272,6 @@ ProfilerMod::ProfilerMod() {
 
         tracy::SetThreadName(name);
       });
-}
-
-ProfilerMod::~ProfilerMod() {
-  if (IS_TELEMETRY) {
-    g_Interceptor->revert(offsets::TelemetryTick);
-  }
 }
 
 REGISTER_MODULE(ProfilerMod)
