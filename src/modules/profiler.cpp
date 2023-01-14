@@ -1,7 +1,3 @@
-#define private public
-#include <vprof.h>
-#undef private
-
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
 #include <convar.h>
@@ -10,6 +6,7 @@
 #include <imgui.h>
 #include <threadtools.h>
 #include <tracy/TracyC.h>
+#include <vprof.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -242,7 +239,7 @@ ProfilerMod::ProfilerMod() {
     enter_node_hook = std::make_unique<AttachmentHookEnter>(
         offsets::CVProfNode_EnterScope, [](InvocationContext context) {
           auto self = context.get_arg<CVProfNode*>(0);
-          vprof_ctx_stack.push(0, UNAVAILABLE, UNAVAILABLE, self->m_pszName);
+          vprof_ctx_stack.push(0, UNAVAILABLE, UNAVAILABLE, self->GetName());
         });
 
     exit_node_hook = std::make_unique<AttachmentHookEnter>(
