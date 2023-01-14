@@ -115,9 +115,7 @@ class ClientPlugin : public IServerPluginCallbacks, public IGameEventListener2 {
 bool ClientPlugin::Load(CreateInterfaceFn interfaceFactory,
                         CreateInterfaceFn gameServerFactory) {
   TimedScope("plugin load");
-  // FIXME: This is terrible
-  // printf("Waiting to attach BIG CHUNGUS!\n");
-  // sleep(3);
+  // hi getchoo
 
   gum_init_embedded();
   g_Interceptor = std::make_unique<Gum::Interceptor>();
@@ -125,9 +123,9 @@ bool ClientPlugin::Load(CreateInterfaceFn interfaceFactory,
   Interfaces::Load(interfaceFactory);
 
   init_offsets();
-  fmt::print("POOTIS IS AT! {:08X}\n",
+  fmt::print("vtable offset IS AT! {:08X}\n",
              static_cast<uintptr_t>(offsets::CEngine_Frame));
-  fmt::print("POOTIS2 IS AT! {:08X}\n",
+  fmt::print("(sig) offset IS AT! {:08X}\n",
              static_cast<uintptr_t>(offsets::FindAndHealTargets));
 
   g_ClientClasses = std::make_unique<ClientClassManager>();
