@@ -4,6 +4,7 @@ add_library(
   interfaces.cpp
   plugin.cpp
   util/mmap.cpp
+  util/loaded_module.cpp
   offsets/offsets.cpp
   offsets/eh_frame.cpp
   offsets/rtti.cpp

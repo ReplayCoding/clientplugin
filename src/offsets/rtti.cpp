@@ -125,7 +125,7 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   }
 
   std::vector<uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
-  DataRangeChecker typeinfo_ranges{loaded_mod.base_address};
+  DataRangeChecker typeinfo_ranges{loaded_mod.online_baseaddr};
 
   for (DataRange& range : section_ranges(loaded_mod)) {
     for (uintptr_t addr{range.begin}; addr < (range.begin + range.length);
@@ -186,7 +186,7 @@ Generator<Vtable> get_vtables_from_module(
     std::span<DataRange> function_ranges) {
   ZoneScoped;
 
-  DataRangeChecker function_range_checker{loaded_mod.base_address};
+  DataRangeChecker function_range_checker{loaded_mod.online_baseaddr};
 
   for (auto& function_range : get_eh_frame_ranges(loaded_mod)) {
     ZoneScopedN("eh_frame insertion");

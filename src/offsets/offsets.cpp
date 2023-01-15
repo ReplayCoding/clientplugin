@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <elfio/elfio.hpp>
 #include <mutex>
 #include <range/v3/algorithm/all_of.hpp>
 #include <range/v3/algorithm/any_of.hpp>
@@ -16,36 +15,18 @@
 #include <tracy/Tracy.hpp>
 
 // It's just a header, it can't hurt you
-// (Must be AFTER elfio)
+#include "util/loaded_module.hpp"
+// (Must be AFTER loaded_module)
 #include <link.h>
 
 #include "offsets/eh_frame.hpp"
 #include "offsets/offsets.hpp"
 #include "offsets/rtti.hpp"
+#include "util/data_range_checker.hpp"
 #include "util/error.hpp"
 #include "util/timedscope.hpp"
 
 std::forward_list<Offset*> g_offset_list{};
-
-LoadedModule::LoadedModule(const std::string& path,
-                           const uintptr_t base_address)
-    : base_address(base_address) {
-  ZoneScoped;
-  elf.load(path);
-
-  for (auto& segment : elf.segments) {
-    if (segment->get_type() == /* ELFIO:: */ PT_LOAD) {
-      offline_baseaddr =
-          std::min(offline_baseaddr,
-                   static_cast<uintptr_t>(segment->get_virtual_address()));
-    }
-  }
-
-  if (base_address == 0) {
-    // bail out, this is bad
-    throw StringError("WARNING: loaded_mod.base_address is nullptr");
-  };
-}
 
 uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
                                        ModuleVtables& vtables,
@@ -173,7 +154,7 @@ void init_offsets() {
       try {
         LoadedModule loaded_mod{
             mod_name,
-            static_cast<uintptr_t>(mod_range.begin),
+            mod_range,
         };
 
         std::vector<DataRange> mod_eh_frame_ranges;

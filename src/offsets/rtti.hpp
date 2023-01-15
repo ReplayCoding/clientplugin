@@ -8,10 +8,7 @@
 
 #include "util/data_range_checker.hpp"
 #include "util/generator.hpp"
-
-// HACK: This causes a circular dependency, so just define what we need
-// #include "offsets/offsets.hpp"
-class LoadedModule;
+#include "util/loaded_module.hpp"
 
 // Max vftables i've observed in TF is 10
 using Vftables = absl::InlinedVector<uintptr_t, 12>;

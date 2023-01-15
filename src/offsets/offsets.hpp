@@ -12,25 +12,6 @@
 #include "util/data_range_checker.hpp"
 #include "util/error.hpp"
 
-struct LoadedModule {
-  LoadedModule(const std::string& path, const uintptr_t base_address);
-
-  inline uintptr_t get_online_address_from_offline(uintptr_t offline_addr) {
-    return base_address + (offline_addr - offline_baseaddr);
-  }
-
-  inline uintptr_t get_offline_address_from_online(uintptr_t online_addr) {
-    return offline_baseaddr + (online_addr - base_address);
-  }
-
-  ELFIO::elfio elf{};
-
-  const uintptr_t base_address{};
-
- private:
-  uintptr_t offline_baseaddr{UINTPTR_MAX};
-};
-
 using ModuleVtables =
     absl::flat_hash_map<std::string,
                         absl::flat_hash_map<std::string_view, Vftables>>;
