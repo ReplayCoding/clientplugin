@@ -59,53 +59,56 @@ namespace Gum {
     end_transaction();
   }
 
-  GumAttachReturn Interceptor::attach(const uintptr_t address,
-                                      CallListener* listener,
-                                      void* user_data) {
+  void Interceptor::attach(const uintptr_t address,
+                           CallListener* listener,
+                           void* user_data) {
     begin_transaction();
 
     auto retval =
         gum_interceptor_attach(get_obj(), std::bit_cast<void*>(address),
                                listener->get_listener(), user_data);
     if (retval != GUM_ATTACH_OK)
-      throw StringError("Failed to attach to address {:08X}", address);
+      throw StringError("Failed to attach to address {:08X} ({})", address,
+                        static_cast<int>(retval));
     call_listeners.push_back(listener);
 
     end_transaction();
-
-    return retval;
   }
   void Interceptor::detach(CallListener* listener) {
     gum_interceptor_detach(get_obj(), listener->get_listener());
   }
 
-  GumAttachReturn Interceptor::attach(const uintptr_t address,
-                                      ProbeListener* listener,
-                                      void* user_data) {
+  void Interceptor::attach(const uintptr_t address,
+                           ProbeListener* listener,
+                           void* user_data) {
     begin_transaction();
 
     auto retval =
         gum_interceptor_attach(get_obj(), std::bit_cast<void*>(address),
                                listener->get_listener(), user_data);
+
     if (retval != GUM_ATTACH_OK)
-      throw StringError("Failed to attach to address {:08X}", address);
+      throw StringError("Failed to attach to address {:08X} ({})", address,
+                        static_cast<int>(retval));
     probe_listeners.push_back(listener);
 
     end_transaction();
-
-    return retval;
   }
 
   void Interceptor::detach(ProbeListener* listener) {
     gum_interceptor_detach(get_obj(), listener->get_listener());
   }
 
-  GumReplaceReturn Interceptor::replace(const uintptr_t address,
-                                        const uintptr_t replacement_address,
-                                        void* user_data) {
-    return gum_interceptor_replace(get_obj(), std::bit_cast<void*>(address),
-                                   std::bit_cast<void*>(replacement_address),
-                                   user_data, nullptr);
+  void Interceptor::replace(const uintptr_t address,
+                            const uintptr_t replacement_address,
+                            void* user_data) {
+    auto retval = gum_interceptor_replace(
+        get_obj(), std::bit_cast<void*>(address),
+        std::bit_cast<void*>(replacement_address), user_data, nullptr);
+
+    if (retval != GUM_REPLACE_OK)
+      throw StringError("Failed to replace address {:08X} ({})", address,
+                        static_cast<int>(retval));
   }
 
   void Interceptor::revert(const uintptr_t address) {

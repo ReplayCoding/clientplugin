@@ -219,8 +219,9 @@ namespace offsets {
 
   // FID HASH F: f2bcda30797732a8, X: b724bdb369b5da37
   const SharedLibOffset FindAndHealTargets{"client.so", 0x00dcd6e0};
+  // FH: 129c0557c56d8e10 (81) +53 XH: 38473da5967e6f22
   const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
-                                                    0x00c01d20 - 0x10000};
+                                                    0x00c03a70 - 0x10000};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};

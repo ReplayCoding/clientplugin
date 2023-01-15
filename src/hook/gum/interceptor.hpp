@@ -38,17 +38,17 @@ namespace Gum {
    public:
     Interceptor();
     ~Interceptor();
-    GumAttachReturn attach(const uintptr_t address,
+    void attach(const uintptr_t address,
                            CallListener* listener,
                            void* user_data);
-    GumAttachReturn attach(const uintptr_t address,
+    void attach(const uintptr_t address,
                            ProbeListener* listener,
                            void* user_data);
 
     void detach(CallListener* listener);
     void detach(ProbeListener* listener);
 
-    GumReplaceReturn replace(const uintptr_t address,
+    void replace(const uintptr_t address,
                              const uintptr_t replacement_address,
                              void* user_data);
     void revert(const uintptr_t address);
