@@ -86,7 +86,7 @@ Generator<DataRange> section_ranges(LoadedModule& loaded_mod) {
 }
 
 size_t get_typeinfo_size(RelocMap& relocations, uintptr_t addr) {
-  const auto vtable_type = relocations[addr];
+  const auto vtable_type = relocations.at(addr);
   uint32_t size = 2 * sizeof(void*); /* vtable ptr + name ptr */
 
   if (vtable_type.ends_with("__si_class_type_infoE")) {
@@ -115,15 +115,9 @@ uintptr_t get_typeinfo_addr_from_vtable(uintptr_t v) {
 }
 
 Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
-                                     RelocMap& relocations,
+                                     RelocMap& typeinfo_relocs,
                                      DataRangeChecker& function_ranges) {
   ZoneScoped;
-  absl::flat_hash_set<uintptr_t> instances_of_typeinfo_relocs{};
-  for (const auto& [addr, name] : relocations) {
-    if (name.ends_with("_class_type_infoE"))
-      instances_of_typeinfo_relocs.insert(addr);
-  }
-
   std::vector<uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
   DataRangeChecker typeinfo_ranges{loaded_mod.online_baseaddr};
 
@@ -132,9 +126,9 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
          addr += sizeof(void*)) {
       uintptr_t potential_typeinfo_addr = *std::bit_cast<uintptr_t*>(addr);
       if (!function_ranges.is_position_in_range(addr) &&
-          instances_of_typeinfo_relocs.contains(potential_typeinfo_addr)) {
+          typeinfo_relocs.contains(potential_typeinfo_addr)) {
         auto typeinfo_size =
-            get_typeinfo_size(relocations, potential_typeinfo_addr);
+            get_typeinfo_size(typeinfo_relocs, potential_typeinfo_addr);
 
         vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
         typeinfo_ranges.add_range(
@@ -193,12 +187,13 @@ Generator<Vtable> get_vtables_from_module(
     function_range_checker.add_range(function_range);
   }
 
-  RelocMap relocations{};
+  RelocMap typeinfo_relocs{};
   for (auto& section : loaded_mod.elf.sections) {
     if (section->get_type() == ELFIO::SHT_REL) {
       for (auto& reloc : get_relocations(loaded_mod, section)) {
-        ZoneScopedN("get relocations");
-        relocations.insert(reloc);
+        ZoneScopedN("get typeinfo relocs");
+        if (reloc.second.ends_with("_class_type_infoE"))
+          typeinfo_relocs.insert(reloc);
       }
     }
   }
@@ -206,7 +201,7 @@ Generator<Vtable> get_vtables_from_module(
   Vftables current_chunk{};
   uintptr_t prev_entry{};
   for (const auto& entry :
-       locate_vftables(loaded_mod, relocations, function_range_checker)) {
+       locate_vftables(loaded_mod, typeinfo_relocs, function_range_checker)) {
     ZoneScopedN("build chunks");
 
     if (prev_entry != 0 && ((get_typeinfo_addr_from_vtable(entry) !=
