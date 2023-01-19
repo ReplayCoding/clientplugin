@@ -92,8 +92,7 @@ NAV_ERROR_TYPE GetNavDataFromFile_replace(void* this_,
 
 NavWorkshopMod::NavWorkshopMod() {
   get_nav_data_hook = std::make_unique<ReplacementHook>(
-      offsets::CNavMesh_GetNavDataFromFile,
-      reinterpret_cast<uintptr_t>(GetNavDataFromFile_replace));
+      offsets::CNavMesh_GetNavDataFromFile, GetNavDataFromFile_replace);
 }
 
 REGISTER_MODULE(NavWorkshopMod)

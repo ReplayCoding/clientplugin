@@ -18,7 +18,7 @@ bool FinishCertCheck_replace(void* this_ /*, ... */) {
 AllowLoginNoSteamMod::AllowLoginNoSteamMod() {
   finish_cert_check_hook = std::make_unique<ReplacementHook>(
       offsets::CGameServer_FinishCertificateCheck,
-      reinterpret_cast<uintptr_t>(FinishCertCheck_replace));
+      FinishCertCheck_replace);
 }
 
 REGISTER_MODULE(AllowLoginNoSteamMod)

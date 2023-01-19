@@ -208,22 +208,17 @@ Generator<Vtable> get_vtables_from_module(
   for (const auto& entry :
        locate_vftables(loaded_mod, relocations, function_range_checker)) {
     ZoneScopedN("build chunks");
-    if (prev_entry != 0) {
-      if (get_typeinfo_addr_from_vtable(entry) ==
-          get_typeinfo_addr_from_vtable(prev_entry)) {
-        current_chunk.push_back(entry);
-      } else {
-        std::string_view typeinfo_name = *std::bit_cast<char**>(
-            get_typeinfo_addr_from_vtable(current_chunk[0]) + sizeof(void*));
-        co_yield Vtable{typeinfo_name, current_chunk};
 
-        current_chunk.clear();
-        current_chunk.push_back(entry);
-      };
-    } else {
-      current_chunk.push_back(entry);
+    if (prev_entry != 0 && ((get_typeinfo_addr_from_vtable(entry) !=
+                             get_typeinfo_addr_from_vtable(prev_entry)))) {
+      std::string_view typeinfo_name = *std::bit_cast<char**>(
+          get_typeinfo_addr_from_vtable(current_chunk[0]) + sizeof(void*));
+      co_yield Vtable{typeinfo_name, current_chunk};
+
+      current_chunk.clear();
     }
 
+    current_chunk.push_back(entry);
     prev_entry = entry;
   }
 }

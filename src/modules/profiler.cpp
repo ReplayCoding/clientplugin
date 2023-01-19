@@ -247,8 +247,7 @@ ProfilerMod::ProfilerMod() {
         [](InvocationContext context) { vprof_ctx_stack.pop(); });
   } else {
     telemetry_tick_hook = std::make_unique<ReplacementHook>(
-        offsets::TelemetryTick,
-        reinterpret_cast<uintptr_t>(TelemetryTick_replacement));
+        offsets::TelemetryTick, TelemetryTick_replacement);
   }
 
   frame_hook = std::make_unique<AttachmentHookEnter>(

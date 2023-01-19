@@ -115,13 +115,12 @@ class AttachmentHookBoth : public _CallAttachmentHook {
 
 class ReplacementHook {
  public:
-  ReplacementHook(const Offset& address, uintptr_t func)
-      : offset(address), func(func) {
-    g_Interceptor->replace(offset, func, nullptr);
+  template <typename T>
+  ReplacementHook(const Offset& address, T func) : offset(address) {
+    g_Interceptor->replace(offset, reinterpret_cast<uintptr_t>(func), nullptr);
   }
   ~ReplacementHook() { g_Interceptor->revert(offset); }
 
  private:
   const uintptr_t offset;
-  uintptr_t func;
 };
