@@ -12,9 +12,8 @@
 #include "util/data_range_checker.hpp"
 #include "util/error.hpp"
 
-using ModuleVtables =
-    absl::flat_hash_map<std::string,
-                        absl::flat_hash_map<std::string_view, Vftables>>;
+using Vtables = absl::flat_hash_map<std::string_view, Vftables>;
+using ModuleVtables = absl::flat_hash_map<std::string, Vtables>;
 using ModuleRangeMap = absl::flat_hash_map<std::string, DataRange>;
 using EhFrameRanges = absl::flat_hash_map<std::string, std::vector<DataRange>>;
 

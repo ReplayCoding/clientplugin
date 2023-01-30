@@ -34,8 +34,6 @@ uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
                                        EhFrameRanges& eh_frame) const {
   auto base_address = modules.at(module).begin;
 
-  fmt::print("TEST: {:08X}\n", offset);
-
   if (base_address == 0)
     throw StringError("Failed to get address of module: {}", module);
   return base_address + offset;
@@ -69,9 +67,6 @@ uintptr_t SharedLibSignature::get_address(ModuleRangeMap& modules,
                                           EhFrameRanges& eh_frame) const {
   auto module = modules.at(module_name);
   auto module_memory_span = module.data_at_mem();
-
-  fmt::print("SEARCHING {:08X} -> {:08X}\n", module.begin,
-             module.begin + module.length);
 
   // hexdump(signature.data(), signature.size());
   // hexdump(mask.data(), mask.size());
@@ -154,12 +149,17 @@ void init_offsets() {
 
         eh_frame_ranges[fname] = mod_eh_frame_ranges;
 
+        Vtables vtables;
         for (auto& vtable :
              get_vtables_from_module(loaded_mod, mod_eh_frame_ranges)) {
           ZoneScopedN("vtable insertion");
-          std::unique_lock l(vtable_mutex);
-          module_vtables[fname].insert(vtable);
+          vtables.insert(vtable);
         };
+
+        {
+          std::unique_lock l(vtable_mutex);
+          module_vtables.insert(std::pair{fname, vtables});
+        }
 
       } catch (std::exception& e) {
         fmt::print(
