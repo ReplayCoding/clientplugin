@@ -24,6 +24,7 @@
 #include "offsets/rtti.hpp"
 #include "util/data_range_checker.hpp"
 #include "util/error.hpp"
+#include "util/hexdump.hpp"
 #include "util/timedscope.hpp"
 
 std::forward_list<Offset*> g_offset_list{};
@@ -32,6 +33,8 @@ uintptr_t SharedLibOffset::get_address(ModuleRangeMap& modules,
                                        ModuleVtables& vtables,
                                        EhFrameRanges& eh_frame) const {
   auto base_address = modules.at(module).begin;
+
+  fmt::print("TEST: {:08X}\n", offset);
 
   if (base_address == 0)
     throw StringError("Failed to get address of module: {}", module);
@@ -65,33 +68,20 @@ uintptr_t SharedLibSignature::get_address(ModuleRangeMap& modules,
                                           ModuleVtables& vtables,
                                           EhFrameRanges& eh_frame) const {
   auto module = modules.at(module_name);
-  auto mod_data = module.data_at_mem();
+  auto module_memory_span = module.data_at_mem();
 
   fmt::print("SEARCHING {:08X} -> {:08X}\n", module.begin,
              module.begin + module.length);
 
-  auto window = ranges::views::sliding(mod_data, signature.size());
-  for (const auto& [idx, bytes] : window | ranges::views::enumerate) {
-    // for (auto row : bytes | ranges::views::chunk(16)) {
-    //   for (auto b : row)
-    //     fmt::print("{:02x} ", b);
-    //   fmt::print(" | ");
-    //   for (auto b : row) {
-    //     auto c = static_cast<char>(b);
-    //     if (c != '\n' && isprint(b))
-    //       fmt::print("{:c}", b);
-    //     else
-    //       fmt::print(".");
-    //   }
-    //   fmt::print("\n");
-    // }
-    // fmt::print("\n---------------------\n");
+  // hexdump(signature.data(), signature.size());
+  // hexdump(mask.data(), mask.size());
 
+  auto window = ranges::views::sliding(module_memory_span, signature.size());
+  for (const auto& [idx, bytes] : window | ranges::views::enumerate) {
     if (ranges::all_of(ranges::views::zip(bytes, signature, mask), [](auto t) {
           auto [orig_byte, sig_byte, mask_byte] = t;
-          return (orig_byte & mask_byte) == sig_byte;
+          return (orig_byte & mask_byte) == (sig_byte & mask_byte);
         })) {
-      fmt::print("FOUND {} {:08x}\n", module_name, idx);
       return idx + module.begin;
     }
   }
@@ -199,10 +189,19 @@ namespace offsets {
                                           "SDL_GL_SwapWindow"};
 
   // FID HASH F: f2bcda30797732a8, X: b724bdb369b5da37
-  const SharedLibOffset FindAndHealTargets{"client.so", 0x00dcd6e0};
+  const SharedLibSignature FindAndHealTargets{
+      "client.so",
+      "5589e557565381ec5c01000065a1140000008945e431c08b5d088b0da423fa018b83f404"
+      "000085c0742283f8ff0fb7d0bfff1f00000f44d7c1e20401ca89d183",
+      "f8ffc0f8f8f8fff800000000ffff00000000ffc000ffc0ffc000ffc700000000ffc00000"
+      "0000ffc0ff00fff800ffffc0f800000000ffffc0fff800ffc0ffc0ff"};
   // FH: 129c0557c56d8e10 (81) +53 XH: 38473da5967e6f22
-  const SharedLibOffset CNavMesh_GetNavDataFromFile{"server.so",
-                                                    0x00c03a70 - 0x10000};
+  const SharedLibSignature CNavMesh_GetNavDataFromFile{
+      "server.so",
+      "5589e557568dbde0feffff5381ec3c02000065a1140000008945e431c0a1306989018b5d"
+      "0c8b75108b503cb89aeb410185d20f45c28d95e0fdffff8904248954",
+      "f8ffc0f8f8ffc000000000f8fff800000000ffff00000000ffc000ffc0ff00000000ffc0"
+      "00ffc000ffc000f800000000ffc0ffffc0ffc000000000ffc738ffc7"};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
