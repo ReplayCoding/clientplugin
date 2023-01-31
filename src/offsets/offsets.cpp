@@ -149,18 +149,12 @@ void init_offsets() {
 
         eh_frame_ranges[fname] = mod_eh_frame_ranges;
 
-        Vtables vtables;
         for (auto& vtable :
              get_vtables_from_module(loaded_mod, mod_eh_frame_ranges)) {
           ZoneScopedN("vtable insertion");
-          vtables.insert(vtable);
-        };
-
-        {
           std::unique_lock l(vtable_mutex);
-          module_vtables.insert(std::pair{fname, vtables});
-        }
-
+          module_vtables[fname].insert(vtable);
+        };
       } catch (std::exception& e) {
         fmt::print(
             "while handling module {}:\n"
