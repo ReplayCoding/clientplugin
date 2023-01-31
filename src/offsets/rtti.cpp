@@ -148,8 +148,6 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
           [](uintptr_t v) { return v + sizeof(void*); }) |
       ranges::actions::sort;
 
-  // Generate a list of constructor vtables, this unfortunately means we
-  // lose some real vtables
   absl::flat_hash_set<uintptr_t> seen_typeinfo{};
   uintptr_t prev_typeinfo{0};
 
