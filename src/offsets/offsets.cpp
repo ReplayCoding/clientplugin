@@ -147,7 +147,10 @@ void init_offsets() {
           mod_eh_frame_ranges.push_back(r);
         }
 
-        eh_frame_ranges[fname] = mod_eh_frame_ranges;
+        {
+          std::unique_lock l(vtable_mutex);
+          eh_frame_ranges[fname] = mod_eh_frame_ranges;
+        }
 
         for (auto& vtable :
              get_vtables_from_module(loaded_mod, mod_eh_frame_ranges)) {
@@ -185,18 +188,24 @@ namespace offsets {
   // FID HASH F: f2bcda30797732a8, X: b724bdb369b5da37
   const SharedLibSignature FindAndHealTargets{
       "client.so",
-      "5589e557565381ec5c01000065a1140000008945e431c08b5d088b0da423fa018b83f404"
-      "000085c0742283f8ff0fb7d0bfff1f00000f44d7c1e20401ca89d183c1047408c1e81039"
+      "5589e557565381ec5c01000065a1140000008945e431c08b5d088b0da423fa018b83f4"
+      "04"
+      "000085c0742283f8ff0fb7d0bfff1f00000f44d7c1e20401ca89d183c1047408c1e810"
+      "39"
       "4104742431ff8b5de465331d1400000089f80f8564040000",
-      "ffffffffffffffff00000000ffff00000000fff800fffffff800ffff00000000fff80000"
-      "0000ffffff00ffff00ffffffff00000000ffffffffff00ffffffffffff00ff00ffff00ff"
+      "ffffffffffffffff00000000ffff00000000fff800fffffff800ffff00000000fff800"
+      "00"
+      "0000ffffff00ffff00ffffffff00000000ffffffffff00ffffffffffff00ff00ffff00"
+      "ff"
       "f800ff00fffffff800ffffff00000000ffffffff00000000"};
   // FH: 129c0557c56d8e10 (81) +53 XH: 38473da5967e6f22
   const SharedLibSignature CNavMesh_GetNavDataFromFile{
       "server.so",
-      "5589e557568dbde0feffff5381ec3c02000065a1140000008945e431c0a1306989018b5d"
+      "5589e557568dbde0feffff5381ec3c02000065a1140000008945e431c0a1306989018b"
+      "5d"
       "0c8b75108b503cb89aeb410185d20f45c28d95e0fdffff8904248954",
-      "f8ffc0f8f8ffc000000000f8fff800000000ffff00000000ffc000ffc0ff00000000ffc0"
+      "f8ffc0f8f8ffc000000000f8fff800000000ffff00000000ffc000ffc0ff00000000ff"
+      "c0"
       "00ffc000ffc000f800000000ffc0ffffc0ffc000000000ffc738ffc7"};
 
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
