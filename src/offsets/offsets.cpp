@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <mutex>
 #include <range/v3/algorithm/all_of.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/view/chunk.hpp>
@@ -126,15 +125,20 @@ void init_offsets() {
   sched.bind();
   defer(sched.unbind());
 
-  TracyLockable(std::mutex, vtable_mutex);
+  ModuleRangeMap cleaned_modules;
+
   marl::WaitGroup wg(modules.size());
   for (auto& [mod_name, mod_range] : modules) {
-    marl::schedule([&, wg]() {
+    const std::string fname = basename(mod_name.c_str());
+    cleaned_modules.insert({fname, mod_range});
+
+    std::vector<DataRange>& mod_eh_frame_ranges = eh_frame_ranges[fname];
+    Vtables& vtables = module_vtables[fname];
+
+    marl::schedule([&, fname, wg]() {
       // TimedScope(fmt::format("module {}", mod_name));
       ZoneScopedN("handle module");
       defer(wg.done());
-
-      const std::string fname = basename(mod_name.c_str());
 
       try {
         LoadedModule loaded_mod{
@@ -142,22 +146,15 @@ void init_offsets() {
             mod_range,
         };
 
-        std::vector<DataRange> mod_eh_frame_ranges;
         for (auto& r : get_eh_frame_ranges(loaded_mod)) {
           mod_eh_frame_ranges.push_back(r);
-        }
-
-        {
-          std::unique_lock l(vtable_mutex);
-          eh_frame_ranges[fname] = mod_eh_frame_ranges;
         }
 
         for (auto& vtable :
              get_vtables_from_module(loaded_mod, mod_eh_frame_ranges)) {
           ZoneScopedN("vtable insertion");
-          std::unique_lock l(vtable_mutex);
-          module_vtables[fname].insert(vtable);
-        };
+          vtables.insert(vtable);
+        }
       } catch (std::exception& e) {
         fmt::print(
             "while handling module {}:\n"
@@ -169,12 +166,6 @@ void init_offsets() {
   }
 
   wg.wait();
-
-  ModuleRangeMap cleaned_modules;
-  for (auto& [mod_name, mod_range] : modules) {
-    const std::string cleaned_name = basename(mod_name.c_str());
-    cleaned_modules.insert({cleaned_name, mod_range});
-  }
 
   for (auto* offset : g_offset_list) {
     offset->cache_address(cleaned_modules, module_vtables, eh_frame_ranges);

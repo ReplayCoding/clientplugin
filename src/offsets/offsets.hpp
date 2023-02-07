@@ -1,5 +1,6 @@
 #pragma once
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/node_hash_map.h>
 #include <bit>
 #include <boost/algorithm/hex.hpp>
 #include <cstdint>
@@ -13,9 +14,9 @@
 #include "util/error.hpp"
 
 using Vtables = absl::flat_hash_map<std::string_view, Vftables>;
-using ModuleVtables = absl::flat_hash_map<std::string, Vtables>;
+using ModuleVtables = absl::node_hash_map<std::string, Vtables>;
 using ModuleRangeMap = absl::flat_hash_map<std::string, DataRange>;
-using EhFrameRanges = absl::flat_hash_map<std::string, std::vector<DataRange>>;
+using EhFrameRanges = absl::node_hash_map<std::string, std::vector<DataRange>>;
 
 void init_offsets();
 
