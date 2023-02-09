@@ -121,18 +121,22 @@ Generator<uintptr_t> locate_vftables(LoadedModule& loaded_mod,
   std::vector<uintptr_t> vftable_candidates_rtti_ptr_with_cvtables{};
   DataRangeChecker typeinfo_ranges{loaded_mod.online_baseaddr};
 
-  for (DataRange& range : section_ranges(loaded_mod)) {
-    for (uintptr_t addr{range.begin}; addr < (range.begin + range.length);
-         addr += sizeof(void*)) {
-      uintptr_t potential_typeinfo_addr = *std::bit_cast<uintptr_t*>(addr);
-      if (!function_ranges.is_position_in_range(addr) &&
-          typeinfo_relocs.contains(potential_typeinfo_addr)) {
-        auto typeinfo_size =
-            get_typeinfo_size(typeinfo_relocs, potential_typeinfo_addr);
+  {
+    ZoneScopedN("Find candidates");
+    for (DataRange& range : section_ranges(loaded_mod)) {
+      for (uintptr_t addr{range.begin}; addr < (range.begin + range.length);
+           addr += sizeof(void*)) {
+        uintptr_t potential_typeinfo_addr = *std::bit_cast<uintptr_t*>(addr);
+        if (!function_ranges.is_position_in_range(addr) &&
+            typeinfo_relocs.contains(potential_typeinfo_addr)) {
+          auto typeinfo_size =
+              get_typeinfo_size(typeinfo_relocs, potential_typeinfo_addr);
 
-        vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
-        typeinfo_ranges.add_range(
-            DataRange(potential_typeinfo_addr, typeinfo_size));
+          vftable_candidates_rtti_ptr_with_cvtables.push_back(addr);
+
+          typeinfo_ranges.add_range(
+              DataRange(potential_typeinfo_addr, typeinfo_size));
+        }
       }
     }
   }
