@@ -40,8 +40,8 @@ class ClientClassManager {
                   absl::btree_map<std::string, clientclasses::ClientProp>>
       clientclasses;
 
-  ConCommandCallbacks pe_dump_props_to_file_callback;
-  ConCommand pe_dump_props_to_file;
+  ConCommandCallbacks dump_props_to_file_callback;
+  ConCommand dump_props_to_file_cmd;
 };
 
 extern std::unique_ptr<ClientClassManager> g_ClientClasses;

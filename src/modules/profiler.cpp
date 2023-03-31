@@ -31,7 +31,7 @@
 constexpr std::string_view UNAVAILABLE = "unavailable";
 constexpr bool IS_TELEMETRY = true;
 
-static ConVar profile_all_levels{"pe_profile_all_levels", 0};
+static ConVar profile_all_levels{"fh_profile_all_levels", 0};
 
 template <typename T, size_t size>
 using InlineStack = std::stack<T, absl::InlinedVector<T, size>>;

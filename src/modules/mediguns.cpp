@@ -7,7 +7,7 @@
 #include "offsets/clientclasses.hpp"
 #include "offsets/offsets.hpp"
 
-ConVar dump_medigun("pe_dump_mediguns",
+ConVar dump_medigun("fh_dump_mediguns",
                     0,
                     FCVAR_NONE,
                     "Enable mediguns module");

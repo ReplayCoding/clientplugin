@@ -10,11 +10,11 @@ class UnhideCVarsMod : public IModule {
  private:
   static void unhide_cvars();
 
-  ConCommand pe_unhide_cvars;
+  ConCommand unhide_cvars_cmd;
 };
 
 UnhideCVarsMod::UnhideCVarsMod()
-    : pe_unhide_cvars("pe_unhide_cvars", unhide_cvars) {}
+    : unhide_cvars_cmd("fh_unhide_cvars", unhide_cvars) {}
 
 void UnhideCVarsMod::unhide_cvars() {
   static constexpr auto MASK = ~(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);

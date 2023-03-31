@@ -44,9 +44,9 @@ clientclasses::parse_tbl(RecvTable* tbl) {
 }
 
 ClientClassManager::ClientClassManager()
-    : pe_dump_props_to_file_callback([&](auto c) { dump_props_to_file(c); }),
-      pe_dump_props_to_file("pe_dump_netvars_to_file",
-                            &pe_dump_props_to_file_callback) {
+    : dump_props_to_file_callback([&](auto c) { dump_props_to_file(c); }),
+      dump_props_to_file_cmd("fh_dump_netvars_to_file",
+                            &dump_props_to_file_callback) {
   for (auto client_class = Interfaces::ClientDll->GetAllClasses();
        client_class != nullptr; client_class = client_class->m_pNext) {
     ZoneScoped;
