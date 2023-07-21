@@ -158,6 +158,7 @@ namespace offsets {
 
   const extern SharedLibSignature FindAndHealTargets;
   const extern SharedLibSignature CNavMesh_GetNavDataFromFile;
+  const extern SharedLibSignature GetPlayerNameForSteamID;
 
   const extern SharedLibSymbol g_Telemetry;
   const extern SharedLibSymbol TelemetryTick;

@@ -17,6 +17,7 @@ add_library(
   modules/profiler.cpp
   modules/cleaverbug.cpp
   modules/allow_login_nosteam.cpp
+  modules/partychat.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )

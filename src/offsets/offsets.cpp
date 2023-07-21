@@ -199,6 +199,15 @@ namespace offsets {
       "c0"
       "00ffc000ffc000f800000000ffc0ffffc0ffc000000000ffc738ffc7"};
 
+  const extern SharedLibSignature GetPlayerNameForSteamID{
+      "client.so",
+      "5589e55383ec14a1c823fa018b48088b45108b198b50048b00890c248954240889442404"
+      "ff531c8b550cc744240c04000000890424895424088b550889542404e80bac100083c414"
+      "5b5dc3",
+      "ffffffffffff00ff00000000fff800fff800fff8fff800fff8ffff38ffff3800ffff3800"
+      "fff800fff800ffff380000000000ffff38ffff3800fff800ffff3800ff00000000ffff00"
+      "ffffff"};
+
   const SharedLibSymbol g_Telemetry{"libtier0.so", "g_Telemetry"};
   const SharedLibSymbol TelemetryTick{"libtier0.so", "TelemetryTick"};
   const SharedLibSymbol ThreadSetDebugName{"libtier0.so", "ThreadSetDebugName"};
