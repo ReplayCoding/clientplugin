@@ -169,4 +169,8 @@ namespace offsets {
 
   const extern VtableOffset CTFCleaver_CreateJarProjectile;
   const extern VtableOffset CGameServer_FinishCertificateCheck;
+
+  const extern SharedLibOffset NotificationQueue_Add;
+  const extern SharedLibOffset CEconNotification_CEconNotification;
+  const extern SharedLibOffset CEconNotification_SetKeyValues;
 }  // namespace offsets

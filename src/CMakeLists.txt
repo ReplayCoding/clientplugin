@@ -18,6 +18,7 @@ add_library(
   modules/cleaverbug.cpp
   modules/allow_login_nosteam.cpp
   modules/partychat.cpp
+  modules/notification.cpp
   hook/gum/interceptor.cpp
   hook/gum/x86patcher.cpp
 )
@@ -49,6 +50,7 @@ target_link_libraries(
   sdk::tier1
   sdk::tier2
   sdk::tier3
+  sdk::vstdlib
   sdk::bitmap
 
   fmt::fmt

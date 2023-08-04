@@ -199,7 +199,7 @@ namespace offsets {
       "c0"
       "00ffc000ffc000f800000000ffc0ffffc0ffc000000000ffc738ffc7"};
 
-  const extern SharedLibSignature GetPlayerNameForSteamID{
+  const SharedLibSignature GetPlayerNameForSteamID{
       "client.so",
       "5589e55383ec14a1c823fa018b48088b45108b198b50048b00890c248954240889442404"
       "ff531c8b550cc744240c04000000890424895424088b550889542404e80bac100083c414"
@@ -221,4 +221,13 @@ namespace offsets {
                                                     504};
   const VtableOffset CGameServer_FinishCertificateCheck{"engine.so",
                                                         "CGameServer", 55};
+
+  const SharedLibOffset NotificationQueue_Add{"client.so",
+                                              0x00f8f890 - 0x10000};
+
+  const SharedLibOffset CEconNotification_CEconNotification{
+      "client.so", 0x00f8ec70 - 0x10000};
+
+  const extern SharedLibOffset CEconNotification_SetKeyValues{
+      "client.so", 0x00f8ed80 - 0x10000};
 }  // namespace offsets

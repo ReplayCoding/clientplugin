@@ -67,7 +67,7 @@ CPMAddPackage(
 CPMAddPackage(
   NAME source-sdk
   GITHUB_REPOSITORY ReplayCoding/hl2sdk-cmake
-  GIT_TAG 92b751c8860337478ed680ef7467359f3e90b97d
+  GIT_TAG 4ef9cdbda59f1ea07a23c518fa00bea0aac45642
 )
 
 CPMAddPackage("gh:fmtlib/fmt#9.1.0")
